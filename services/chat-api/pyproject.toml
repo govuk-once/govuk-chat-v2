@@ -1,0 +1,23 @@
+[project]
+name = "chat-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13.7"
+dependencies = [
+    "fastapi[standard]>=0.118.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pyright>=1.1.406",
+    "pytest>=8.4.2",
+    "ruff>=0.13.3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".",
+  "src"
+]
