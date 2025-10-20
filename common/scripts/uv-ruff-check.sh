@@ -2,4 +2,8 @@
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 
-uv run ruff check
+if [ -n "$CI" ]; then
+    uv run ruff check --output-format=github
+else
+    uv run ruff check
+fi

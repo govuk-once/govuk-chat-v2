@@ -2,4 +2,8 @@
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 
-uv run ruff format
+if [ -n "$CI" ]; then
+    uv run ruff format --check
+else
+    uv run ruff format
+fi
