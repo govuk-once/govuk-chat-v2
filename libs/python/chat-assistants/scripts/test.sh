@@ -1,0 +1,1 @@
+../../../../common/scripts/uv-pytest.sh

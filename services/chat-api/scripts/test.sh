@@ -1,5 +1,1 @@
-#!/usr/bin/env bash
-
-cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
-
-uv run pytest
+../../../common/scripts/uv-pytest.sh
