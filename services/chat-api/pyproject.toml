@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13.7"
 dependencies = [
+    "chat-assistants",
     "fastapi[standard]>=0.118.0",
 ]
 
@@ -21,3 +22,6 @@ pythonpath = [
   ".",
   "src"
 ]
+
+[tool.uv.sources]
+chat-assistants = { path = "../../libs/python/chat-assistants" }
