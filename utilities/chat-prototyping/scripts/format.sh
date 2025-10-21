@@ -1,0 +1,1 @@
+../../../common/scripts/uv-ruff-format.sh

@@ -1,0 +1,14 @@
+[project]
+name = "chat-prototyping"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13.7"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.406",
+    "pytest>=8.4.2",
+    "ruff>=0.14.1",
+]
