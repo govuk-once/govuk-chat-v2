@@ -1,0 +1,1 @@
+../../../../common/scripts/export-aws-credentials.sh
