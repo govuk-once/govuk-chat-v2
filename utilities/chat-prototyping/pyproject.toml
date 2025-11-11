@@ -19,3 +19,10 @@ dev = [
 
 [tool.uv.sources]
 chat-assistants = { path = "../../libs/python/chat-assistants", editable = true }
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

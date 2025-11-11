@@ -235,7 +235,7 @@ dev = [
 [[package]]
 name = "chat-prototyping"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "chat-assistants" },
     { name = "gradio" },
