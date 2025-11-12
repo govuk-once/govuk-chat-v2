@@ -1,19 +1,25 @@
 from anthropic import AsyncAnthropicBedrock
-from anthropic.types import TextBlock
 from pydantic import BaseModel
+from typing import AsyncGenerator
 
 
 class UserInput(BaseModel):
     message: str
 
 
-class AssistantResponse(BaseModel):
+class AssistantResponseDelta(BaseModel):
+    delta: str
+
+
+class AssistantResponseFinal(BaseModel):
     message: str
 
 
-async def sonnet_non_streaming_assistant(user_input: UserInput) -> AssistantResponse:
+async def sonnet_streaming_assistant(
+    user_input: UserInput,
+) -> AsyncGenerator[AssistantResponseDelta | AssistantResponseFinal, None]:
     client = AsyncAnthropicBedrock()
-    message = await client.messages.create(
+    async with client.messages.stream(
         max_tokens=1024,
         messages=[
             {
@@ -22,10 +28,8 @@ async def sonnet_non_streaming_assistant(user_input: UserInput) -> AssistantResp
             }
         ],
         model="eu.anthropic.claude-sonnet-4-20250514-v1:0",
-    )
+    ) as stream:
+        async for text in stream.text_stream:
+            yield AssistantResponseDelta(delta=text)
 
-    text_responses = [
-        block.text for block in message.content if isinstance(block, TextBlock)
-    ]
-
-    return AssistantResponse(message="".join(text_responses))
+    yield AssistantResponseFinal(message=await stream.get_final_text())
