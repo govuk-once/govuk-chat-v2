@@ -1,17 +1,19 @@
 from anthropic import AsyncAnthropicBedrock
-from pydantic import BaseModel
+from dataclasses import dataclass
 from typing import AsyncGenerator
 
-
-class UserInput(BaseModel):
+@dataclass
+class UserInput:
     message: str
 
 
-class AssistantResponseDelta(BaseModel):
+@dataclass
+class AssistantResponseDelta:
     delta: str
 
 
-class AssistantResponseFinal(BaseModel):
+@dataclass
+class AssistantResponseFinal:
     message: str
 
 
