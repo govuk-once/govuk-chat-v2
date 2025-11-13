@@ -5,12 +5,18 @@ from chat_assistants.anthropic import (
     AssistantResponseDelta,
     AssistantResponseFinal,
     UserInput,
+    UserHistoryItem,
+    AssistantHistoryItem,
 )
 
 
 @pytest.mark.asyncio
-async def test_generate_response_returns_string(mocker):
-    user_input = UserInput(message="What's the weather like?")
+async def test_generate_response_yields_deltas(mocker):
+    history = [
+        UserHistoryItem("How are you?"),
+        AssistantHistoryItem("I'm well"),
+    ]
+    user_input = UserInput("What's the weather like?", history)
     tokens = ("It's ", "sunny ", "today")
 
     async def mock_data():
@@ -24,8 +30,13 @@ async def test_generate_response_returns_string(mocker):
         side_effect=lambda _: mock_data(),
     )
 
+    expected_history = [
+        {"role": "user", "content": "How are you?"},
+        {"role": "assistant", "content": "I'm well"},
+    ]
+
     deltas = []
-    async for delta in generate_response(user_input.message):
+    async for delta in generate_response(user_input.message, expected_history):
         deltas.append(delta)
 
     first_token, second_token, _ = tokens
