@@ -8,4 +8,9 @@ scripts/export-aws-credentials.sh
 echo ""
 echo "== Starting app =="
 
-uv run fastapi dev src/chat_api/main.py
+# Using uvicorn rather than FastAPI CLI to have extra reload dirs (FastAPI CLI
+# delegate to uvicorn anyway)
+uv run uvicorn chat_api.main:app \
+    --reload \
+    --reload-dir . \
+    --reload-dir ../../libs/python/chat-assistants

@@ -89,7 +89,7 @@ wheels = [
 [[package]]
 name = "chat-api"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "chat-assistants" },
     { name = "fastapi", extra = ["standard"] },
