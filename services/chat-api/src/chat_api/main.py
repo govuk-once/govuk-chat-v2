@@ -5,7 +5,7 @@ from sse_starlette.sse import EventSourceResponse
 
 import chat_assistants.anthropic as anthropic_assistant
 
-load_dotenv(find_dotenv(".env.aws"))
+load_dotenv(find_dotenv(".env.aws"), override=True)
 
 app = FastAPI()
 

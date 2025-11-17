@@ -8,7 +8,7 @@ from chat_assistants.anthropic import (
     AssistantHistoryItem,
 )
 
-load_dotenv(find_dotenv(".env.aws"))
+load_dotenv(find_dotenv(".env.aws"), override=True)
 
 
 async def generate_response(message, history):
