@@ -1,6 +1,6 @@
 import pytest
 
-from chat_prototyping.main import generate_response
+from chat_prototyping.sonnet_streaming_assistant import generate_response
 from chat_assistants.anthropic import (
     AssistantResponseDelta,
     AssistantResponseFinal,
@@ -26,7 +26,7 @@ async def test_generate_response_yields_deltas(mocker):
         yield AssistantResponseFinal(message="".join(tokens))
 
     assistant_method = mocker.patch(
-        "chat_prototyping.main.sonnet_streaming_assistant",
+        "chat_prototyping.sonnet_streaming_assistant.sonnet_streaming_assistant",
         side_effect=lambda _: mock_data(),
     )
 
