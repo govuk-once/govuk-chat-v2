@@ -11,6 +11,24 @@ from chat_assistants.anthropic import (
 )
 
 
+class TestUserInput:
+    def test_message_cannot_be_empty(self):
+        with pytest.raises(ValueError, match="message cannot be empty"):
+            UserInput(message="")
+
+
+class TestAssistantHistoryInput:
+    def test_message_cannot_be_empty(self):
+        with pytest.raises(ValueError, match="message cannot be empty"):
+            AssistantHistoryItem(message="")
+
+
+class TestUserHistoryInput:
+    def test_message_cannot_be_empty(self):
+        with pytest.raises(ValueError, match="message cannot be empty"):
+            UserHistoryItem(message="")
+
+
 def mock_client_messages_stream(deltas: list[str]):
     text_stream = MagicMock()
     text_stream.__aiter__.return_value = iter(deltas)

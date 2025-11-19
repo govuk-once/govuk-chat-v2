@@ -7,16 +7,28 @@ from typing import AsyncGenerator
 class UserHistoryItem:
     message: str
 
+    def __post_init__(self):
+        if not self.message:
+            raise ValueError("message cannot be empty")
+
 
 @dataclass
 class AssistantHistoryItem:
     message: str
+
+    def __post_init__(self):
+        if not self.message:
+            raise ValueError("message cannot be empty")
 
 
 @dataclass
 class UserInput:
     message: str
     history: list[UserHistoryItem | AssistantHistoryItem] = field(default_factory=list)
+
+    def __post_init__(self):
+        if not self.message:
+            raise ValueError("message cannot be empty")
 
 
 @dataclass
