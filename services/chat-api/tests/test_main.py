@@ -41,3 +41,15 @@ def test_sonnet_streaming_assistant_response(mocker):
         assert body[starting_index + 1] == f"data: {json.dumps(content)}"
 
     assistant_method.assert_called_with(UserInput("Hi, how are you?"))
+
+
+def test_sonnet_streaming_assistant_response_blank_message():
+    response = client.post(
+        "/sonnet-streaming/assistant-response",
+        json={"message": " "},
+    )
+    assert response.status_code == 422
+    assert response.headers["content-type"].startswith("application/json")
+    data = response.json()
+    # don't know how to get rid of the ugly "Value error, " prefix
+    assert data["detail"][0]["msg"] == "Value error, Message must not be empty"

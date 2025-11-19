@@ -1,7 +1,7 @@
 import json
 from dotenv import load_dotenv, find_dotenv
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sse_starlette.sse import EventSourceResponse
 
 import chat_assistants.anthropic as anthropic_assistant
@@ -13,6 +13,12 @@ app = FastAPI()
 
 class UserInput(BaseModel):
     message: str
+
+    @field_validator("message")
+    def not_empty(cls, value):
+        if not value.strip():
+            raise ValueError("Message must not be empty")
+        return value
 
 
 @app.get("/")
