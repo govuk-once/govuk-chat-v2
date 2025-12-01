@@ -25,7 +25,4 @@ async def generate_response(message, _history):
 
 
 def build_interface():
-    gr.ChatInterface(
-        fn=generate_response,
-        type="messages",
-    )
+    gr.ChatInterface(fn=generate_response)
