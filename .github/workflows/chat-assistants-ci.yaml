@@ -6,9 +6,11 @@ on:
     branches:
       - main
     paths:
+      - "uv.lock"
       - "libs/python/chat-assistants/**"
   pull_request:
     paths:
+      - "uv.lock"
       - "libs/python/chat-assistants/**"
 
 jobs:

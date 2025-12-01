@@ -6,9 +6,11 @@ on:
     branches:
       - main
     paths:
+      - "uv.lock"
       - "utilities/chat-prototyping/**"
   pull_request:
     paths:
+      - "uv.lock"
       - "utilities/chat-prototyping/**"
 
 jobs:
