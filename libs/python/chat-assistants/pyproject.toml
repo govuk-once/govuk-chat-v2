@@ -3,7 +3,6 @@ name = "chat-assistants"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13.7"
 dependencies = [
     "anthropic[bedrock]>=0.71.0",
 ]

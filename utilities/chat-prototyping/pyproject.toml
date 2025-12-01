@@ -3,7 +3,6 @@ name = "chat-prototyping"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13.7"
 dependencies = [
     "chat-assistants",
     "gradio>=5.49.1",
@@ -21,9 +20,6 @@ dev = [
     "respx>=0.22.0",
     "ruff>=0.14.1",
 ]
-
-[tool.uv.sources]
-chat-assistants = { path = "../../libs/python/chat-assistants", editable = true }
 
 [build-system]
 requires = ["setuptools>=61.0"]
