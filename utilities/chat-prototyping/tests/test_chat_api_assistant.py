@@ -17,18 +17,15 @@ async def test_generate_response_yields_deltas(mocker):
     )
 
     with respx.mock:
-        route = respx.post(
-            "http://127.0.0.1:8000/sonnet-streaming/assistant-response"
-        ).mock(
+        api_host = "http://localhost"
+        route = respx.post(f"{api_host}/sonnet-streaming/assistant-response").mock(
             return_value=Response(
                 200, text=sse_content, headers={"Content-Type": "text/event-stream"}
             )
         )
 
-        generate_response("test", [])
-
         deltas = []
-        async for delta in generate_response("Hi, how are you?", []):
+        async for delta in generate_response("Hi, how are you?", [], api_host):
             deltas.append(delta)
 
         assert deltas == ["I'm", "I'm good thanks"]

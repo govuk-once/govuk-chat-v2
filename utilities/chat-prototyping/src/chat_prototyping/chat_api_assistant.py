@@ -4,15 +4,14 @@ import json
 from httpx_sse import aconnect_sse
 
 
-async def generate_response(message, _history):
+async def generate_response(message, _history, api_host_input):
     response = ""
     async with (
         httpx.AsyncClient() as client,
         aconnect_sse(
             client,
             "POST",
-            # TODO: make hostname configurable in Gradio UI
-            "http://127.0.0.1:8000/sonnet-streaming/assistant-response",
+            f"{api_host_input}/sonnet-streaming/assistant-response",
             json={"message": message},
         ) as event_source,
     ):
@@ -25,4 +24,5 @@ async def generate_response(message, _history):
 
 
 def build_interface():
-    gr.ChatInterface(fn=generate_response)
+    api_host_input = gr.Textbox("http://127.0.0.1:8000", label="API host", render=False)
+    gr.ChatInterface(fn=generate_response, additional_inputs=api_host_input)
