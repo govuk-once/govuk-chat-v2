@@ -1,10 +1,20 @@
-# GOV.UK Chat Monorepo prototype
+# GOV.UK Chat V2 prototype
 
 A prototype structure to explore managing GOV.UK Chat services in
-a monorepo.
+a monorepo to explore ideas for a v2.
 
-Expectations of things that could go in this are:
+GOV.UK Chat V2 is likely to be:
 
-- Services: microservices that form the suite of applications (e.g api, admin, frontends)
-- Utilities: standalone tools, such as evaluation suite
-- Libs: shared libraries such as assitants or analysis
+- Micro-service architecture, for small focused components,
+- Monorepo, to try reduce the pain of working with micro-services
+- Python as main backend language, to reduce work to take a concept to production
+- Cloud-native, built directly to utilise AWS managed services
+- Streaming as default output
+- Agentic in assistant response
+
+### Directory structure
+
+- common: files common to multiple distinct sub-projects
+- libs: shared libraries such as assitants or analysis
+- utilities: standalone tools, such as evaluation suite
+- services: microservices that form the suite of applications (e.g api, admin, frontends)

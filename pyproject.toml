@@ -1,5 +1,5 @@
 [project]
-name = "govuk-chat-monorepo-prototype"
+name = "govuk-chat-v2-prototype"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

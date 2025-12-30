@@ -7,7 +7,7 @@ members = [
     "chat-api",
     "chat-assistants",
     "chat-prototyping",
-    "govuk-chat-monorepo-prototype",
+    "govuk-chat-v2-prototype",
 ]
 
 [[package]]
@@ -508,7 +508,7 @@ wheels = [
 ]
 
 [[package]]
-name = "govuk-chat-monorepo-prototype"
+name = "govuk-chat-v2-prototype"
 version = "0.1.0"
 source = { virtual = "." }
 
