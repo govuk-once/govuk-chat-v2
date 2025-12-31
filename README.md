@@ -12,7 +12,7 @@ GOV.UK Chat V2 is likely to be:
 - Streaming as default output
 - Agentic in assistant response
 
-### Directory structure
+## Directory structure
 
 - common: files common to multiple distinct sub-projects
 - libs: shared libraries such as assitants or analysis
