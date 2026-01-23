@@ -18,3 +18,9 @@ GOV.UK Chat V2 is likely to be:
 - libs: shared libraries such as assitants or analysis
 - utilities: standalone tools, such as evaluation suite
 - services: microservices that form the suite of applications (e.g api, admin, frontends)
+
+## Technical documentation
+
+### Installing dependencies
+
+For Python, install [uv](https://docs.astral.sh/uv/getting-started/installation/). This can be used to install the relevant python version with `uv python install`.
