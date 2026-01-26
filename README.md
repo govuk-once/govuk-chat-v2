@@ -24,3 +24,7 @@ GOV.UK Chat V2 is likely to be:
 ### Installing dependencies
 
 For Python, install [uv](https://docs.astral.sh/uv/getting-started/installation/). This can be used to install the relevant python version with `uv python install`.
+
+## Decisions
+
+There is a [decision log](decisions.md).
