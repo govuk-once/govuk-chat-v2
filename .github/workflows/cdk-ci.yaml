@@ -38,16 +38,16 @@ jobs:
       - name: Run linter
         run: cdk/scripts/lint.sh
 
-  # format:
-  #   name: Format
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
-  #     - uses: ./.github/actions/setup-python-uv-env
+      - uses: ./.github/actions/setup-node-pnpm-env
 
-  #     - name: Run formatter
-  #       run: libs/python/chat-assistants/scripts/format.sh
+      - name: Run formatter
+        run: cdk/scripts/format.sh
 
   typing:
     name: Type checks

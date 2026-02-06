@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "type-check": "scripts/type-check.sh",
-    "lint": "scripts/lint.sh"
+    "lint": "scripts/lint.sh",
+    "format": "scripts/format.sh"
   },
   "dependencies": {
     "aws-cdk": "^2.1105.0",

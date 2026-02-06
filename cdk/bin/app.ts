@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { getEnvironment, getResourceNamePrefix, serviceMetadata } from '../constants/environment.ts';
+import {
+  getEnvironment,
+  getResourceNamePrefix,
+  serviceMetadata,
+} from '../constants/environment.ts';
 import { ChatApiServerlessStack } from '../stacks/chat-api-serverless-stack.ts';
 
 const app = new cdk.App();
@@ -11,5 +15,5 @@ new ChatApiServerlessStack(app, 'ChatApiServerlessStack', {
   },
   environment: getEnvironment(),
   stackName: `${getResourceNamePrefix()}-ChatApiServerlessStack`,
-  ...serviceMetadata
+  ...serviceMetadata,
 });
