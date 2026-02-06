@@ -6,6 +6,9 @@ dist/
 wheels/
 *.egg-info
 
+# NodeJS files
+node_modules
+
 # Individual env vars
 .env
 .env*
