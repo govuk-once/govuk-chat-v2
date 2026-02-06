@@ -3,7 +3,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "type-check": "scripts/type-check.sh"
+    "type-check": "scripts/type-check.sh",
+    "lint": "scripts/lint.sh"
   },
   "dependencies": {
     "aws-cdk": "^2.1105.0",
