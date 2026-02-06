@@ -1,4 +1,4 @@
-name: Chat API CI
+name: Chat API FastAPI CI
 
 on:
   workflow_dispatch: {}
@@ -7,11 +7,11 @@ on:
       - main
     paths:
       - "uv.lock"
-      - "services/chat-api/**"
+      - "services/chat-api-fastapi/**"
   pull_request:
     paths:
       - "uv.lock"
-      - "services/chat-api/**"
+      - "services/chat-api-fastapi/**"
 
 jobs:
   test:
@@ -23,7 +23,7 @@ jobs:
       - uses: ./.github/actions/setup-python-uv-env
 
       - name: Run tests
-        run: services/chat-api/scripts/test.sh
+        run: services/chat-api-fastapi/scripts/test.sh
 
   lint:
     name: Lint
@@ -34,7 +34,7 @@ jobs:
       - uses: ./.github/actions/setup-python-uv-env
 
       - name: Run linter
-        run: services/chat-api/scripts/lint.sh
+        run: services/chat-api-fastapi/scripts/lint.sh
 
   format:
     name: Format
@@ -45,7 +45,7 @@ jobs:
       - uses: ./.github/actions/setup-python-uv-env
 
       - name: Run formatter
-        run: services/chat-api/scripts/format.sh
+        run: services/chat-api-fastapi/scripts/format.sh
 
   typing:
     name: Type checks
@@ -56,4 +56,4 @@ jobs:
       - uses: ./.github/actions/setup-python-uv-env
 
       - name: Run type checks
-        run: services/chat-api/scripts/type-check.sh
+        run: services/chat-api-fastapi/scripts/type-check.sh

@@ -4,7 +4,7 @@ requires-python = ">=3.13.7"
 
 [manifest]
 members = [
-    "chat-api",
+    "chat-api-fastapi",
     "chat-assistants",
     "chat-prototyping",
     "govuk-chat-v2-prototype",
@@ -196,9 +196,9 @@ wheels = [
 ]
 
 [[package]]
-name = "chat-api"
+name = "chat-api-fastapi"
 version = "0.1.0"
-source = { editable = "services/chat-api" }
+source = { editable = "services/chat-api-fastapi" }
 dependencies = [
     { name = "chat-assistants" },
     { name = "fastapi", extra = ["standard"] },
