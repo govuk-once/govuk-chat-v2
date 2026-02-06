@@ -6,7 +6,14 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      '@tsconfig/node24':
+        specifier: ^24.0.4
+        version: 24.0.4
+      '@types/node':
+        specifier: ^25.2.1
+        version: 25.2.1
 
   cdk:
     dependencies:
@@ -35,6 +42,12 @@ packages:
       - jsonschema
       - semver
 
+  '@tsconfig/node24@24.0.4':
+    resolution: {integrity: sha512-2A933l5P5oCbv6qSxHs7ckKwobs8BDAe9SJ/Xr2Hy+nDlwmLE1GhFh/g/vXGRZWgxBg9nX/5piDtHR9Dkw/XuA==}
+
+  '@types/node@25.2.1':
+    resolution: {integrity: sha512-CPrnr8voK8vC6eEtyRzvMpgp3VyVRhgclonE7qYi6P9sXwYb59ucfrnmFBTaP0yUi8Gk4yZg/LlTJULGxvTNsg==}
+
   aws-cdk-lib@2.237.1:
     resolution: {integrity: sha512-RH8mWHLBtc14stkeUF0gFLaWdS5iS2AHUHnoT5B5LLZfEkYP9G43LjJs0AMmpdlQ5/ZQVvCZ+VB83Q9vLxILRw==}
     engines: {node: '>= 18.0.0'}
@@ -61,6 +74,9 @@ packages:
   constructs@10.4.5:
     resolution: {integrity: sha512-fOoP70YLevMZr5avJHx2DU3LNYmC6wM8OwdrNewMZou1kZnPGOeVzBrRjZNgFDHUlulYUjkpFRSpTE3D+n+ZSg==}
 
+  undici-types@7.16.0:
+    resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
+
 snapshots:
 
   '@aws-cdk/asset-awscli-v1@2.2.263': {}
@@ -68,6 +84,12 @@ snapshots:
   '@aws-cdk/asset-node-proxy-agent-v6@2.1.0': {}
 
   '@aws-cdk/cloud-assembly-schema@48.20.0': {}
+
+  '@tsconfig/node24@24.0.4': {}
+
+  '@types/node@25.2.1':
+    dependencies:
+      undici-types: 7.16.0
 
   aws-cdk-lib@2.237.1(constructs@10.4.5):
     dependencies:
@@ -79,3 +101,5 @@ snapshots:
   aws-cdk@2.1105.0: {}
 
   constructs@10.4.5: {}
+
+  undici-types@7.16.0: {}

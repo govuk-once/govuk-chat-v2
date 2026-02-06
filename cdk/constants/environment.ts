@@ -26,8 +26,8 @@ export const getEnvironment = (): string => {
 
 export const isEphemeralEnvironment = (): boolean => {
     const environment = getEnvironment();
-    const nonEphemeral = [GovUkOnceEnvironments.Stag, GovUkOnceEnvironments.Prod];
-    return !nonEphemeral.includes(environment as GovUkOnceEnvironments);
+    const nonEphemeral: string[] = [GovUkOnceEnvironments.Stag, GovUkOnceEnvironments.Prod];
+    return !nonEphemeral.includes(environment);
 };
 
 export const getResourceNamePrefix = (): string => {

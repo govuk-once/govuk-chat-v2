@@ -1,0 +1,1 @@
+../../common/scripts/tsc-no-emit.sh
