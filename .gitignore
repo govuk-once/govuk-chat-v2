@@ -9,6 +9,10 @@ wheels/
 # NodeJS files
 node_modules
 
+# CDK files
+cdk.context.json
+cdk.out
+
 # Individual env vars
 .env
 .env*

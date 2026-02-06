@@ -1,0 +1,10 @@
+{
+  "name": "@govuk-chat-v2-prototype/cdk",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "aws-cdk": "^2.1105.0",
+    "aws-cdk-lib": "^2.237.1",
+    "constructs": "^10.4.5"
+  }
+}

@@ -1,12 +1,7 @@
 {
   "name": "govuk-chat-v2-prototype",
-  "version": "1.0.0",
-  "description": "",
-  "keywords": [],
+  "private": true,
   "author": "Government Digital Service",
   "license": "MIT",
-  "packageManager": "pnpm@10.28.1",
-  "devDependencies": {
-    "aws-cdk": "^2.1103.0"
-  }
+  "packageManager": "pnpm@10.28.1"
 }
