@@ -30,7 +30,7 @@ For Python, install [uv](https://docs.astral.sh/uv/getting-started/installation/
 For NodeJS, install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating). Then:
 
 - Install the appropriate NodeJS version: `nvm install`
-- Install [pnpm]: `npm install -g pnpm`
+- Install [pnpm](https://pnpm.io/): `npm install -g pnpm`
 - Install dependencies: `pnpm install`
 
 ## Decisions
