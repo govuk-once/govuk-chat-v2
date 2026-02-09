@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "check": "scripts/check.sh",
+    "dev-checks": "scripts/dev-checks.sh",
     "format": "scripts/format.sh",
     "lint": "scripts/lint.sh",
     "test": "scripts/test.sh",

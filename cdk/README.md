@@ -22,7 +22,7 @@ This is, clearly, rather manual and should be improved.
 ## Development
 
 ```
-./scripts/check.sh
+./scripts/dev-checks.sh
 ```
 
 Will perform linting, formatting, type checking and execute tests.
