@@ -1,0 +1,1 @@
+../../common/scripts/pnpm-eslint.sh

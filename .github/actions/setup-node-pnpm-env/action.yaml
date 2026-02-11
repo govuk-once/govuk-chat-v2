@@ -1,0 +1,22 @@
+name: "Set up a Node PNPM environment"
+description: "Install PNPM, Node and dependencies"
+runs:
+  using: "composite"
+  steps:
+    - name: Get PNPM Version
+      id: pnpm-version
+      shell: bash
+      run: echo "pnpm_version=$(jq -r '.packageManager' package.json)" >> $GITHUB_OUTPUT
+
+    - name: Install PNPM
+      shell: bash
+      run: npm install -g ${{ steps.pnpm-version.outputs.pnpm_version }}
+
+    - name: Install Node
+      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+      with:
+        cache: "pnpm"
+
+    - name: Install PNPM dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

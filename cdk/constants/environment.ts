@@ -1,0 +1,45 @@
+export const GovUkOnceEnvironments = {
+  Dev: 'dev',
+  Test: 'test',
+  Stag: 'stag',
+  Prod: 'prod',
+} as const;
+
+// removed version for now as seems unlikely to be something incremented
+// removed cost-centre for now until establish correct one and if other
+// programme codes are needed
+export const serviceMetadata = {
+  serviceName: 'govuk-chat',
+  teamName: 'chat-team',
+  repositoryUrl: 'https://github.com/govuk-once/govuk-chat-v2-prototype',
+};
+
+export const getEnvironment = (): string => {
+  const env = process.env.ENVIRONMENT || process.env.USER;
+  if (!env) {
+    throw new Error(
+      'Unable to determine environment: Neither ENVIRONMENT nor USER environment variables are set',
+    );
+  }
+  return env.replace(/[^a-zA-Z0-9-]/g, '');
+};
+
+export const isEphemeralEnvironment = (): boolean => {
+  const environment = getEnvironment();
+  const nonEphemeral: string[] = [
+    GovUkOnceEnvironments.Stag,
+    GovUkOnceEnvironments.Prod,
+  ];
+  return !nonEphemeral.includes(environment);
+};
+
+export const getResourceNamePrefix = (): string => {
+  const environment = getEnvironment();
+  const prefix = `${environment}-${serviceMetadata.serviceName}`.toLowerCase();
+  return prefix.substring(0, 40);
+};
+
+// generate a 5 character alphanumeric unique id
+export const generateUniqueId = (): string => {
+  return Math.random().toString(36).substring(2, 7);
+};

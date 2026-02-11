@@ -1,0 +1,17 @@
+{
+  "name": "@govuk-chat-v2-prototype/cdk",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev-checks": "scripts/dev-checks.sh",
+    "format": "scripts/format.sh",
+    "lint": "scripts/lint.sh",
+    "test": "scripts/test.sh",
+    "type-check": "scripts/type-check.sh"
+  },
+  "dependencies": {
+    "aws-cdk": "^2.1105.0",
+    "aws-cdk-lib": "^2.237.1",
+    "constructs": "^10.4.5"
+  }
+}
