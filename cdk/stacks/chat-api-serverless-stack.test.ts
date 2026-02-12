@@ -1,7 +1,14 @@
 import * as cdk from 'aws-cdk-lib';
+import baseContext from '../cdk.json' with { type: 'json' };
 import { Tags } from 'aws-cdk-lib/assertions';
 import { describe, it } from 'vitest';
 import { ChatApiServerlessStack } from './chat-api-serverless-stack.ts';
+
+const context = {
+  ...baseContext,
+  // prevent stacks from being bundled
+  'aws:cdk:bundling-stacks': [],
+};
 
 describe('ChatApiServerlessStack', () => {
   const baseProps = {
@@ -13,7 +20,7 @@ describe('ChatApiServerlessStack', () => {
 
   describe('Stack tags', () => {
     function stackTags() {
-      const app = new cdk.App();
+      const app = new cdk.App({ context });
       const stack = new ChatApiServerlessStack(app, 'TestStack', baseProps);
       return Tags.fromStack(stack);
     }
