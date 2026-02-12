@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import baseContext from '../cdk.json' with { type: 'json' };
-import { Tags } from 'aws-cdk-lib/assertions';
+import { Tags, Template } from 'aws-cdk-lib/assertions';
 import { describe, it } from 'vitest';
 import { ChatApiServerlessStack } from './chat-api-serverless-stack.ts';
 
@@ -18,6 +18,12 @@ describe('ChatApiServerlessStack', () => {
     environment: 'testing',
   };
 
+  function stackTemplate() {
+    const app = new cdk.App({ context });
+    const stack = new ChatApiServerlessStack(app, 'TestStack', baseProps);
+    return Template.fromStack(stack);
+  }
+
   describe('Stack tags', () => {
     function stackTags() {
       const app = new cdk.App({ context });
@@ -31,6 +37,16 @@ describe('ChatApiServerlessStack', () => {
         TeamName: baseProps.teamName,
         RepositoryUrl: baseProps.repositoryUrl,
         Environment: baseProps.environment,
+      });
+    });
+  });
+
+  describe('Lambda functions', () => {
+    it('creates a HelloWorld lambda', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Handler: 'chat_api.handlers.hello_world.lambda_handler',
       });
     });
   });
