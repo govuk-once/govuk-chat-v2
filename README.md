@@ -25,13 +25,13 @@ GOV.UK Chat V2 is likely to be:
 
 This project uses Python and NodeJS
 
-For Python, install [uv](https://docs.astral.sh/uv/getting-started/installation/). This can be used to install the relevant python version with `uv python install`.
+For Python, install [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-For NodeJS, install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating). Then:
+For NodeJS, install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating).
 
-- Install the appropriate NodeJS version: `nvm install`
-- Install [pnpm](https://pnpm.io/): `npm install -g pnpm`
-- Install dependencies: `pnpm install`
+To set-up your environment with ZSH then run `source dev-prepare.zsh`
+
+If you don't use ZSH check the [dev-prepare.zsh](dev-prepare.zsh) script to check which commands to run.
 
 ## Decisions
 
