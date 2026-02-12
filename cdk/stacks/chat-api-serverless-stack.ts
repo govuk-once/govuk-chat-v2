@@ -1,11 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
-import {
-  getResourceNamePrefix,
-  mostRecentFileMtime,
-  sha256Hash,
-} from '../constants/environment.ts';
+import { getResourceNamePrefix, hashGlobs } from '../constants/environment.ts';
 
 // You were about to look at fast glob for checking file mtime
 
@@ -43,13 +40,13 @@ export class ChatApiServerlessStack extends cdk.Stack {
     );
 
     const url = helloWorldLambda.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.NONE,
+      authType: lambda.FunctionUrlAuthType.AWS_IAM,
     });
 
-    // helloWorldLambda.addPermission('AccountWideInvoke', {
-    //   action: 'lambda:InvokeFunctionUrl',
-    //   principal: new iam.AccountPrincipal(this.account),
-    // });
+    helloWorldLambda.addPermission('AccountWideInvoke', {
+      action: 'lambda:InvokeFunctionUrl',
+      principal: new iam.AccountPrincipal(this.account),
+    });
 
     new cdk.CfnOutput(this, 'LambdaUrl', {
       value: url.url,
@@ -57,12 +54,11 @@ export class ChatApiServerlessStack extends cdk.Stack {
   }
 
   chatApiServerlessCode(): lambda.AssetCode {
-    const mtime = mostRecentFileMtime(
+    const assetHash = hashGlobs(
       '../services/chat-api-serverless/src/**/*.py',
       '../libs/python/**/src/**/*.py',
       '../uv.lock',
     );
-    const assetHash = sha256Hash(mtime.toString());
 
     return lambda.Code.fromAsset('../services/chat-api-serverless/src', {
       bundling: {
