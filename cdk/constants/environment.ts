@@ -47,12 +47,17 @@ export const generateUniqueId = (): string => {
   return Math.random().toString(36).substring(2, 7);
 };
 
-export const mostRecentFileMtime = (...pathGlobs: string[]): number => {
+export const hashGlobs = (...pathGlobs: string[]): string => {
   const files = pathGlobs.flatMap((glob) => globSync(glob));
-  const mtimes = files.map((file) => statSync(file).mtimeMs);
-  return Math.max(...mtimes);
-};
+  const filenamesWithMtime = files.map(
+    (file) => `${file}-${statSync(file).mtimeMs}`,
+  );
 
-export const sha256Hash = (toHash: string): string => {
-  return createHash('sha256').update(toHash).digest('hex');
+  const hash = createHash('sha256');
+
+  for (const id of filenamesWithMtime) {
+    hash.update(id, 'utf8');
+  }
+
+  return hash.digest('hex');
 };
