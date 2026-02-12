@@ -23,40 +23,73 @@ export class ChatApiServerlessStack extends cdk.Stack {
     cdk.Tags.of(this).add('RepositoryUrl', props.repositoryUrl);
     cdk.Tags.of(this).add('Environment', props.environment);
 
+    const chatApiServerlessCode = lambda.Code.fromAsset(
+      '../services/chat-api-serverless/src',
+      {
+        bundling: {
+          image: lambda.Runtime.PYTHON_3_13.bundlingImage,
+          volumes: [
+            {
+              containerPath: '/repo-root',
+              hostPath: '../',
+            },
+            // cache for all pip dependencies
+            {
+              containerPath: '/pip-cache/global-cache',
+              hostPath: './cache/pip/global-cache',
+            },
+            // cache for this asset
+            {
+              containerPath: '/pip-cache/packages',
+              hostPath: './cache/pip/chat-api-serverless-packages',
+            },
+          ],
+          command: [
+            'bash',
+            '-c',
+            `
+          pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
+          cp -r /asset-input/* /asset-output/ &&
+          cd /repo-root &&
+          uv export --frozen \
+                    --no-editable \
+                    --no-dev \
+                    --no-emit-project \
+                    --package chat-api-serverless \
+                    --prune botocore \
+                    --prune boto3 \
+                    -o /asset-output/requirements.txt &&
+          uv pip install --no-installer-metadata \
+                         --compile-bytecode \
+                         --link-mode=copy \
+                         --target /pip-cache/packages \
+                         --python-platform aarch64-manylinux2014 \
+                         --python-version 3.13 \
+                         --exact \
+                         --no-deps \
+                         --cache-dir=/pip-cache/global-cache \
+                         -r /asset-output/requirements.txt &&
+          cp -r /pip-cache/packages/* /asset-output/
+          `,
+          ],
+          user: 'root',
+        },
+      },
+    );
+
     const helloWorldLambda = new lambda.Function(
       this,
       `${getResourceNamePrefix()}-api-hello-world`,
       {
         runtime: lambda.Runtime.PYTHON_3_13,
         handler: 'chat_api.handlers.hello_world.lambda_handler',
-        code: lambda.Code.fromAsset('../services/chat-api-serverless/src', {
-          bundling: {
-            image: lambda.Runtime.PYTHON_3_13.bundlingImage,
-            volumes: [
-              {
-                containerPath: '/repo-root',
-                hostPath: '../',
-              },
-            ],
-            command: [
-              'bash',
-              '-c',
-              `
-              pip install uv --root-user-action=ignore &&
-              cp -r /asset-input/* /asset-output/ &&
-              cd /repo-root &&
-              uv export --frozen --no-editable --no-dev --no-emit-project --package chat-api-serverless -o requirements.txt &&
-              uv pip install --no-installer-metadata --no-compile-bytecode --link-mode=copy --target /asset-output/packages -r requirements.txt
-              `,
-            ],
-            user: 'root',
-          },
-        }),
+        code: chatApiServerlessCode,
+        architecture: lambda.Architecture.ARM_64,
       },
     );
 
     const url = helloWorldLambda.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.AWS_IAM,
+      authType: lambda.FunctionUrlAuthType.NONE,
     });
 
     // helloWorldLambda.addPermission('AccountWideInvoke', {
