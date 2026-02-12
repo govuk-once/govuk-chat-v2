@@ -13,6 +13,7 @@ resolution-markers = [
 [manifest]
 members = [
     "chat-api-fastapi",
+    "chat-api-serverless",
     "chat-assistants",
     "chat-prototyping",
     "govuk-chat-v2-prototype",
@@ -237,6 +238,35 @@ dev = [
     { name = "pyright", specifier = ">=1.1.406" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-mock", specifier = ">=3.15.1" },
+    { name = "ruff", specifier = ">=0.13.3" },
+]
+
+[[package]]
+name = "chat-api-serverless"
+version = "0.1.0"
+source = { editable = "services/chat-api-serverless" }
+dependencies = [
+    { name = "chat-assistants" },
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "chat-assistants", editable = "libs/python/chat-assistants" },
+    { name = "pydantic", specifier = ">=2.12.5" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyright", specifier = ">=1.1.406" },
+    { name = "pytest", specifier = ">=8.4.2" },
     { name = "ruff", specifier = ">=0.13.3" },
 ]
 
