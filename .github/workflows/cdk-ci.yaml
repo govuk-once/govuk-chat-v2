@@ -59,3 +59,14 @@ jobs:
 
       - name: Run type checks
         run: cdk/scripts/type-check.sh
+
+  cdk-synth:
+    name: CDK Synth
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run CDK Synth
+        run: cdk/scripts/cdk-synth.sh

@@ -14,3 +14,5 @@ echo "== Type checking =="
 scripts/type-check.sh
 echo "== Running tests =="
 scripts/test.sh
+echo "== Checking CDK synth =="
+scripts/cdk-synth.sh
