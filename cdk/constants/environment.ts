@@ -1,3 +1,6 @@
+import { globSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+
 export const GovUkOnceEnvironments = {
   Dev: 'dev',
   Test: 'test',
@@ -42,4 +45,14 @@ export const getResourceNamePrefix = (): string => {
 // generate a 5 character alphanumeric unique id
 export const generateUniqueId = (): string => {
   return Math.random().toString(36).substring(2, 7);
+};
+
+export const mostRecentFileMtime = (...pathGlobs: string[]): number => {
+  const files = pathGlobs.flatMap((glob) => globSync(glob));
+  const mtimes = files.map((file) => statSync(file).mtimeMs);
+  return Math.max(...mtimes);
+};
+
+export const sha256Hash = (toHash: string): string => {
+  return createHash('sha256').update(toHash).digest('hex');
 };
