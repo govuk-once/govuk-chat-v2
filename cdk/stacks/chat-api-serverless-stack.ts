@@ -33,7 +33,7 @@ export class ChatApiServerlessStack extends cdk.Stack {
       `${getResourceNamePrefix()}-api-hello-world`,
       {
         runtime: lambda.Runtime.PYTHON_3_13,
-        handler: 'chat_api.handlers.hello_world.lambda_handler',
+        handler: 'chat_api.handlers.example.lambda_handler',
         code: chatApiServerlessCode,
         architecture: lambda.Architecture.ARM_64,
       },
