@@ -84,8 +84,15 @@ export class ChatApiServerlessStack extends cdk.Stack {
           '-c',
           `
           pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
+
           cp -r /asset-input/* /asset-output/ &&
+
           cd /repo-root &&
+          
+          # Create a requirements.txt file of dependencies
+          # Any editable dependencies are copied
+          # Current project is not included
+          # AWS bundled depenencies are excluded
           uv export --frozen \
                     --no-editable \
                     --no-dev \
@@ -94,6 +101,14 @@ export class ChatApiServerlessStack extends cdk.Stack {
                     --prune botocore \
                     --prune boto3 \
                     -o /asset-output/requirements.txt &&
+
+          # Install the requirements.txt
+          # Compile bytecode for faster cold starts
+          # Use a shared directory so faster for subsequent runs
+          # Target appropriate Python platform and versions for any compilation
+          # Use exact to remove any packages that shouldn't be installed
+          # Use no-deps to only install what's in requirements.txt and not any 
+          # sub-dependencies pip is aware of
           uv pip install --no-installer-metadata \
                          --compile-bytecode \
                          --link-mode=copy \
@@ -104,6 +119,7 @@ export class ChatApiServerlessStack extends cdk.Stack {
                          --no-deps \
                          --cache-dir=/pip-cache/global-cache \
                          -r /asset-output/requirements.txt &&
+
           cp -r /pip-cache/packages/* /asset-output/
           `,
         ],
