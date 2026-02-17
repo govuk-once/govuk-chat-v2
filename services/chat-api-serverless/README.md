@@ -4,13 +4,10 @@ Exploring the idea of Chat API running on AWS Lambda
 
 ## Usage
 
-Change directory to the [cdk directory](../../cdk/): `cd ../../cdk`
-
-Then:
+This is deployed via CDK, after sourcing the dev-prepare.zsh script (root directory):
 
 ```
-$ eval $(gds aws once-chat-development-admin -e)
-$ cdk deploy ChatApiServerlessStack
+$ scripts/cdk-deploy.sh
 $ export LAMBDA_URL=(url from ChatApiServerlessStack.LambdaUrl)
 $ awscurl --service lambda $LAMBDA_URL
 ```
