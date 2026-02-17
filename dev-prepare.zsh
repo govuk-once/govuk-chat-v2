@@ -50,6 +50,9 @@ fi
 echo "== Installing pnpm dependencies =="
 pnpm install
 
+echo "== Refreshing AWS credentials =="
+source ./refresh-aws-credentials.zsh
+
 if test "$CURRENT_DIR" != "$SCRIPT_DIR"; then
     echo "== Changing back to ${CURRENT_DIR}"
     cd $CURRENT_DIR

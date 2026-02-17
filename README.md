@@ -29,6 +29,8 @@ For Python, install [uv](https://docs.astral.sh/uv/getting-started/installation/
 
 For NodeJS, install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating).
 
+You'll need to authenticate with AWS, this uses the [GDS CLI](https://github.com/alphagov/gds-cli).
+
 To set-up your environment with ZSH then run `source dev-prepare.zsh`
 
 If you don't use ZSH check the [dev-prepare.zsh](dev-prepare.zsh) script to check which commands to run.
