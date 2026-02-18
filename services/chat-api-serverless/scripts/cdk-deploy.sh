@@ -6,8 +6,8 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 
-../../common/scripts/export-aws-credentials.sh
+./../../common/scripts/export-aws-credentials.sh
 
-cd ../cdk
+cd ../../cdk
 
-cdk deploy "
+cdk deploy ChatApiServerlessStack "$@"
