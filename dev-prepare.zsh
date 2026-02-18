@@ -58,8 +58,9 @@ else
     return 1
 fi
 
-echo "== Refreshing Dev AWS credentials =="
-source ./refresh-dev-aws-credentials.zsh
+if ! ./common/scripts/check-dev-aws-credentials.sh --no-suggestion; then
+    source ./refresh-dev-aws-credentials.zsh
+fi
 
 if test "$CURRENT_DIR" != "$SCRIPT_DIR"; then
     echo "== Changing back to ${CURRENT_DIR}"
