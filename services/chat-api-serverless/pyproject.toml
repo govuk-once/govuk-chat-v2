@@ -13,6 +13,7 @@ dependencies = [
 dev = [
     "pyright>=1.1.406",
     "pytest>=8.4.2",
+    "pytest-freezer>=0.4.9",
     "ruff>=0.13.3",
 ]
 
