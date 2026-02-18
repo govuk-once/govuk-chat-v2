@@ -26,22 +26,22 @@ export class ChatApiServerlessStack extends cdk.Stack {
 
     const chatApiServerlessCode = this.chatApiServerlessCode();
 
-    const helloWorldLambda = new lambda.Function(
+    const exampleLambda = new lambda.Function(
       this,
-      `${getResourceNamePrefix()}-api-hello-world`,
+      `${getResourceNamePrefix()}-api-example`,
       {
         runtime: lambda.Runtime.PYTHON_3_13,
-        handler: 'chat_api.handlers.hello_world.lambda_handler',
+        handler: 'chat_api.handlers.example.lambda_handler',
         code: chatApiServerlessCode,
         architecture: lambda.Architecture.ARM_64,
       },
     );
 
-    const url = helloWorldLambda.addFunctionUrl({
+    const url = exampleLambda.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.AWS_IAM,
     });
 
-    helloWorldLambda.addPermission('AccountWideInvoke', {
+    exampleLambda.addPermission('AccountWideInvoke', {
       action: 'lambda:InvokeFunctionUrl',
       principal: new iam.AccountPrincipal(this.account),
     });

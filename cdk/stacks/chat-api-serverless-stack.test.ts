@@ -46,7 +46,7 @@ describe('ChatApiServerlessStack', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::Lambda::Function', {
-        Handler: 'chat_api.handlers.hello_world.lambda_handler',
+        Handler: 'chat_api.handlers.example.lambda_handler',
       });
     });
   });
