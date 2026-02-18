@@ -1,12 +1,9 @@
 import json
-from dotenv import load_dotenv, find_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel, field_validator
 from sse_starlette.sse import EventSourceResponse
 
 import chat_assistants.anthropic as anthropic_assistant
-
-load_dotenv(find_dotenv(".env.aws"), override=True)
 
 app = FastAPI()
 
