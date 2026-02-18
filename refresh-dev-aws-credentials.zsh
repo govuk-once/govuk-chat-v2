@@ -12,7 +12,15 @@ aws_role="${AWS_ROLE:-once-chat-development-admin}"
 
 echo "== Exporting AWS credentials for role: $aws_role =="
 
-eval $(gds aws "$aws_role" -e)
+env_vars=$(gds aws "$aws_role" -e)
+cmd_status=$? 
+
+if (( $cmd_status != 0 )); then
+    echo "Error: gds-cli failed with exit code $cmd_status" >&2
+    return 1
+fi
+
+eval $env_vars
 
 echo "== Checking AWS credentials work =="
 aws sts get-caller-identity --no-cli-pager
