@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-aws_role="${1:-once-chat-development-admin}"
+aws_role="${1:-${AWS_ROLE:-once-chat-development-admin}}"
 
 echo "== Configuring AWS credentials for role: $aws_role =="
 
