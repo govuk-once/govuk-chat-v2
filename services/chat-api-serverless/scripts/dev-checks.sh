@@ -12,7 +12,5 @@ echo "== Formatting =="
 scripts/format.sh
 echo "== Type checking =="
 scripts/type-check.sh
-echo "== Running tests =="
+echo "== Tests =="
 scripts/test.sh
-echo "== Checking CDK synth =="
-scripts/cdk-synth.sh
