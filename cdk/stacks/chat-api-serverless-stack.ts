@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as iam from 'aws-cdk-lib/aws-iam';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as path from 'path';
 import { Construct } from 'constructs';
 import {
@@ -42,17 +42,21 @@ export class ChatApiServerlessStack extends cdk.Stack {
       },
     );
 
-    const url = exampleLambda.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.AWS_IAM,
+    const api = new apigateway.RestApi(this, `${getResourceNamePrefix()}-api`, {
+      deployOptions: {
+        stageName: props.environment,
+      },
     });
 
-    exampleLambda.addPermission('AccountWideInvoke', {
-      action: 'lambda:InvokeFunctionUrl',
-      principal: new iam.AccountPrincipal(this.account),
+    const exampleIntegration = new apigateway.LambdaIntegration(exampleLambda);
+
+    const exampleResource = api.root.addResource('example');
+    exampleResource.addMethod('GET', exampleIntegration, {
+      authorizationType: apigateway.AuthorizationType.IAM,
     });
 
-    new cdk.CfnOutput(this, 'LambdaUrl', {
-      value: url.url,
+    new cdk.CfnOutput(this, 'ExamplePath', {
+      value: `${api.url}example`,
     });
   }
 
