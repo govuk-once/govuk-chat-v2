@@ -1,8 +1,13 @@
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as path from 'path';
 import { Construct } from 'constructs';
-import { getResourceNamePrefix, hashGlobs } from '../constants/environment.ts';
+import {
+  getResourceNamePrefix,
+  hashGlobs,
+  repoRoot,
+} from '../constants/environment.ts';
 
 export interface ChatApiServerlessStackProps extends cdk.StackProps {
   serviceName: string;
@@ -52,35 +57,42 @@ export class ChatApiServerlessStack extends cdk.Stack {
   }
 
   chatApiServerlessCode(): lambda.AssetCode {
+    console.log(repoRoot());
+
     const assetHash = hashGlobs(
-      '../services/chat-api-serverless/src/**/*.py',
-      '../libs/python/**/src/**/*.py',
-      '../uv.lock',
+      path.resolve(repoRoot(), 'services/chat-api-serverless/src/**/*.py'),
+      path.resolve(repoRoot(), 'libs/python/**/src/**/*.py'),
+      path.resolve(repoRoot(), 'uv.lock'),
     );
 
-    return lambda.Code.fromAsset('../services/chat-api-serverless/src', {
-      bundling: {
-        image: lambda.Runtime.PYTHON_3_13.bundlingImage,
-        volumes: [
-          {
-            containerPath: '/repo-root',
-            hostPath: '../',
-          },
-          // cache for all pip dependencies
-          {
-            containerPath: '/pip-cache/global-cache',
-            hostPath: './cache/pip/global-cache',
-          },
-          // cache for this asset
-          {
-            containerPath: '/pip-cache/packages',
-            hostPath: './cache/pip/chat-api-serverless-packages',
-          },
-        ],
-        command: [
-          'bash',
-          '-c',
-          `
+    return lambda.Code.fromAsset(
+      path.resolve(repoRoot(), 'services/chat-api-serverless/src'),
+      {
+        bundling: {
+          image: lambda.Runtime.PYTHON_3_13.bundlingImage,
+          volumes: [
+            {
+              containerPath: '/repo-root',
+              hostPath: repoRoot(),
+            },
+            // cache for all pip dependencies
+            {
+              containerPath: '/pip-cache/global-cache',
+              hostPath: path.resolve(repoRoot(), 'cdk/cache/pip/global-cache'),
+            },
+            // cache for this asset
+            {
+              containerPath: '/pip-cache/packages',
+              hostPath: path.resolve(
+                repoRoot(),
+                'cdk/cache/pip/chat-api-serverless-packages',
+              ),
+            },
+          ],
+          command: [
+            'bash',
+            '-c',
+            `
           pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
 
           cp -r /asset-input/* /asset-output/ &&
@@ -120,11 +132,12 @@ export class ChatApiServerlessStack extends cdk.Stack {
 
           cp -r /pip-cache/packages/* /asset-output/
           `,
-        ],
-        user: 'root',
+          ],
+          user: 'root',
+        },
+        assetHashType: cdk.AssetHashType.CUSTOM,
+        assetHash: assetHash,
       },
-      assetHashType: cdk.AssetHashType.CUSTOM,
-      assetHash: assetHash,
-    });
+    );
   }
 }
