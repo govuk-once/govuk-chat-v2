@@ -1,5 +1,7 @@
 import { globSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'url';
+import * as path from 'path';
 
 export const GovUkOnceEnvironments = {
   Dev: 'dev',
@@ -60,4 +62,11 @@ export const hashGlobs = (...pathGlobs: string[]): string => {
   }
 
   return hash.digest('hex');
+};
+
+export const repoRoot = () => {
+  const filename = fileURLToPath(import.meta.url);
+
+  // relative to the path of this current file
+  return path.resolve(filename, '../../../');
 };
