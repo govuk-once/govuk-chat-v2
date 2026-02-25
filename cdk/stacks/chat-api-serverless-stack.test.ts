@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import baseContext from '../cdk.json' with { type: 'json' };
 import { Tags, Template } from 'aws-cdk-lib/assertions';
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'vitest';
 import { ChatApiServerlessStack } from './chat-api-serverless-stack.ts';
 
 const context = {
@@ -50,7 +50,7 @@ describe('ChatApiServerlessStack', () => {
       });
     });
   });
-  
+
   describe('API Gateway', () => {
     it('creates an API gateway', () => {
       const template = stackTemplate();
@@ -62,16 +62,19 @@ describe('ChatApiServerlessStack', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::ApiGateway::Stage', {
-        StageName: baseProps.environment
+        StageName: baseProps.environment,
       });
     });
 
     it('has an example path', () => {
       const template = stackTemplate();
 
-      const exampleResourceId = template.getResourceId('AWS::ApiGateway::Resource', {
-        Properties: { PathPart: 'example' },
-      });
+      const exampleResourceId = template.getResourceId(
+        'AWS::ApiGateway::Resource',
+        {
+          Properties: { PathPart: 'example' },
+        },
+      );
 
       template.hasResourceProperties('AWS::ApiGateway::Method', {
         HttpMethod: 'GET',

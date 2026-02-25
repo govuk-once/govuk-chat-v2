@@ -42,6 +42,17 @@ export class ChatApiServerlessStack extends cdk.Stack {
       },
     );
 
+    const streamLambda = new lambda.Function(
+      this,
+      `${getResourceNamePrefix()}-api-stream`,
+      {
+        runtime: lambda.Runtime.PYTHON_3_13,
+        handler: 'chat_api.handlers.stream.lambda_handler',
+        code: chatApiServerlessCode,
+        architecture: lambda.Architecture.ARM_64,
+      },
+    );
+
     const api = new apigateway.RestApi(this, `${getResourceNamePrefix()}-api`, {
       deployOptions: {
         stageName: props.environment,
@@ -55,8 +66,21 @@ export class ChatApiServerlessStack extends cdk.Stack {
       authorizationType: apigateway.AuthorizationType.IAM,
     });
 
+    const streamIntegration = new apigateway.LambdaIntegration(streamLambda, {
+      responseTransferMode: apigateway.ResponseTransferMode.STREAM,
+    });
+
+    const streamResource = api.root.addResource('stream');
+    streamResource.addMethod('GET', streamIntegration, {
+      authorizationType: apigateway.AuthorizationType.IAM,
+    });
+
     new cdk.CfnOutput(this, 'ExamplePath', {
       value: `${api.url}example`,
+    });
+
+    new cdk.CfnOutput(this, 'StreamPath', {
+      value: `${api.url}stream`,
     });
   }
 
