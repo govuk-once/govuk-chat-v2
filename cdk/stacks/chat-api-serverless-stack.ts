@@ -57,8 +57,6 @@ export class ChatApiServerlessStack extends cdk.Stack {
   }
 
   chatApiServerlessCode(): lambda.AssetCode {
-    console.log(repoRoot());
-
     const assetHash = hashGlobs(
       path.resolve(repoRoot(), 'services/chat-api-serverless/src/**/*.py'),
       path.resolve(repoRoot(), 'libs/python/**/src/**/*.py'),
