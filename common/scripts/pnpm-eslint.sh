@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
+set -e
 
-cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 if [ -n "$CI" ]; then
     pnpm exec eslint . --max-warnings 0 

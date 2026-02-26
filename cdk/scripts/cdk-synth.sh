@@ -2,6 +2,6 @@
 
 set -e
 
-cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 pnpm exec cdk synth --quiet

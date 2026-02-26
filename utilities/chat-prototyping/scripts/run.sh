@@ -5,7 +5,7 @@ PROJECT_DIR="$(dirname "${BASH_SOURCE[0]}")/.."
 
 ${PROJECT_DIR}/../../common/scripts/check-dev-aws-credentials.sh
 
-cd "$PROJECT_DIR" || exit 1
+cd "$PROJECT_DIR"
 
 echo ""
 echo "== Starting gradio =="
