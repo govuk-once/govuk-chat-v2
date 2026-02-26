@@ -10,7 +10,7 @@
     "type-check": "scripts/type-check.sh"
   },
   "dependencies": {
-    "aws-cdk": "^2.1105.0",
+    "aws-cdk": "^2.1106.1",
     "aws-cdk-lib": "^2.238.0",
     "constructs": "^10.4.5"
   }
