@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+PROJECT_DIR="$(dirname "${BASH_SOURCE[0]}")/.."
 
-scripts/export-aws-credentials.sh
+${PROJECT_DIR}/../../common/scripts/check-dev-aws-credentials.sh
+
+cd "$PROJECT_DIR"
 
 echo ""
 echo "== Starting gradio =="

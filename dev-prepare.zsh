@@ -50,6 +50,18 @@ fi
 echo "== Installing pnpm dependencies =="
 pnpm install
 
+echo "== Checking GDS CLI is installed =="
+if command -v gds >/dev/null 2>&1; then
+    gds --version
+else
+    echo "Error: GDS CLI is not installed, go to https://github.com/alphagov/gds-cli to install"
+    return 1
+fi
+
+if ! ./common/scripts/check-dev-aws-credentials.sh --no-suggestion; then
+    source ./refresh-dev-aws-credentials.zsh
+fi
+
 if test "$CURRENT_DIR" != "$SCRIPT_DIR"; then
     echo "== Changing back to ${CURRENT_DIR}"
     cd $CURRENT_DIR

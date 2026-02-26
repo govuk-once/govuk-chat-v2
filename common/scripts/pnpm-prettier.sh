@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # Prettier walks up the directory tree for config, but not for ignore paths
 # so we have to do it for it.
@@ -21,7 +22,7 @@ done
 
 
 # change directory to project
-cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 if [ -n "$CI" ]; then
     pnpm exec prettier . --check $IGNORE_CMD
