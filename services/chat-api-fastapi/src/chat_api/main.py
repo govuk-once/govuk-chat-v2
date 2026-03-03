@@ -1,11 +1,13 @@
 import json
-from fastapi import FastAPI
+import asyncio
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, field_validator
 from sse_starlette.sse import EventSourceResponse
 
 import chat_assistants.anthropic as anthropic_assistant
 
-app = FastAPI()
+app = FastAPI(root_path="/test")
 
 
 class UserInput(BaseModel):
@@ -21,6 +23,23 @@ class UserInput(BaseModel):
 @app.get("/")
 async def read_root():
     return {"message": "Hello World"}
+
+
+@app.get("/redirect")
+async def redirect(request: Request):
+    return RedirectResponse(url="/stream")
+
+
+@app.get("/stream")
+async def stream():
+    async def streamer():
+        message = "This is streaming from Lambda!".split(" ")
+        for word in message:
+            content = {"type": "delta", "content": word}
+            yield {"event": content["type"], "data": json.dumps(content)}
+            await asyncio.sleep(0.5)
+
+    return EventSourceResponse(streamer())
 
 
 @app.post("/sonnet-streaming/assistant-response")
