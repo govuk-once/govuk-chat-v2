@@ -3,4 +3,4 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-pnpm exec vitest run
+pnpm exec vitest run "$@"
