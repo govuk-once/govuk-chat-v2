@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import baseContext from '../cdk.json' with { type: 'json' };
-import { Tags } from 'aws-cdk-lib/assertions';
+import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
 import { describe, it } from 'vitest';
 import { ChatApiFastapiStack } from './chat-api-fastapi-stack.ts';
 
@@ -18,6 +18,12 @@ describe('ChatApiFastapiStack', () => {
     environment: 'testing',
   };
 
+  function stackTemplate() {
+    const app = new cdk.App({ context });
+    const stack = new ChatApiFastapiStack(app, 'TestStack', baseProps);
+    return Template.fromStack(stack);
+  }
+
   describe('Stack tags', () => {
     function stackTags() {
       const app = new cdk.App({ context });
@@ -32,6 +38,23 @@ describe('ChatApiFastapiStack', () => {
         RepositoryUrl: baseProps.repositoryUrl,
         Environment: baseProps.environment,
       });
+    });
+  });
+
+  describe('API lambda function', () => {
+    it('creates the lambda', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: Match.stringLikeRegexp('api-fastapi-function'),
+        Runtime: Match.stringLikeRegexp('python'),
+      });
+    });
+
+    it('outputs the URL', () => {
+      const template = stackTemplate();
+
+      template.hasOutput('LambdaUrl', {});
     });
   });
 });
