@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import * as iam from 'aws-cdk-lib/aws-iam';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 import { Construct } from 'constructs';
@@ -47,17 +47,23 @@ export class ChatApiFastapiStack extends cdk.Stack {
       ],
     });
 
-    const url = apiLambda.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.AWS_IAM,
-    });
+    const api = new apigateway.LambdaRestApi(
+      this,
+      `${getResourceNamePrefix()}-api-fastapi-gateway`,
+      {
+        proxy: true,
+        handler: apiLambda,
+        defaultMethodOptions: {
+          authorizationType: apigateway.AuthorizationType.IAM,
+        },
+        deployOptions: {
+          stageName: props.environment,
+        },
+      },
+    );
 
-    apiLambda.addPermission('AccountWideInvoke', {
-      action: 'lambda:InvokeFunctionUrl',
-      principal: new iam.AccountPrincipal(this.account),
-    });
-
-    new cdk.CfnOutput(this, 'LambdaUrl', {
-      value: url.url,
+    new cdk.CfnOutput(this, 'GatewayUrl', {
+      value: api.url,
     });
   }
 

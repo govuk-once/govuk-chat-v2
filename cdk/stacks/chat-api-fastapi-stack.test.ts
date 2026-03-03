@@ -1,4 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import baseContext from '../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
 import { describe, it } from 'vitest';
@@ -50,11 +51,35 @@ describe('ChatApiFastapiStack', () => {
         Runtime: Match.stringLikeRegexp('python'),
       });
     });
+  });
+
+  describe('API gateway', () => {
+    it('creates an API gateway', () => {
+      const template = stackTemplate();
+
+      template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
+    });
+
+    it('requires IAM auth', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::Method', {
+        AuthorizationType: apigateway.AuthorizationType.IAM,
+      });
+    });
+
+    it('uses the environment name for the stage', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::Stage', {
+        StageName: baseProps.environment,
+      });
+    });
 
     it('outputs the URL', () => {
       const template = stackTemplate();
 
-      template.hasOutput('LambdaUrl', {});
+      template.hasOutput('GatewayUrl', {});
     });
   });
 });
