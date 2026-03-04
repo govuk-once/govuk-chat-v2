@@ -1,4 +1,5 @@
 import json
+import asyncio
 from fastapi import FastAPI
 from pydantic import BaseModel, field_validator
 from sse_starlette.sse import EventSourceResponse
@@ -21,6 +22,18 @@ class UserInput(BaseModel):
 @app.get("/")
 async def read_root():
     return {"message": "Hello World"}
+
+
+@app.get("/stream")
+async def stream():
+    async def streamer():
+        message = "This is an SSE stream".split(" ")
+        for word in message:
+            content = {"type": "delta", "content": word}
+            yield {"event": content["type"], "data": json.dumps(content)}
+            await asyncio.sleep(0.5)
+
+    return EventSourceResponse(streamer())
 
 
 @app.post("/sonnet-streaming/assistant-response")

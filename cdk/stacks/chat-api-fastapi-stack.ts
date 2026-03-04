@@ -36,8 +36,10 @@ export class ChatApiFastapiStack extends cdk.Stack {
       architecture: lambda.Architecture.ARM_64,
       environment: {
         AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
+        AWS_LWA_INVOKE_MODE: 'RESPONSE_STREAM',
         PORT: '8000',
       },
+      timeout: cdk.Duration.minutes(15),
       layers: [
         lambda.LayerVersion.fromLayerVersionArn(
           this,
@@ -58,6 +60,10 @@ export class ChatApiFastapiStack extends cdk.Stack {
         },
         deployOptions: {
           stageName: props.environment,
+        },
+        integrationOptions: {
+          responseTransferMode: apigateway.ResponseTransferMode.STREAM,
+          timeout: cdk.Duration.minutes(15),
         },
       },
     );
