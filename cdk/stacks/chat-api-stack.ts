@@ -164,14 +164,12 @@ export class ChatApiStack extends cdk.Stack {
                     -o /asset-output/requirements.txt &&
 
           # Install the requirements.txt
-          # Compile bytecode for faster cold starts
           # Use a shared directory so faster for subsequent runs
           # Target appropriate Python platform and versions for any compilation
           # Use exact to remove any packages that shouldn't be installed
           # Use no-deps to only install what's in requirements.txt and not any 
           # sub-dependencies pip is aware of
           uv pip install --no-installer-metadata \
-                         --compile-bytecode \
                          --link-mode=copy \
                          --target /pip-cache/packages \
                          --python-platform aarch64-manylinux2014 \
