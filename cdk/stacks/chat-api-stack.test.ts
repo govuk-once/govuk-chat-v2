@@ -3,7 +3,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import baseContext from '../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
 import { vi, describe, it } from 'vitest';
-import { ChatApiFastapiStack } from './chat-api-fastapi-stack.ts';
+import { ChatApiStack } from './chat-api-stack.ts';
 
 const context = {
   ...baseContext,
@@ -11,7 +11,7 @@ const context = {
   'aws:cdk:bundling-stacks': [],
 };
 
-describe('ChatApiFastapiStack', () => {
+describe('ChatApiStack', () => {
   const baseProps = {
     serviceName: 'chat-api',
     teamName: 'chat',
@@ -21,14 +21,14 @@ describe('ChatApiFastapiStack', () => {
 
   function stackTemplate() {
     const app = new cdk.App({ context });
-    const stack = new ChatApiFastapiStack(app, 'TestStack', baseProps);
+    const stack = new ChatApiStack(app, 'TestStack', baseProps);
     return Template.fromStack(stack);
   }
 
   describe('Stack tags', () => {
     function stackTags() {
       const app = new cdk.App({ context });
-      const stack = new ChatApiFastapiStack(app, 'TestStack', baseProps);
+      const stack = new ChatApiStack(app, 'TestStack', baseProps);
       return Tags.fromStack(stack);
     }
 
@@ -47,7 +47,7 @@ describe('ChatApiFastapiStack', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::Lambda::Function', {
-        FunctionName: Match.stringLikeRegexp('api-fastapi-function'),
+        FunctionName: Match.stringLikeRegexp('api-function'),
         Runtime: Match.stringLikeRegexp('python'),
       });
     });
@@ -58,7 +58,7 @@ describe('ChatApiFastapiStack', () => {
       const prodTemplate = stackTemplate();
 
       prodTemplate.hasResourceProperties('AWS::Lambda::Function', {
-        FunctionName: Match.stringLikeRegexp('api-fastapi-function'),
+        FunctionName: Match.stringLikeRegexp('api-function'),
         SnapStart: {
           ApplyOn: 'PublishedVersions',
         },
@@ -69,7 +69,7 @@ describe('ChatApiFastapiStack', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::Lambda::Function', {
-        FunctionName: Match.stringLikeRegexp('api-fastapi-function'),
+        FunctionName: Match.stringLikeRegexp('api-function'),
         SnapStart: Match.absent(),
       });
     });
@@ -87,7 +87,7 @@ describe('ChatApiFastapiStack', () => {
 
       const resources = template.findResources('AWS::Lambda::Function', {
         Properties: {
-          FunctionName: Match.stringLikeRegexp('api-fastapi-function'),
+          FunctionName: Match.stringLikeRegexp('api-function'),
         },
       });
 
