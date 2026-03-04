@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 import { Construct } from 'constructs';
@@ -25,14 +26,23 @@ export class ChatApiFastapiStack extends cdk.Stack {
     cdk.Tags.of(this).add('RepositoryUrl', props.repositoryUrl);
     cdk.Tags.of(this).add('Environment', props.environment);
 
-    const chatApiFastapiCode = this.chatApiFastapiCode();
+    const lambdaHandler = this.lambdaHandler();
+    const apiGateway = this.apiGateway(props, lambdaHandler);
+
+    new cdk.CfnOutput(this, 'GatewayUrl', {
+      value: apiGateway.url,
+    });
+  }
+
+  lambdaHandler(): lambda.Function {
+    const code = this.lambdaCode();
     const apiLambdaName = `${getResourceNamePrefix()}-api-fastapi-function`;
 
     const apiLambda = new lambda.Function(this, apiLambdaName, {
       functionName: apiLambdaName,
       runtime: lambda.Runtime.PYTHON_3_13,
       handler: 'lambda-run.sh',
-      code: chatApiFastapiCode,
+      code: code,
       architecture: lambda.Architecture.ARM_64,
       environment: {
         AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
@@ -49,12 +59,32 @@ export class ChatApiFastapiStack extends cdk.Stack {
       ],
     });
 
-    const api = new apigateway.LambdaRestApi(
+    apiLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'bedrock:InvokeModel',
+          'bedrock:InvokeModelWithResponseStream',
+        ],
+        resources: [
+          `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/*`,
+          'arn:aws:bedrock:*::foundation-model/*',
+        ],
+      }),
+    );
+
+    return apiLambda;
+  }
+
+  apiGateway(
+    props: ChatApiFastapiStackProps,
+    handler: lambda.Function,
+  ): apigateway.LambdaRestApi {
+    return new apigateway.LambdaRestApi(
       this,
       `${getResourceNamePrefix()}-api-fastapi-gateway`,
       {
         proxy: true,
-        handler: apiLambda,
+        handler: handler,
         defaultMethodOptions: {
           authorizationType: apigateway.AuthorizationType.IAM,
         },
@@ -67,13 +97,9 @@ export class ChatApiFastapiStack extends cdk.Stack {
         },
       },
     );
-
-    new cdk.CfnOutput(this, 'GatewayUrl', {
-      value: api.url,
-    });
   }
 
-  chatApiFastapiCode(): lambda.AssetCode {
+  lambdaCode(): lambda.AssetCode {
     const assetHash = hashGlobs(
       path.resolve(repoRoot(), 'services/chat-api-fastapi/src/**/*.py'),
       path.resolve(repoRoot(), 'libs/python/**/src/**/*.py'),

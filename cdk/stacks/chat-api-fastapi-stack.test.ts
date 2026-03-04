@@ -51,6 +51,32 @@ describe('ChatApiFastapiStack', () => {
         Runtime: Match.stringLikeRegexp('python'),
       });
     });
+
+    it('applies a policy to allow invoking Bedrock', () => {
+      const template = stackTemplate();
+
+      const resources = template.findResources('AWS::Lambda::Function', {
+        Properties: {
+          FunctionName: Match.stringLikeRegexp('api-fastapi-function'),
+        },
+      });
+      const roleId =
+        Object.values(resources)[0].Properties.Role['Fn::GetAtt'][0];
+
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: [
+                'bedrock:InvokeModel',
+                'bedrock:InvokeModelWithResponseStream',
+              ],
+            }),
+          ]),
+        },
+        Roles: Match.arrayWith([Match.objectLike({ Ref: roleId })]),
+      });
+    });
   });
 
   describe('API gateway', () => {
