@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import baseContext from '../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
-import { describe, it } from 'vitest';
+import { vi, describe, it } from 'vitest';
 import { ChatApiFastapiStack } from './chat-api-fastapi-stack.ts';
 
 const context = {
@@ -52,6 +52,36 @@ describe('ChatApiFastapiStack', () => {
       });
     });
 
+    it('turns on snapstart for non-ephemeral environments', () => {
+      vi.stubEnv('ENVIRONMENT', 'prod');
+
+      const prodTemplate = stackTemplate();
+
+      prodTemplate.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: Match.stringLikeRegexp('api-fastapi-function'),
+        SnapStart: {
+          ApplyOn: 'PublishedVersions',
+        },
+      });
+
+      vi.unstubAllEnvs();
+
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: Match.stringLikeRegexp('api-fastapi-function'),
+        SnapStart: Match.absent(),
+      });
+    });
+
+    it('aliases the function as published', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::Lambda::Alias', {
+        Name: 'published',
+      });
+    });
+
     it('applies a policy to allow invoking Bedrock', () => {
       const template = stackTemplate();
 
@@ -60,6 +90,7 @@ describe('ChatApiFastapiStack', () => {
           FunctionName: Match.stringLikeRegexp('api-fastapi-function'),
         },
       });
+
       const roleId =
         Object.values(resources)[0].Properties.Role['Fn::GetAtt'][0];
 

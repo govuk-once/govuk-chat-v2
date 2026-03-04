@@ -6,6 +6,7 @@ import * as path from 'path';
 import { Construct } from 'constructs';
 import {
   getResourceNamePrefix,
+  isEphemeralEnvironment,
   hashGlobs,
   repoRoot,
 } from '../constants/environment.ts';
@@ -26,15 +27,15 @@ export class ChatApiFastapiStack extends cdk.Stack {
     cdk.Tags.of(this).add('RepositoryUrl', props.repositoryUrl);
     cdk.Tags.of(this).add('Environment', props.environment);
 
-    const lambdaHandler = this.lambdaHandler();
-    const apiGateway = this.apiGateway(props, lambdaHandler);
+    const lambdaAlias = this.lambdaHandler();
+    const apiGateway = this.apiGateway(props, lambdaAlias);
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
       value: apiGateway.url,
     });
   }
 
-  lambdaHandler(): lambda.Function {
+  lambdaHandler(): lambda.Alias {
     const code = this.lambdaCode();
     const apiLambdaName = `${getResourceNamePrefix()}-api-fastapi-function`;
 
@@ -49,6 +50,9 @@ export class ChatApiFastapiStack extends cdk.Stack {
         AWS_LWA_INVOKE_MODE: 'RESPONSE_STREAM',
         PORT: '8000',
       },
+      snapStart: isEphemeralEnvironment()
+        ? undefined
+        : lambda.SnapStartConf.ON_PUBLISHED_VERSIONS,
       timeout: cdk.Duration.minutes(15),
       layers: [
         lambda.LayerVersion.fromLayerVersionArn(
@@ -72,12 +76,17 @@ export class ChatApiFastapiStack extends cdk.Stack {
       }),
     );
 
-    return apiLambda;
+    // we return an alias so a specific version of the function can be used
+    // as a handler, allowing lambda snap start
+    return new lambda.Alias(this, 'PublishedAlias', {
+      aliasName: 'published',
+      version: apiLambda.currentVersion,
+    });
   }
 
   apiGateway(
     props: ChatApiFastapiStackProps,
-    handler: lambda.Function,
+    handler: lambda.Alias,
   ): apigateway.LambdaRestApi {
     return new apigateway.LambdaRestApi(
       this,
