@@ -9,7 +9,7 @@ Prior to us putting together more formal ADR type documents, this keeps a brief 
 - Python has first class AWS support and fast cold start times on AWS Lambda
 - Python is often the default language of those working in the AI / Data space, particularly data scientists, and thus we want a cleaner route from prototype to production than we've previously had porting between languages.
 
-## 1. Use TypeScript/NodeJS for AWS CDK
+## 2. Use TypeScript/NodeJS for AWS CDK
 
 - While CDK supports Python, the App & AI Platform team only currently have resources in TypeScript
 - The platform team expects to support Python in future as well as TypeScript, but no concrete commitments
