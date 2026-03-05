@@ -12,7 +12,7 @@ const app = new cdk.App();
 
 const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
-  region: process.env.CDK_DEFAULT_REGION || 'eu-west-2',
+  region: process.env.CDK_DEFAULT_REGION || 'eu-west-1',
 };
 
 new ChatApiServerlessStack(app, 'ChatApiServerlessStack', {
