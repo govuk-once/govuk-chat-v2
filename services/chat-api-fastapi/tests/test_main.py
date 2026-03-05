@@ -1,5 +1,6 @@
 import json
 from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock
 
 from chat_api.main import app
 from chat_assistants.anthropic import UserInput, AssistantResponseDelta
@@ -11,6 +12,24 @@ def test_read_root():
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Hello World"}
+
+
+def test_stream(mocker):
+    tokens = "This is an SSE stream".split(" ")
+    sleep_mock = mocker.patch("asyncio.sleep", new_callable=AsyncMock)
+
+    response = client.get("/stream")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+
+    body = response.text.splitlines()
+    for index, token in enumerate(tokens):
+        starting_index = index * 3
+        assert body[starting_index] == "event: delta"
+        content = {"type": "delta", "content": token}
+        assert body[starting_index + 1] == f"data: {json.dumps(content)}"
+
+    assert sleep_mock.call_count == len(tokens)
 
 
 def test_sonnet_streaming_assistant_response(mocker):
