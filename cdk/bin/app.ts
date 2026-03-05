@@ -5,8 +5,7 @@ import {
   getResourceNamePrefix,
   serviceMetadata,
 } from '../constants/environment.ts';
-import { ChatApiServerlessStack } from '../stacks/chat-api-serverless-stack.ts';
-import { ChatApiFastapiStack } from '../stacks/chat-api-fastapi-stack.ts';
+import { ChatApiStack } from '../stacks/chat-api-stack.ts';
 
 const app = new cdk.App();
 
@@ -15,16 +14,9 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION || 'eu-west-1',
 };
 
-new ChatApiServerlessStack(app, 'ChatApiServerlessStack', {
+new ChatApiStack(app, 'ChatApiStack', {
   env: env,
   environment: getEnvironment(),
-  stackName: `${getResourceNamePrefix()}-ChatApiServerlessStack`,
-  ...serviceMetadata,
-});
-
-new ChatApiFastapiStack(app, 'ChatApiFastapiStack', {
-  env: env,
-  environment: getEnvironment(),
-  stackName: `${getResourceNamePrefix()}-ChatApiFastapiStack`,
+  stackName: `${getResourceNamePrefix()}-ChatApiStack`,
   ...serviceMetadata,
 });

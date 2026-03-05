@@ -1,19 +1,20 @@
 [project]
-name = "chat-api-serverless"
+name = "chat-api"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-# contrived example dependencies to test bundling
 dependencies = [
     "chat-assistants",
-    "pydantic>=2.12.5",
+    "fastapi[standard]>=0.118.0",
+    "sse-starlette>=3.0.3",
 ]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "pyright>=1.1.406",
     "pytest>=8.4.2",
-    "pytest-freezer>=0.4.9",
+    "pytest-mock>=3.15.1",
     "ruff>=0.13.3",
 ]
 

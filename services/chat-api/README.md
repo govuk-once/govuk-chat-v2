@@ -1,8 +1,7 @@
-# Chat API FastAPI
+# Chat API
 
 Basic prototype, but could one day be a basis for conversation and usage APIs.
-Built using FastAPI framework and would expected to be run on a containerised
-architecture.
+Built using FastAPI framework and configured to run on AWS Lambda Web Adapter.
 
 ## Usage
 
