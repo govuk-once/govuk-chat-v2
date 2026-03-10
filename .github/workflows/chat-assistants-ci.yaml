@@ -6,11 +6,13 @@ on:
     branches:
       - main
     paths:
+      - ".github/actions/setup-python-uv-env/*"
       - ".github/workflows/chat-assistants-ci.yaml"
       - "uv.lock"
       - "libs/python/chat-assistants/**"
   pull_request:
     paths:
+      - ".github/actions/setup-python-uv-env/*"
       - ".github/workflows/chat-assistants-ci.yaml"
       - "uv.lock"
       - "libs/python/chat-assistants/**"
