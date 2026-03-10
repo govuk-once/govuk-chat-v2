@@ -1,0 +1,11 @@
+default_agent: simple_agent
+agents:
+  simple_agent:
+    name: simple_agent
+    # Ideally I want this to be in a module directory (e.g. src/simple_agent/main.py).
+    # However that can only work if the path is absolute which is obviously
+    # not very portable:
+    # https://github.com/aws/bedrock-agentcore-starter-toolkit/issues/426
+    entrypoint: src/main.py
+    runtime_type: PYTHON_3_13
+    platform: linux/amd64

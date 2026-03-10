@@ -1,0 +1,16 @@
+default_agent: novaGray_Agent
+is_agentcore_create_with_iac: true
+agents:
+  novaGray_Agent:
+    name: novaGray_Agent
+    entrypoint: /Users/kevin.dew/govuk/govuk-chat-v2-prototype/services/simple-agent/novaGray/src/main.py
+    deployment_type: container
+    source_path: /Users/kevin.dew/govuk/govuk-chat-v2-prototype/services/simple-agent/novaGray/src
+    aws:
+      account: null
+      region: null
+    bedrock_agentcore:
+      agent_id: null
+      agent_arn: null
+      agent_session_id: null
+    is_generated_by_agentcore_create: true

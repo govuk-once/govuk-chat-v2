@@ -11,6 +11,7 @@ members = [
     "services/chat-api",
     "utilities/chat-prototyping",
     "libs/python/*",
+    "services/simple-agent",
 ]
 
 [tool.uv.sources]
