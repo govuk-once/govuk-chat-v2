@@ -28,6 +28,9 @@ fi
 echo "== Checking uv python installation =="
 uv python install
 
+echo "== Installing uv python dependencies =="
+uv sync --all-packages --dev
+
 echo "== Checking nvm is installed =="
 if command -v nvm >/dev/null 2>&1; then
     nvm --version
