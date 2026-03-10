@@ -6,11 +6,13 @@ on:
     branches:
       - main
     paths:
+      - ".github/actions/setup-python-uv-env/*"
       - ".github/workflows/chat-prototyping-ci.yaml"
       - "uv.lock"
       - "utilities/chat-prototyping/**"
   pull_request:
     paths:
+      - ".github/actions/setup-python-uv-env/*"
       - ".github/workflows/chat-prototyping-ci.yaml"
       - "uv.lock"
       - "utilities/chat-prototyping/**"
