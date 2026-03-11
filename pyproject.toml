@@ -9,6 +9,7 @@ dependencies = []
 [tool.uv.workspace]
 members = [
     "services/chat-api",
+    "services/example-agent",
     "utilities/chat-prototyping",
     "libs/python/*",
 ]
