@@ -6,6 +6,7 @@ import {
   serviceMetadata,
 } from '../constants/environment.ts';
 import { ChatApiStack } from '../stacks/chat-api-stack.ts';
+import { ExampleAgentStack } from '../stacks/example-agent-stack.ts';
 
 const app = new cdk.App();
 
@@ -18,5 +19,12 @@ new ChatApiStack(app, 'ChatApiStack', {
   env: env,
   environment: getEnvironment(),
   stackName: `${getResourceNamePrefix()}-ChatApiStack`,
+  ...serviceMetadata,
+});
+
+new ExampleAgentStack(app, 'ExampleAgentStack', {
+  env: env,
+  environment: getEnvironment(),
+  stackName: `${getResourceNamePrefix()}-ExampleAgentStack`,
   ...serviceMetadata,
 });
