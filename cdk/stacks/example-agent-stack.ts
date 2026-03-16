@@ -71,7 +71,7 @@ export class ExampleAgentStack extends cdk.Stack {
     return agentcore.AgentRuntimeArtifact.fromCodeAsset({
       path: path.resolve(repoRoot(), 'services/example-agent'),
       runtime: agentcore.AgentCoreRuntime.PYTHON_3_13,
-      entrypoint: ['example_agent/main.py'],
+      entrypoint: ['opentelemetry-instrument', 'example_agent/main.py'],
       bundling: {
         // there aren't agentcore bundling images, so I think a Lambda one
         // will be ok
