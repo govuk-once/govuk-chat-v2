@@ -15,6 +15,11 @@ cdk.out
 /cdk/cache
 !/cdk/cache/.keep
 
+# Bedrock Agentcore
+# The config file for the agentcore starter kit is very specific to the
+# local environment
+.bedrock_agentcore.yaml
+
 # Individual env vars
 .env
 .env*

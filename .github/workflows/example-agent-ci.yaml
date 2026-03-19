@@ -1,0 +1,63 @@
+name: Example Agent CI
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/actions/setup-python-uv-env/*"
+      - ".github/workflows/example-agent-ci.yaml"
+      - "uv.lock"
+      - "services/example-agent/**"
+  pull_request:
+    paths:
+      - ".github/actions/setup-python-uv-env/*"
+      - ".github/workflows/example-agent-ci.yaml"
+      - "uv.lock"
+      - "services/example-agent/**"
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: ./.github/actions/setup-python-uv-env
+
+      - name: Run tests
+        run: services/example-agent/scripts/test.sh
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: ./.github/actions/setup-python-uv-env
+
+      - name: Run linter
+        run: services/example-agent/scripts/lint.sh
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: ./.github/actions/setup-python-uv-env
+
+      - name: Run formatter
+        run: services/example-agent/scripts/format.sh
+
+  typing:
+    name: Type checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: ./.github/actions/setup-python-uv-env
+
+      - name: Run type checks
+        run: services/example-agent/scripts/type-check.sh
