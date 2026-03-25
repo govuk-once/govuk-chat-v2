@@ -4,7 +4,7 @@ A quick example of an LLM agent intended to be run on AWS Bedrock AgentCore Runt
 
 ## Usage
 
-### Local
+### Local
 
 ```
 ./scripts/run.sh
