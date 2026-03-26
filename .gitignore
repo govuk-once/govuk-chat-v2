@@ -10,7 +10,6 @@ wheels/
 node_modules
 
 # CDK files
-cdk.context.json
 cdk.out
 /cdk/cache
 !/cdk/cache/.keep
