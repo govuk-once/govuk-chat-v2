@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as path from 'path';
 import { Construct } from 'constructs';
 import {
@@ -29,6 +30,7 @@ export class ChatApiStack extends cdk.Stack {
 
     const lambdaAlias = this.lambdaHandler();
     const apiGateway = this.apiGateway(props, lambdaAlias);
+    const dynamoTable = this.dynamoDBTable();
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
       value: apiGateway.url,
@@ -120,6 +122,15 @@ export class ChatApiStack extends cdk.Stack {
         },
       },
     );
+  }
+
+  dynamoDBTable(): dynamodb.Table {
+    return new dynamodb.Table(this, `ChatApiTable`, {
+      tableName: `${getResourceNamePrefix()}-chat-api-table`,
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
   }
 
   lambdaCode(): lambda.AssetCode {
