@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 dependencies = [
+    "boto3>=1.42.66",
     "chat-assistants",
     "fastapi[standard]>=0.118.0",
     "sse-starlette>=3.0.3",
@@ -11,6 +12,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "boto3-stubs[dynamodb]>=1.42.79",
     "httpx>=0.28.1",
     "pyright>=1.1.406",
     "pytest>=8.4.2",
