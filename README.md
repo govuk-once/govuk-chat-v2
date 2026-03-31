@@ -35,6 +35,24 @@ To set-up your environment with ZSH then run `source dev-prepare.zsh`
 
 If you don't use ZSH check the [dev-prepare.zsh](dev-prepare.zsh) script to check which commands to run.
 
+<details>
+<summary>If you see this error: `realpath: illegal option -- -`</summary>
+
+This error means you're using the built-in macOS version of realpath and you need to install the GNU version instead.
+
+You can install it by following these instructions:
+
+```bash
+brew install coreutils
+```
+
+Then add the coreutils path to your `$PATH` environment variable:
+
+```
+export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
+```
+</details>
+
 ## Decisions
 
 There is a [decision log](decisions.md).
