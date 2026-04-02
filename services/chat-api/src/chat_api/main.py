@@ -7,6 +7,7 @@ from sse_starlette.sse import EventSourceResponse
 from chat_api.agent import invoke_agent, parse_agent_response_stream
 
 import chat_assistants.anthropic as anthropic_assistant
+import chat_api.db as db
 
 app = FastAPI()
 
@@ -63,3 +64,25 @@ async def sonnet_streaming_assistant_response(user_input: UserInput):
                     yield {"event": content["type"], "data": json.dumps(content)}
 
     return EventSourceResponse(assistant_response_generator(user_input))
+
+
+class ConversationInput(BaseModel):
+    title: str
+
+
+@app.post("/conversations")
+def create_conversation(input: ConversationInput):
+    conversation_id = db.create_conversation(input.title)
+    return {"conversation_id": conversation_id}
+
+
+@app.post("/conversations/{conversation_id}/messages")
+def add_message(conversation_id: str, user_input: UserInput):
+    db.add_message(conversation_id, "user", user_input.message)
+    return {"status": "message added"}
+
+
+@app.get("/conversations/{conversation_id}")
+def get_conversation(conversation_id: str):
+    conversation = db.get_conversation_with_messages(conversation_id)
+    return conversation

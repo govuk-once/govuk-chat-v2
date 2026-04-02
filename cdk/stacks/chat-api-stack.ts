@@ -28,16 +28,16 @@ export class ChatApiStack extends cdk.Stack {
     cdk.Tags.of(this).add('RepositoryUrl', props.repositoryUrl);
     cdk.Tags.of(this).add('Environment', props.environment);
 
-    const lambdaAlias = this.lambdaHandler();
+    const conversationTable = this.conversationTable();
+    const lambdaAlias = this.lambdaHandler(conversationTable);
     const apiGateway = this.apiGateway(props, lambdaAlias);
-    const dynamoTable = this.dynamoDBTable();
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
       value: apiGateway.url,
     });
   }
 
-  lambdaHandler(): lambda.Alias {
+  lambdaHandler(conversationTable: dynamodb.Table): lambda.Alias {
     const code = this.lambdaCode();
     const apiLambdaName = `${getResourceNamePrefix()}-api-function`;
 
@@ -52,6 +52,7 @@ export class ChatApiStack extends cdk.Stack {
         AWS_LWA_INVOKE_MODE: 'RESPONSE_STREAM',
         PORT: '8000',
         AGENT_RUNTIME_ARN: cdk.Fn.importValue('AgentRuntimeArn'),
+        DYNAMODB_TABLE_NAME: conversationTable.tableName,
       },
       snapStart: isEphemeralEnvironment()
         ? undefined
@@ -91,6 +92,7 @@ export class ChatApiStack extends cdk.Stack {
         ],
       }),
     );
+    conversationTable.grantReadWriteData(apiLambda);
 
     // we return an alias so a specific version of the function can be used
     // as a handler, allowing lambda snap start
@@ -124,9 +126,9 @@ export class ChatApiStack extends cdk.Stack {
     );
   }
 
-  dynamoDBTable(): dynamodb.Table {
-    return new dynamodb.Table(this, `ChatApiTable`, {
-      tableName: `${getResourceNamePrefix()}-chat-api-table`,
+  conversationTable(): dynamodb.Table {
+    return new dynamodb.Table(this, `ConversationTable`, {
+      tableName: `${getResourceNamePrefix()}-chat-api-conversation-table`,
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY,
