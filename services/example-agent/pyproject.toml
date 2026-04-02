@@ -6,6 +6,7 @@ readme = "README.md"
 dependencies = [
     "aws-opentelemetry-distro>=0.16.0",
     "bedrock-agentcore>=1.4.5",
+    "govuk-chat-v2-prototype-private",
     "strands-agents>=1.30.0",
 ]
 
@@ -31,3 +32,6 @@ pythonpath = [
   ".",
   "src"
 ]
+
+[tool.uv.sources]
+govuk-chat-v2-prototype-private = { git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" }
