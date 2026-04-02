@@ -6,6 +6,7 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
 from strands import Agent
 from strands.models import BedrockModel
 import os
+from govuk_chat_v2_prototype_private import load_prompts
 
 app = BedrockAgentCoreApp()
 
@@ -25,9 +26,14 @@ async def invoke(payload, context):
         agentcore_memory_config=memory_config,
         region_name="eu-west-1",
     ) as session_manager:
+        prompts = load_prompts()
+        structured_answer_prompt = prompts["structured_answer_composer"][
+            "system_prompt"
+        ]
+
         agent = Agent(
             model=BedrockModel(model_id="eu.anthropic.claude-sonnet-4-6"),
-            system_prompt="You reply to all comments helpfully",
+            system_prompt=structured_answer_prompt,
             session_manager=session_manager,
         )
 
