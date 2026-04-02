@@ -25,6 +25,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
 
       - name: Run tests
         run: utilities/chat-prototyping/scripts/test.sh
@@ -36,6 +38,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
 
       - name: Run linter
         run: utilities/chat-prototyping/scripts/lint.sh
@@ -47,6 +51,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
 
       - name: Run formatter
         run: utilities/chat-prototyping/scripts/format.sh
@@ -58,6 +64,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
 
       - name: Run type checks
         run: utilities/chat-prototyping/scripts/type-check.sh

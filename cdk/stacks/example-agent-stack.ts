@@ -100,12 +100,14 @@ export class ExampleAgentStack extends cdk.Stack {
           'bash',
           '-c',
           `
+        dnf install -y git &&
         pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
+        git config --global url."https://x-access-token:\${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/" &&
 
         cp -r /asset-input/src/* /asset-output/ &&
 
         cd /repo-root &&
-        
+
         # Create a requirements.txt file of dependencies
         # Any editable dependencies are copied
         # Current project is not included
@@ -120,7 +122,7 @@ export class ExampleAgentStack extends cdk.Stack {
         # Use a shared directory so faster for subsequent runs
         # Target appropriate Python platform and versions for any compilation
         # Use exact to remove any packages that shouldn't be installed
-        # Use no-deps to only install what's in requirements.txt and not any 
+        # Use no-deps to only install what's in requirements.txt and not any
         # sub-dependencies pip is aware of
         uv pip install --no-installer-metadata \
                         --link-mode=copy \

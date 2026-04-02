@@ -1,5 +1,8 @@
 name: "Set up a Python UV environment"
 description: "Installs uv and sets up Python"
+inputs:
+  dependencies_github_token:
+     required: true
 runs:
   using: "composite"
   steps:
@@ -13,4 +16,6 @@ runs:
 
     - name: Install dependencies
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.dependencies_github_token }}
       run: uv sync --all-packages --locked --dev
