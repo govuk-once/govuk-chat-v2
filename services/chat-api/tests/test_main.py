@@ -32,6 +32,46 @@ def test_stream(mocker):
     assert sleep_mock.call_count == len(tokens)
 
 
+def test_agent_stream(mocker):
+    tokens = "This is an SSE stream".split(" ")
+
+    class MockStreamingBody:
+        def iter_lines(self, chunk_size=None):
+            for token in tokens:
+                yield f"data: {token}".encode("utf-8")
+
+    mock_client = mocker.Mock()
+    mock_client.invoke_agent_runtime.return_value = {
+        "response": MockStreamingBody(),
+        "contentType": "text/event-stream",
+    }
+
+    mocker.patch("chat_api.agent.boto3.client", return_value=mock_client)
+    mocker.patch.dict("os.environ", {"AGENT_RUNTIME_ARN": "test-arn"})
+
+    response = client.get("/agent-stream")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+
+    body = [line for line in response.text.splitlines() if line]
+    for index, token in enumerate(tokens):
+        assert body[index] == f"data: {token}"
+
+
+def test_agent_stream_error(mocker):
+    mock_client = mocker.Mock()
+    mock_client.invoke_agent_runtime.side_effect = Exception("Bedrock error")
+
+    mocker.patch("boto3.client", return_value=mock_client)
+    mocker.patch.dict("os.environ", {"AGENT_RUNTIME_ARN": "test-arn"})
+
+    response = client.get("/agent-stream")
+
+    assert response.status_code == 500
+    assert response.json() == {"error": "Bedrock error"}
+
+
 def test_sonnet_streaming_assistant_response(mocker):
     tokens = ("I'm very ", "well. Thank ", "you.")
 
