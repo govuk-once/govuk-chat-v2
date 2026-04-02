@@ -132,7 +132,9 @@ export class ExampleAgentStack extends cdk.Stack {
           'bash',
           '-c',
           `
+        dnf install -y git &&
         pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
+        git config --global url."https://x-access-token:\${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/" &&
 
         cp -r /asset-input/src/* /asset-output/ &&
 

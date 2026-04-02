@@ -67,6 +67,8 @@ jobs:
   cdk-synth:
     name: CDK Synth
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
