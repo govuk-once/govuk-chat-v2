@@ -696,6 +696,7 @@ source = { editable = "services/example-agent" }
 dependencies = [
     { name = "aws-opentelemetry-distro" },
     { name = "bedrock-agentcore" },
+    { name = "govuk-chat-v2-prototype-private" },
     { name = "strands-agents" },
 ]
 
@@ -713,6 +714,7 @@ dev = [
 requires-dist = [
     { name = "aws-opentelemetry-distro", specifier = ">=0.16.0" },
     { name = "bedrock-agentcore", specifier = ">=1.4.5" },
+    { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
     { name = "strands-agents", specifier = ">=1.30.0" },
 ]
 
@@ -889,6 +891,14 @@ wheels = [
 name = "govuk-chat-v2-prototype"
 version = "0.1.0"
 source = { virtual = "." }
+
+[[package]]
+name = "govuk-chat-v2-prototype-private"
+version = "0.1.0"
+source = { git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git#88e0179cf0daa028a6a4a6e5308b62c10188e440" }
+dependencies = [
+    { name = "pyyaml" },
+]
 
 [[package]]
 name = "gradio"
