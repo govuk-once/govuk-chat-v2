@@ -1,6 +1,6 @@
 import json
 import asyncio
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
 from sse_starlette.sse import EventSourceResponse
@@ -84,5 +84,8 @@ def add_message(conversation_id: str, user_input: UserInput):
 
 @app.get("/conversations/{conversation_id}")
 def get_conversation(conversation_id: str):
-    conversation = db.get_conversation_with_messages(conversation_id)
-    return conversation
+    result = db.get_conversation_with_messages(conversation_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation, messages = result
+    return {"conversation": conversation, "messages": messages}

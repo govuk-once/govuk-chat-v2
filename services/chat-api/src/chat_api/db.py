@@ -1,8 +1,9 @@
 import boto3
 from boto3.dynamodb.conditions import Key
-from datetime import datetime, timezone
 import uuid
 import os
+
+from chat_api.models import AssistantMessage, Conversation, UserMessage
 
 _table = None
 
@@ -23,62 +24,42 @@ def get_table(name: str):
     return _table
 
 
-def create_conversation(title: str) -> str:
-    conversation_id = uuid.uuid4().hex
-    pk = f"CONVERSATION#{conversation_id}"
-    get_table(get_table_name()).put_item(
-        Item={
-            "PK": pk,
-            "SK": "METADATA",
-            "entityType": "METADATA",
-            "title": title,
-        }
-    )
-    return conversation_id
+def create_conversation(title: str) -> Conversation:
+    conversation = Conversation(id=uuid.uuid4().hex, title=title)
+    get_table(get_table_name()).put_item(Item=conversation.to_item())
+    return conversation
 
 
-def add_message(conversation_id: str, role: str, content: str) -> None:
-    pk = f"CONVERSATION#{conversation_id}"
-    sk = make_message_sk()
-    get_table(get_table_name()).put_item(
-        Item={
-            "PK": pk,
-            "SK": sk,
-            "role": role,
-            "entityType": "MESSAGE",
-            "content": content,
-        }
-    )
+def add_message(
+    conversation_id: str, role: str, content: str
+) -> UserMessage | AssistantMessage:
+    if role == "user":
+        message = UserMessage(conversation_id=conversation_id, content=content)
+    else:
+        message = AssistantMessage(conversation_id=conversation_id, content=content)
+    get_table(get_table_name()).put_item(Item=message.to_item())
+    return message
 
 
-def get_conversation_with_messages(conversation_id: str) -> dict:
+def get_conversation_with_messages(
+    conversation_id: str,
+) -> tuple[Conversation, list[UserMessage | AssistantMessage]] | None:
     pk = f"CONVERSATION#{conversation_id}"
     response = get_table(get_table_name()).query(
         KeyConditionExpression=Key("PK").eq(pk)
     )
     items = response.get("Items", [])
-    return {
-        "metadata": next(
-            (item for item in items if item["entityType"] == "METADATA"), None
-        ),
-        "messages": [item for item in items if item["entityType"] == "MESSAGE"],
-    }
-
-
-def make_message_sk() -> str:
-    """
-    Create a DynamoDB sort key for a message.
-
-    The key uses the form ``MSG#<timestamp>#<uuid>`` so that:
-
-    - the ``MSG#`` prefix identifies the item type,
-    - the UTC ISO 8601 timestamp sorts correctly as a string in time order,
-    - and the UUID prevents collisions when multiple messages are created at
-    nearly the same instant.
-
-    UTC is used to avoid timezone ambiguity, microseconds are included for
-    consistent precision, and ``Z`` is used as the standard UTC suffix.
-    """
-    ts = datetime.now(timezone.utc).isoformat(timespec="microseconds")
-    ts = ts.replace("+00:00", "Z")
-    return f"MSG#{ts}#{uuid.uuid4().hex}"
+    metadata_item = next(
+        (item for item in items if item["entityType"] == "METADATA"), None
+    )
+    if metadata_item is None:
+        return None
+    conversation = Conversation.from_item(metadata_item)
+    messages = [
+        UserMessage.from_item(item)
+        if item["role"] == "user"
+        else AssistantMessage.from_item(item)
+        for item in items
+        if item["entityType"] == "MESSAGE"
+    ]
+    return conversation, messages
