@@ -163,7 +163,7 @@ export class ChatApiStack extends cdk.Stack {
           cp -r /asset-input/scripts/lambda-run.sh /asset-output/ &&
 
           cd /repo-root &&
-          
+
           # Create a requirements.txt file of dependencies
           # Any editable dependencies are copied
           # Current project is not included
@@ -181,7 +181,7 @@ export class ChatApiStack extends cdk.Stack {
           # Use a shared directory so faster for subsequent runs
           # Target appropriate Python platform and versions for any compilation
           # Use exact to remove any packages that shouldn't be installed
-          # Use no-deps to only install what's in requirements.txt and not any 
+          # Use no-deps to only install what's in requirements.txt and not any
           # sub-dependencies pip is aware of
           uv pip install --no-installer-metadata \
                          --link-mode=copy \
