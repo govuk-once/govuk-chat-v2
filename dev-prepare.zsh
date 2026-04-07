@@ -17,6 +17,25 @@ if test "$CURRENT_DIR" != "$SCRIPT_DIR"; then
     cd $SCRIPT_DIR
 fi
 
+echo "== Checking GitHub Authentication =="
+if [[ -z "${GITHUB_TOKEN}" ]]; then
+    if command -v gh >/dev/null 2>&1; then
+        if ! gh auth status >/dev/null 2>&1; then
+            echo "Error: You are not logged into GitHub CLI."
+            echo "Run: gh auth login"
+            return 1
+         fi
+         echo "Setting GITHUB_TOKEN from GitHub CLI"
+         export GITHUB_TOKEN=$(gh auth token)
+    else
+        echo "Error: 'gh' (GitHub CLI) is not installed."
+        echo "Install it via Homebrew: brew install gh"
+        return 1
+    fi
+else
+    echo "GITHUB_TOKEN already set, skipping export"
+fi
+
 echo "== Checking uv is installed =="
 if command -v uv >/dev/null 2>&1; then
     uv --version
