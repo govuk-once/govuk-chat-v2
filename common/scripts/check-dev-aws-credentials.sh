@@ -15,7 +15,7 @@ exit_with_optional_suggestion() {
     if $suggestion; then
         ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." &>/dev/null && pwd)"
         SCRIPT_PATH="${ROOT_DIR}/refresh-dev-aws-credentials.zsh"
-        RELATIVE_PATH="$(realpath --relative-to $(pwd) $SCRIPT_PATH)"
+        RELATIVE_PATH="$(uv run python -c "import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))" "$SCRIPT_PATH" $(pwd))"
 
         # we show a relative path to users as that is nicer visually, this
         # does however carry the overhead that we can't cd before calling this
