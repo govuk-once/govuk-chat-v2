@@ -27,4 +27,23 @@ Prior to us putting together more formal ADR type documents, this keeps a brief 
     4. Use AWS AppSync - unappealing since it imposes the communication technology (GraphQL) for our API, reducing our flexibility
 - Cold starts are likely to be a problem without use of features such as Lambda SnapStart
 
+## 4. Use Amazon Strands as the agentic framework SDK
 
+We want to use an agentic SDK to orchestrate agent logic rather than building a custom agent loop from scratch. This reduces boilerplate and lets us focus on product behaviour over "plumbing".
+Other teams across the Agentic workstream have been experimenting with Strands, the Claude Agent SDK, and Google ADK, giving us a useful reference point across options.
+
+[Amazon Strands](https://github.com/strands-agents/sdk-python) is chosen for the following reasons:
+
+- AWS-native but model-agnostic — Strands integrates tightly with Amazon Bedrock (where our models are hosted by default) while remaining compatible with other providers. This avoids lock-in to a single model or provider as the space evolves rapidly.
+- Open source (Apache 2.0) — unlike the Claude Agent SDK (proprietary licence), Strands carries no commercial licensing constraints.
+- Built-in observability — full tracing and observability are included out of the box, which aligns with our need for debugging and evaluation in a prototyping phase and beyond.
+- Flexible orchestration patterns — Strands supports conversational, non-conversational, streaming and non-streaming agent types, and can accommodate graph-style orchestration patterns as our needs evolve.
+- Multi-agent support — support for multi-agent coordination, including Graph and the Agent-to-Agent (A2A) protocol, gives us headroom to grow toward more complex architectures without switching frameworks.
+- MCP and Skills integration — means we can integrate external tools and skills in a standardised way.
+- AWS support relationship — as an AWS-built open-source project, there is a realistic support channel available to us given our AWS partnership.
+
+The Claude Agent SDK was not chosen because it is Claude-specific (limiting model flexibility), proprietary-licensed, and grew primarily out of a coding agent use case rather than general-purpose agentic orchestration.
+
+Google ADK was not chosen as it ties more closely to GCP infrastructure, which sits outside our current stack.
+
+Risk / caveat — Strands is still relatively new and maturing, and its API may change or stop. We accept some risk links to this as acceptable at prototype stage.
