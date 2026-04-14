@@ -46,4 +46,4 @@ The Claude Agent SDK was not chosen because it is Claude-specific (limiting mode
 
 Google ADK was not chosen as it ties more closely to GCP infrastructure, which sits outside our current stack.
 
-Risk / caveat — Strands is still relatively new and maturing, and its API may change or stop. We accept some risk links to this as acceptable at prototype stage.
+Risk / caveat — Strands is still relatively new and maturing, and its API may change or development stop. We accept some risk links to this as acceptable at prototype stage.
