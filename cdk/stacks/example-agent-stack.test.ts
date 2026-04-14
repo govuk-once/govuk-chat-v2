@@ -48,6 +48,12 @@ describe('ExampleAgentStack', () => {
       template.hasResource('AWS::BedrockAgentCore::Runtime', {});
     });
 
+    it('creates an AgentCore memory resource and sets the env var on the runtime resource', () => {
+      const template = stackTemplate();
+
+      template.hasResource('AWS::BedrockAgentCore::Memory', {});
+    });
+
     it('outputs the name', () => {
       const template = stackTemplate();
 
