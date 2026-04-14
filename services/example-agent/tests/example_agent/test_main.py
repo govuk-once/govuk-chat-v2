@@ -23,4 +23,7 @@ async def test_invoke_yields_data(mocker):
     async for item in invoke({"prompt": "Tell me a joke"}):
         result.append(item)
 
-    assert result == ["Knock, Knock", "Who's there?"]
+    assert result == [
+        {"type": "data", "content": "Knock, Knock"},
+        {"type": "data", "content": "Who's there?"},
+    ]

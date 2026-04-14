@@ -33,12 +33,18 @@ def test_stream(mocker):
 
 
 def test_agent_stream(mocker):
-    tokens = "This is an SSE stream".split(" ")
+    agent_responses = [
+        {"type": "data", "content": "This is"},
+        {"type": "data", "content": "an"},
+        {"type": "data", "content": "SSE stream"},
+    ]
 
     class MockStreamingBody:
         def iter_lines(self, chunk_size=None):
-            for token in tokens:
-                yield f"data: {token}".encode("utf-8")
+            for content in agent_responses:
+                yield f"data: {json.dumps(content)}".encode(
+                    "utf-8"
+                )  # iter_lines returns bytes
 
     mock_client = mocker.Mock()
     mock_client.invoke_agent_runtime.return_value = {
@@ -55,8 +61,8 @@ def test_agent_stream(mocker):
     assert response.headers["content-type"].startswith("text/event-stream")
 
     body = [line for line in response.text.splitlines() if line]
-    for index, token in enumerate(tokens):
-        assert body[index] == f"data: {token}"
+    for index, content in enumerate(agent_responses):
+        assert body[index] == f"data: {content['content']}"
 
 
 def test_agent_stream_error(mocker):
