@@ -32,7 +32,7 @@ Prior to us putting together more formal ADR type documents, this keeps a brief 
 We want to use an agentic SDK to orchestrate agent logic rather than building a custom agent loop from scratch. This reduces boilerplate and lets us focus on product behaviour over "plumbing".
 Other teams across the Agentic workstream have been experimenting with Strands, the Claude Agent SDK, and Google ADK, giving us a useful reference point across options.
 
-[Amazon Strands](https://github.com/strands-agents/sdk-python) is chosen for the following reasons:
+[Amazon Strands](https://strandsagents.com/) is chosen for the following reasons:
 
 - AWS-native but model-agnostic — Strands integrates tightly with Amazon Bedrock (where our models are hosted by default) while remaining compatible with other providers. This avoids lock-in to a single model or provider as the space evolves rapidly.
 - Open source (Apache 2.0) — unlike the Claude Agent SDK (proprietary licence), Strands carries no commercial licensing constraints.
