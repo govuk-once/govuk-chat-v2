@@ -5,7 +5,7 @@ Built using FastAPI framework and configured to run on AWS Lambda Web Adapter.
 
 ## Usage
 
-### Local
+### Local
 
 ```
 ./scripts/run.sh
