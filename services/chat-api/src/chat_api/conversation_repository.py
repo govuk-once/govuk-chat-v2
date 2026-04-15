@@ -16,7 +16,6 @@ _dynamodb = boto3.resource(
     or os.environ.get("AWS_DEFAULT_REGION")
     or "eu-west-1",
 )
-_table = _dynamodb.Table(get_table_name())
 
 
 class ConversationRepository:
@@ -61,4 +60,5 @@ class ConversationRepository:
 
 
 def get_conversation_repository() -> ConversationRepository:
-    return ConversationRepository(_table)
+    table = _dynamodb.Table(get_table_name())
+    return ConversationRepository(table)

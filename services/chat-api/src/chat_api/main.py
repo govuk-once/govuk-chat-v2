@@ -1,13 +1,16 @@
 import json
 import asyncio
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
 from sse_starlette.sse import EventSourceResponse
 from chat_api.agent import invoke_agent, parse_agent_response_stream
 
 import chat_assistants.anthropic as anthropic_assistant
-from chat_api.conversation_repository import get_conversation_repository
+from chat_api.conversation_repository import (
+    ConversationRepository,
+    get_conversation_repository,
+)
 
 app = FastAPI()
 
@@ -71,24 +74,30 @@ class ConversationInput(BaseModel):
 
 
 @app.post("/conversations")
-def create_conversation(input: ConversationInput):
-    conversation = get_conversation_repository().create_conversation(input.title)
+def create_conversation(
+    input: ConversationInput,
+    repository: ConversationRepository = Depends(get_conversation_repository),
+):
+    conversation = repository.create_conversation(input.title)
     return {"conversation_id": conversation.id}
 
 
 @app.post("/conversations/{conversation_id}/messages")
-def add_message(conversation_id: str, user_input: UserInput):
-    get_conversation_repository().add_message(
-        conversation_id, "user", user_input.message
-    )
+def add_message(
+    conversation_id: str,
+    user_input: UserInput,
+    repository: ConversationRepository = Depends(get_conversation_repository),
+):
+    repository.add_message(conversation_id, "user", user_input.message)
     return {"status": "message added"}
 
 
 @app.get("/conversations/{conversation_id}")
-def get_conversation(conversation_id: str):
-    result = get_conversation_repository().get_conversation_with_messages(
-        conversation_id
-    )
+def get_conversation(
+    conversation_id: str,
+    repository: ConversationRepository = Depends(get_conversation_repository),
+):
+    result = repository.get_conversation_with_messages(conversation_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     conversation, messages = result
