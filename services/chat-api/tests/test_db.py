@@ -5,7 +5,7 @@ from boto3.dynamodb.conditions import Key
 import pytest
 from moto import mock_aws
 
-from chat_api import db
+from chat_api.conversation_repository import ConversationRepository
 from chat_api.models import AssistantMessage, Conversation, UserMessage
 
 
@@ -25,15 +25,12 @@ def dynamo_table():
             ],
             BillingMode="PAY_PER_REQUEST",
         )
-
-        original_table = db._table
-        db._table = table
         yield table
-        db._table = original_table
 
 
 def test_create_conversation(dynamo_table):
-    conversation = db.create_conversation("Prototype chat")
+    repository = ConversationRepository(dynamo_table)
+    conversation = repository.create_conversation("Prototype chat")
 
     assert isinstance(conversation, Conversation)
     assert conversation.title == "Prototype chat"
@@ -45,9 +42,12 @@ def test_create_conversation(dynamo_table):
 
 
 def test_add_message(dynamo_table):
-    conversation = db.create_conversation("Prototype chat")
+    repository = ConversationRepository(dynamo_table)
+    conversation = repository.create_conversation("Prototype chat")
 
-    message = db.add_message(conversation.id, "assistant", "Hello from the assistant")
+    message = repository.add_message(
+        conversation.id, "assistant", "Hello from the assistant"
+    )
 
     assert isinstance(message, AssistantMessage)
     assert message.conversation_id == conversation.id
@@ -82,6 +82,7 @@ def test_get_conversation_with_messages(dynamo_table):
     dynamo_table.put_item(Item=first_message.to_item())
     dynamo_table.put_item(Item=second_message.to_item())
 
-    result = db.get_conversation_with_messages(conversation.id)
+    repository = ConversationRepository(dynamo_table)
+    result = repository.get_conversation_with_messages(conversation.id)
 
     assert result == (conversation, [first_message, second_message])

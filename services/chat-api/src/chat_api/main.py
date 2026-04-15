@@ -7,7 +7,7 @@ from sse_starlette.sse import EventSourceResponse
 from chat_api.agent import invoke_agent, parse_agent_response_stream
 
 import chat_assistants.anthropic as anthropic_assistant
-import chat_api.db as db
+from chat_api.conversation_repository import get_conversation_repository
 
 app = FastAPI()
 
@@ -72,19 +72,23 @@ class ConversationInput(BaseModel):
 
 @app.post("/conversations")
 def create_conversation(input: ConversationInput):
-    conversation_id = db.create_conversation(input.title)
-    return {"conversation_id": conversation_id}
+    conversation = get_conversation_repository().create_conversation(input.title)
+    return {"conversation_id": conversation.id}
 
 
 @app.post("/conversations/{conversation_id}/messages")
 def add_message(conversation_id: str, user_input: UserInput):
-    db.add_message(conversation_id, "user", user_input.message)
+    get_conversation_repository().add_message(
+        conversation_id, "user", user_input.message
+    )
     return {"status": "message added"}
 
 
 @app.get("/conversations/{conversation_id}")
 def get_conversation(conversation_id: str):
-    result = db.get_conversation_with_messages(conversation_id)
+    result = get_conversation_repository().get_conversation_with_messages(
+        conversation_id
+    )
     if result is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     conversation, messages = result
