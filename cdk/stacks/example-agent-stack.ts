@@ -34,6 +34,7 @@ export class ExampleAgentStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'AgentRuntimeArn', {
       value: runtime.agentRuntimeArn,
+      exportName: 'AgentRuntimeArn',
     });
   }
 

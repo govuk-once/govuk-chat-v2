@@ -16,7 +16,7 @@ async def invoke(payload):
 
     async for event in stream:
         if "data" in event and isinstance(event["data"], str):
-            yield event["data"]
+            yield {"type": "data", "content": event["data"]}
 
 
 if __name__ == "__main__":

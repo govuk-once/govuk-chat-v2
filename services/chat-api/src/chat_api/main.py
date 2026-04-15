@@ -1,8 +1,10 @@
 import json
 import asyncio
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
 from sse_starlette.sse import EventSourceResponse
+from chat_api.agent import invoke_agent, parse_agent_response_stream
 
 import chat_assistants.anthropic as anthropic_assistant
 
@@ -34,6 +36,18 @@ async def stream():
             await asyncio.sleep(0.5)
 
     return EventSourceResponse(streamer())
+
+
+@app.get("/agent-stream")
+def agent_stream():
+    try:
+        response = invoke_agent(
+            "Tell me about the state of the automotive industry, in 2 sentences"
+        )
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+    return EventSourceResponse(parse_agent_response_stream(response))
 
 
 @app.post("/sonnet-streaming/assistant-response")

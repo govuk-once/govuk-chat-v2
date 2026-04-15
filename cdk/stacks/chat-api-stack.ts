@@ -49,6 +49,7 @@ export class ChatApiStack extends cdk.Stack {
         AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
         AWS_LWA_INVOKE_MODE: 'RESPONSE_STREAM',
         PORT: '8000',
+        AGENT_RUNTIME_ARN: cdk.Fn.importValue('AgentRuntimeArn'),
       },
       snapStart: isEphemeralEnvironment()
         ? undefined
@@ -72,6 +73,19 @@ export class ChatApiStack extends cdk.Stack {
         resources: [
           `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/*`,
           'arn:aws:bedrock:*::foundation-model/*',
+        ],
+      }),
+    );
+
+    apiLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['bedrock-agentcore:InvokeAgentRuntime'],
+        resources: [
+          // AgentCore requires both the base runtime ARN and a wildcard for sub-paths
+          // (e.g. /runtime-endpoint/DEFAULT).
+          cdk.Fn.importValue('AgentRuntimeArn'),
+          `${cdk.Fn.importValue('AgentRuntimeArn')}/*`,
         ],
       }),
     );
