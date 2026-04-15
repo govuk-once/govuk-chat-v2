@@ -2,9 +2,9 @@ import json
 import asyncio
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ValidationInfo
 from sse_starlette.sse import EventSourceResponse
-from chat_api.agent import invoke_agent, parse_agent_response_stream
+from chat_api.agent import invoke_agent_runtime, parse_agent_response_stream
 
 import chat_assistants.anthropic as anthropic_assistant
 
@@ -18,6 +18,17 @@ class UserInput(BaseModel):
     def not_empty(cls, value):
         if not value.strip():
             raise ValueError("Message must not be empty")
+        return value
+
+
+class ConversationInput(UserInput):
+    session_id: str
+    end_user_id: str
+
+    @field_validator("session_id", "end_user_id")
+    def not_empty_fields(cls, value, info: ValidationInfo):
+        if not value.strip():
+            raise ValueError(f"{info.field_name} must not be empty")
         return value
 
 
@@ -41,8 +52,20 @@ async def stream():
 @app.get("/agent-stream")
 def agent_stream():
     try:
-        response = invoke_agent(
+        response = invoke_agent_runtime(
             "Tell me about the state of the automotive industry, in 2 sentences"
+        )
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+    return EventSourceResponse(parse_agent_response_stream(response))
+
+
+@app.post("/invoke-agent")
+def invoke_agent(user_input: ConversationInput):
+    try:
+        response = invoke_agent_runtime(
+            user_input.message, user_input.session_id, user_input.end_user_id
         )
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})

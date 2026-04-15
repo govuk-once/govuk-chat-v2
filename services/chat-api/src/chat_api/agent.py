@@ -5,12 +5,14 @@ import uuid
 import boto3
 
 
-def invoke_agent(prompt: str) -> dict:
+def invoke_agent_runtime(
+    prompt: str, session_id: str | None = None, end_user_id: str | None = None
+) -> dict:
     client = boto3.client("bedrock-agentcore")
-    payload = json.dumps({"prompt": prompt}).encode()
+    payload = json.dumps({"prompt": prompt, "end_user_id": end_user_id}).encode()
     return client.invoke_agent_runtime(
         agentRuntimeArn=os.environ["AGENT_RUNTIME_ARN"],
-        runtimeSessionId=str(uuid.uuid4()),
+        runtimeSessionId=session_id or str(uuid.uuid4()),
         payload=payload,
         qualifier="DEFAULT",
     )
