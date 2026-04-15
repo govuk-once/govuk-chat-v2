@@ -139,4 +139,31 @@ describe('ChatApiStack', () => {
       template.hasOutput('GatewayUrl', {});
     });
   });
+
+  describe('DynamoDB table', () => {
+    it('creates a GSI for listing conversations by user', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::DynamoDB::Table', {
+        AttributeDefinitions: Match.arrayWith([
+          { AttributeName: 'PK', AttributeType: 'S' },
+          { AttributeName: 'SK', AttributeType: 'S' },
+          { AttributeName: 'GSI1PK', AttributeType: 'S' },
+          { AttributeName: 'GSI1SK', AttributeType: 'S' },
+        ]),
+        GlobalSecondaryIndexes: Match.arrayWith([
+          Match.objectLike({
+            IndexName: 'GSI1',
+            KeySchema: [
+              { AttributeName: 'GSI1PK', KeyType: 'HASH' },
+              { AttributeName: 'GSI1SK', KeyType: 'RANGE' },
+            ],
+            Projection: {
+              ProjectionType: 'ALL',
+            },
+          }),
+        ]),
+      });
+    });
+  });
 });

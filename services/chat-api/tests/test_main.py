@@ -1,11 +1,63 @@
 import json
+from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock
 
+from chat_api.conversation_repository import get_conversation_repository
 from chat_api.main import app
+from chat_api.models import Conversation
 from chat_assistants.anthropic import UserInput, AssistantResponseDelta
 
 client = TestClient(app)
+
+
+class FakeConversationRepository:
+    def __init__(self):
+        self.created_conversations: list[tuple[str, str]] = []
+        self.conversations_by_user = {
+            "user-123": [
+                Conversation(
+                    id="conversation-2",
+                    user_id="user-123",
+                    title="Most recent",
+                    created_at=datetime(2026, 1, 1, 12, 0, 5, tzinfo=timezone.utc),
+                ),
+                Conversation(
+                    id="conversation-1",
+                    user_id="user-123",
+                    title="Older conversation",
+                    created_at=datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+                ),
+            ]
+        }
+
+    def create_conversation(self, user_id: str, title: str) -> Conversation:
+        self.created_conversations.append((user_id, title))
+        return Conversation(
+            id="conversation-123",
+            user_id=user_id,
+            title=title,
+            created_at=datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        )
+
+    def list_conversations_for_user(self, user_id: str) -> list[Conversation]:
+        return self.conversations_by_user.get(user_id, [])
+
+
+fake_repository = FakeConversationRepository()
+
+
+def _get_fake_repository():
+    return fake_repository
+
+
+def setup_function():
+    app.dependency_overrides[get_conversation_repository] = _get_fake_repository
+    fake_repository.created_conversations.clear()
+
+
+def teardown_function():
+    app.dependency_overrides.clear()
 
 
 def test_read_root():
@@ -118,3 +170,53 @@ def test_sonnet_streaming_assistant_response_blank_message():
     data = response.json()
     # don't know how to get rid of the ugly "Value error, " prefix
     assert data["detail"][0]["msg"] == "Value error, Message must not be empty"
+
+
+def test_create_conversation():
+    response = client.post(
+        "/conversations",
+        json={"title": "Prototype chat", "user_id": "user-123"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"conversation_id": "conversation-123"}
+    assert fake_repository.created_conversations == [("user-123", "Prototype chat")]
+
+
+def test_create_conversation_requires_user_id():
+    response = client.post(
+        "/conversations",
+        json={"title": "Prototype chat"},
+    )
+
+    assert response.status_code == 422
+    assert response.headers["content-type"].startswith("application/json")
+
+
+def test_list_conversations_for_user():
+    response = client.get("/users/user-123/conversations")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "conversations": [
+            {
+                "id": "conversation-2",
+                "user_id": "user-123",
+                "title": "Most recent",
+                "created_at": "2026-01-01T12:00:05+00:00",
+            },
+            {
+                "id": "conversation-1",
+                "user_id": "user-123",
+                "title": "Older conversation",
+                "created_at": "2026-01-01T12:00:00+00:00",
+            },
+        ]
+    }
+
+
+def test_list_conversations_for_user_returns_empty_list():
+    response = client.get("/users/user-999/conversations")
+
+    assert response.status_code == 200
+    assert response.json() == {"conversations": []}

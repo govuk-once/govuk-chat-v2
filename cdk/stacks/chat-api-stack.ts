@@ -127,12 +127,21 @@ export class ChatApiStack extends cdk.Stack {
   }
 
   conversationTable(): dynamodb.Table {
-    return new dynamodb.Table(this, `ConversationTable`, {
+    const table = new dynamodb.Table(this, `ConversationTable`, {
       tableName: `${getResourceNamePrefix()}-chat-api-conversation-table`,
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
+
+    table.addGlobalSecondaryIndex({
+      indexName: 'GSI1',
+      partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    return table;
   }
 
   lambdaCode(): lambda.AssetCode {

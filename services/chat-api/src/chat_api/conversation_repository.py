@@ -22,8 +22,8 @@ class ConversationRepository:
     def __init__(self, table):
         self.table = table
 
-    def create_conversation(self, title: str) -> Conversation:
-        conversation = Conversation(id=uuid.uuid4().hex, title=title)
+    def create_conversation(self, user_id: str, title: str) -> Conversation:
+        conversation = Conversation(id=uuid.uuid4().hex, user_id=user_id, title=title)
         self.table.put_item(Item=conversation.to_item())
         return conversation
 
@@ -57,6 +57,19 @@ class ConversationRepository:
             if item["entityType"] == "MESSAGE"
         ]
         return conversation, messages
+
+    def list_conversations_for_user(self, user_id: str) -> list[Conversation]:
+        response = self.table.query(
+            IndexName="GSI1",
+            KeyConditionExpression=Key("GSI1PK").eq(f"USER#{user_id}"),
+            ScanIndexForward=False,
+        )
+        items = response.get("Items", [])
+        return [
+            Conversation.from_item(item)
+            for item in items
+            if item["entityType"] == "METADATA"
+        ]
 
 
 def get_conversation_repository() -> ConversationRepository:

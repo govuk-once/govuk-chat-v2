@@ -71,6 +71,7 @@ async def sonnet_streaming_assistant_response(user_input: UserInput):
 
 class ConversationInput(BaseModel):
     title: str
+    user_id: str
 
 
 @app.post("/conversations")
@@ -78,7 +79,7 @@ def create_conversation(
     input: ConversationInput,
     repository: ConversationRepository = Depends(get_conversation_repository),
 ):
-    conversation = repository.create_conversation(input.title)
+    conversation = repository.create_conversation(input.user_id, input.title)
     return {"conversation_id": conversation.id}
 
 
@@ -102,3 +103,12 @@ def get_conversation(
         raise HTTPException(status_code=404, detail="Conversation not found")
     conversation, messages = result
     return {"conversation": conversation, "messages": messages}
+
+
+@app.get("/users/{user_id}/conversations")
+def list_conversations_for_user(
+    user_id: str,
+    repository: ConversationRepository = Depends(get_conversation_repository),
+):
+    conversations = repository.list_conversations_for_user(user_id)
+    return {"conversations": conversations}
