@@ -3,6 +3,8 @@
 Basic prototype, but could one day be a basis for conversation and usage APIs.
 Built using FastAPI framework and configured to run on AWS Lambda Web Adapter.
 
+There is a draft specification for the endpoints and use-cases: [API Spec](api-spec.md)
+
 ## Usage
 
 ### Local
