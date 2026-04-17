@@ -4,7 +4,6 @@ from pathlib import Path
 from botocore.exceptions import (
     NoCredentialsError,
     PartialCredentialsError,
-    ClientError,
 )
 import boto3
 import os
@@ -25,10 +24,26 @@ except (NoCredentialsError, PartialCredentialsError):
     sys.exit("No AWS credentials found, exiting!")
 
 print("== Checking for AWS cloudformation resources ==")
-local_only = False
 local_stack_name = "ExampleAgentStack"
 deployed_agent_name: str | None = None
 deployed_agent_arn: str | None = None
+deployed_agent_short_term_memory_id: str | None = None
+
+
+def get_cdk_output(stack_name: str, output_name: str) -> str:
+    result = subprocess.run(
+        ["scripts/fetch-cdk-output.sh", stack_name, output_name],
+        text=True,
+        cwd=project_dir,
+        capture_output=True,
+    )
+
+    if result.returncode != 0:
+        print("STDERR:", result.stderr, file=sys.stderr)
+        raise RuntimeError(f"Command failed with {result.returncode}")
+
+    return result.stdout.strip()
+
 
 # fetch remote stack name using local stack name
 try:
@@ -46,28 +61,13 @@ except subprocess.CalledProcessError as e:
 
 # fetch stack output variables
 if stack_name:
-    cf_client = boto3.client("cloudformation")
-    try:
-        stack = cf_client.describe_stacks(StackName=stack_name)["Stacks"][0]
-        outputs_dict = {
-            item["OutputKey"]: item["OutputValue"] for item in stack["Outputs"]
-        }
+    deployed_agent_name = get_cdk_output(local_stack_name, "AgentRuntimeName")
+    deployed_agent_arn = get_cdk_output(local_stack_name, "AgentRuntimeArn")
+    deployed_agent_short_term_memory_id = get_cdk_output(
+        local_stack_name, "ShortTermMemoryId"
+    )
 
-        deployed_agent_name = outputs_dict["AgentRuntimeName"]
-        deployed_agent_arn = outputs_dict["AgentRuntimeArn"]
-    except KeyError as e:
-        print(f"Stack outputs not identified: {e}")
-        local_only = True
-
-    except ClientError as e:
-        print(f"Stack {stack_name} not found on current AWS account: {e}")
-        local_only = True
-
-# output whether we're connecting to the cloud resources
-if local_only:
-    print("Failed to identify deployed resources, configuring for local only")
-else:
-    print(f"Configuring for AWS resources from stack: {stack_name}")
+print(f"Configuring for AWS resources from stack: {stack_name}")
 
 agent_name = deployed_agent_name or "example_agent"
 
@@ -89,6 +89,7 @@ config = {
                 "agent_session_id": str(uuid.uuid4()),
             },
             "is_generated_by_agentcore_create": False,
+            "memory": {"memory_id": deployed_agent_short_term_memory_id},
         }
     },
 }
