@@ -14,8 +14,14 @@ runs:
       with:
         python-version-file: ".python-version"
 
+    - name: Register GitHub PAT for private repos
+      shell: bash
+      run: echo "${{ inputs.dependencies_github_token }}" | gh auth login --with-token
+
+    - name: Configure the Git credential helper
+      shell: bash
+      run: gh auth setup-git
+
     - name: Install dependencies
       shell: bash
-      env:
-        GITHUB_TOKEN: ${{ inputs.dependencies_github_token }}
       run: uv sync --all-packages --locked --dev
