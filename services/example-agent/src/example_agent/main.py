@@ -5,14 +5,38 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
 )
 from strands import Agent
 from strands.models import BedrockModel
+from example_agent.types import AgentStreamEvent
+from typing import AsyncGenerator
 import os
 from govuk_chat_v2_prototype_private import load_prompts
 
 app = BedrockAgentCoreApp()
 
 
+def process_event(event) -> AgentStreamEvent | None:
+    match event:
+        case {"init_event_loop": True}:
+            return {"type": "stream_start"}
+        case {"event": {"contentBlockDelta": {"delta": {"text": text}}}}:
+            return {"type": "content_delta", "delta": text}
+        case {"result": result} if result.stop_reason == "end_turn":
+            return {"type": "stream_end", "complete": True}
+        case {"result": result}:
+            return {
+                "type": "stream_end",
+                "complete": False,
+                "stop_reason": result.stop_reason,
+            }
+        case {"force_stop": True}:
+            return {
+                "type": "stream_end",
+                "complete": False,
+                "stop_reason": event.get("force_stop_reason", "unknown"),
+            }
+
+
 @app.entrypoint
-async def invoke(payload, context):
+async def invoke(payload, context) -> AsyncGenerator[AgentStreamEvent, None]:
     session_id = getattr(context, "session_id", "default-session")
     user_id = payload.get("end_user_id") or session_id
 
@@ -36,12 +60,20 @@ async def invoke(payload, context):
             system_prompt=structured_answer_prompt,
             session_manager=session_manager,
         )
+        try:
+            stream = agent.stream_async(payload.get("prompt"))
 
-        stream = agent.stream_async(payload.get("prompt"))
+            async for event in stream:
+                if (processed := process_event(event)) is not None:
+                    yield processed
 
-        async for event in stream:
-            if "data" in event and isinstance(event["data"], str):
-                yield {"type": "data", "content": event["data"]}
+        except Exception as e:
+            # TODO: Log the exception in Sentry
+            yield {
+                "type": "error",
+                "error_type": "agent_error",
+                "error_message": str(e),
+            }
 
 
 if __name__ == "__main__":
