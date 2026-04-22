@@ -26,7 +26,8 @@ export class ExampleAgentStack extends cdk.Stack {
     cdk.Tags.of(this).add('RepositoryUrl', props.repositoryUrl);
     cdk.Tags.of(this).add('Environment', props.environment);
 
-    const runtime = this.agentcoreRuntime();
+    const shortTermMemory = this.createShortTermMemory();
+    const runtime = this.agentcoreRuntime(shortTermMemory.memoryId);
 
     new cdk.CfnOutput(this, 'AgentRuntimeName', {
       value: runtime.agentRuntimeName,
@@ -36,15 +37,32 @@ export class ExampleAgentStack extends cdk.Stack {
       value: runtime.agentRuntimeArn,
       exportName: 'AgentRuntimeArn',
     });
+
+    new cdk.CfnOutput(this, 'ShortTermMemoryId', {
+      value: shortTermMemory.memoryId,
+    });
   }
 
-  agentcoreRuntime(): agentcore.Runtime {
+  createShortTermMemory(): agentcore.Memory {
+    const name = `${getResourceNamePrefix()}-example-memory`;
+
+    return new agentcore.Memory(this, name, {
+      // name cannot have dash characters
+      memoryName: name.replace(/-/g, '_'),
+      expirationDuration: cdk.Duration.days(90),
+    });
+  }
+
+  agentcoreRuntime(shortTermMemoryId: string): agentcore.Runtime {
     const name = `${getResourceNamePrefix()}-example-agent-runtime`;
 
     const agentcoreRuntime = new agentcore.Runtime(this, name, {
       // runtime name cannot have dash characters
       runtimeName: name.replace(/-/g, '_'),
       agentRuntimeArtifact: this.agentCode(),
+      environmentVariables: {
+        BEDROCK_AGENTCORE_MEMORY_ID: shortTermMemoryId,
+      },
     });
 
     agentcoreRuntime.addToRolePolicy(
@@ -56,6 +74,20 @@ export class ExampleAgentStack extends cdk.Stack {
         resources: [
           `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/*`,
           'arn:aws:bedrock:*::foundation-model/*',
+        ],
+      }),
+    );
+
+    agentcoreRuntime.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'bedrock-agentcore:CreateEvent',
+          'bedrock-agentcore:GetEvent',
+          'bedrock-agentcore:ListEvents',
+        ],
+        resources: [
+          `arn:aws:bedrock-agentcore:${this.region}:${this.account}:memory/${shortTermMemoryId}`,
+          `arn:aws:bedrock-agentcore:${this.region}:${this.account}:memory/${shortTermMemoryId}/*`,
         ],
       }),
     );
@@ -105,7 +137,7 @@ export class ExampleAgentStack extends cdk.Stack {
         cp -r /asset-input/src/* /asset-output/ &&
 
         cd /repo-root &&
-        
+
         # Create a requirements.txt file of dependencies
         # Any editable dependencies are copied
         # Current project is not included
@@ -120,7 +152,7 @@ export class ExampleAgentStack extends cdk.Stack {
         # Use a shared directory so faster for subsequent runs
         # Target appropriate Python platform and versions for any compilation
         # Use exact to remove any packages that shouldn't be installed
-        # Use no-deps to only install what's in requirements.txt and not any 
+        # Use no-deps to only install what's in requirements.txt and not any
         # sub-dependencies pip is aware of
         uv pip install --no-installer-metadata \
                         --link-mode=copy \

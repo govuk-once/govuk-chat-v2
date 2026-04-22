@@ -1,21 +1,38 @@
 import pytest
 from unittest.mock import MagicMock
-from chat_api.agent import invoke_agent, parse_agent_response_stream
+from chat_api.agent import invoke_agent_runtime, parse_agent_response_stream
 import json
 
 
-def test_invoke_agent(mocker):
+def test_invoke_agent_runtime(mocker):
     mock_client = mocker.Mock()
     mock_client.invoke_agent_runtime.return_value = {"response": MagicMock()}
     mocker.patch("chat_api.agent.boto3.client", return_value=mock_client)
     mocker.patch.dict("os.environ", {"AGENT_RUNTIME_ARN": "test-arn"})
 
-    invoke_agent("test prompt")
+    invoke_agent_runtime("test prompt", "session_123", "user_123")
 
     mock_client.invoke_agent_runtime.assert_called_once_with(
         agentRuntimeArn="test-arn",
-        runtimeSessionId=mocker.ANY,
-        payload=b'{"prompt": "test prompt"}',
+        runtimeSessionId="session_123",
+        payload=b'{"prompt": "test prompt", "end_user_id": "user_123"}',
+        qualifier="DEFAULT",
+    )
+
+
+def test_invoke_agent_uses_default_session_and_user_id(mocker):
+    mock_client = mocker.Mock()
+    mock_client.invoke_agent_runtime.return_value = {"response": MagicMock()}
+    mocker.patch("chat_api.agent.boto3.client", return_value=mock_client)
+    mocker.patch.dict("os.environ", {"AGENT_RUNTIME_ARN": "test-arn"})
+    mocker.patch("chat_api.agent.uuid.uuid4", return_value="mock-uuid")
+
+    invoke_agent_runtime("test prompt")
+
+    mock_client.invoke_agent_runtime.assert_called_once_with(
+        agentRuntimeArn="test-arn",
+        runtimeSessionId="mock-uuid",
+        payload=b'{"prompt": "test prompt", "end_user_id": null}',
         qualifier="DEFAULT",
     )
 

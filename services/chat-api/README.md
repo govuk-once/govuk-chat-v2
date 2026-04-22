@@ -19,9 +19,10 @@ To deploy:
 ./scripts/cdk-deploy.sh
 ```
 
-To invoke, given the output of the Gateway URL:
+To invoke:
 
 ```
-./scripts/aws-curl.sh ${GATEWAY_URL}/stream
-./scripts/aws-curl.sh -H 'Content-type: application/json' -d '{ "message": "Is this working?" }' ${GATEWAY_URL}/sonnet-streaming/assistant-response
+GATEWAY_URL=$(scripts/fetch-cdk-output.sh ChatApiStack GatewayUrl)
+./scripts/aws-curl.sh "${GATEWAY_URL%/}/stream"
+./scripts/aws-curl.sh -H 'Content-type: application/json' -d '{ "message": "Is this working?" }' "${GATEWAY_URL%/}/sonnet-streaming/assistant-response"
 ```

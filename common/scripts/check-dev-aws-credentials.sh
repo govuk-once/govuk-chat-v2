@@ -2,14 +2,24 @@
 set -euo pipefail
 
 suggestion=true
+quiet=false
 
 for arg in "$@"; do
   case "$arg" in
     --no-suggestion)
       suggestion=false
       ;;
+    --quiet)
+      quiet=true
+      ;;
   esac
 done
+
+echo_if_verbose() {
+    if ! $quiet; then
+      echo "$1"
+    fi
+}
 
 exit_with_optional_suggestion() {
     if $suggestion; then
@@ -21,24 +31,24 @@ exit_with_optional_suggestion() {
         # does however carry the overhead that we can't cd before calling this
         # script
         printf "%s" "AWS credentials need to be refreshed, run " \
-                    "\`source ${RELATIVE_PATH}\`"
-        echo
+                    "\`source ${RELATIVE_PATH}\`" >&2
+        echo >&2
     fi
     exit 1
 }
 
 expected_aws_role="${AWS_ROLE:-once-chat-development-admin}"
 
-echo "== Checking for AWS env vars =="
+echo_if_verbose "== Checking for AWS env vars =="
 
 if [[ -v AWS_ACCESS_KEY_ID ]]; then
-    echo "AWS env vars found"
+    echo_if_verbose "AWS env vars found"
 else
-    echo "AWS env vars are not available"
+    echo "AWS env vars are not available" >&2
     exit_with_optional_suggestion
 fi
 
-echo "== Checking validity of AWS credentials for role ${expected_aws_role} =="
+echo_if_verbose "== Checking validity of AWS credentials for role ${expected_aws_role} =="
 
 role_details=$(gds aws "$expected_aws_role" --details 2>/dev/null) || {
     echo "ERROR: Couldn't establish AWS role: $expected_aws_role" >&2
@@ -58,7 +68,7 @@ has_expected_role() {
         actual_role="${BASH_REMATCH[2]}"
     else
         echo "Couldn't match an assumed role in AWS identity: $current_identity" >&2
-        echo "AWS output may have changed since this script was written. Exiting."
+        echo "AWS output may have changed since this script was written. Exiting."  >&2
         exit 1
     fi
 
@@ -68,12 +78,12 @@ has_expected_role() {
 current_identity=$(aws sts get-caller-identity 2>/dev/null || true)
 
 if [[ -z "$current_identity" ]]; then
-    echo "Existing credentials are invalid or expired."
+    echo "Existing credentials are invalid or expired." >&2
     exit_with_optional_suggestion
 elif ! has_expected_role "$role_details" "$current_identity"; then
-    echo "Existing credentials are for a different role."
+    echo "Existing credentials are for a different role." >&2
     exit_with_optional_suggestion
 else
-    echo "Existing AWS credentials are still valid. No update needed."
+    echo_if_verbose "Existing AWS credentials are still valid. No update needed."
     exit 0
 fi
