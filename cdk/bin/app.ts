@@ -9,6 +9,12 @@ import { ChatApiStack } from '../stacks/chat-api-stack.ts';
 import { ExampleAgentStack } from '../stacks/example-agent-stack.ts';
 
 const app = new cdk.App();
+const githubToken = process.env.GITHUB_TOKEN;
+if (!githubToken) {
+  throw new Error(
+    'GITHUB_TOKEN environment variable is required but was not found.',
+  );
+}
 
 const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
@@ -25,6 +31,7 @@ new ChatApiStack(app, 'ChatApiStack', {
 new ExampleAgentStack(app, 'ExampleAgentStack', {
   env: env,
   environment: getEnvironment(),
+  githubToken: githubToken,
   stackName: `${getResourceNamePrefix()}-ExampleAgentStack`,
   ...serviceMetadata,
 });

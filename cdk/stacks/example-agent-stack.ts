@@ -15,6 +15,7 @@ export interface ExampleAgentStackProps extends cdk.StackProps {
   teamName: string;
   repositoryUrl: string;
   environment: string;
+  githubToken: string;
 }
 
 export class ExampleAgentStack extends cdk.Stack {
@@ -27,7 +28,10 @@ export class ExampleAgentStack extends cdk.Stack {
     cdk.Tags.of(this).add('Environment', props.environment);
 
     const shortTermMemory = this.createShortTermMemory();
-    const runtime = this.agentcoreRuntime(shortTermMemory.memoryId);
+    const runtime = this.agentcoreRuntime(
+      shortTermMemory.memoryId,
+      props.githubToken,
+    );
 
     new cdk.CfnOutput(this, 'AgentRuntimeName', {
       value: runtime.agentRuntimeName,
@@ -53,13 +57,16 @@ export class ExampleAgentStack extends cdk.Stack {
     });
   }
 
-  agentcoreRuntime(shortTermMemoryId: string): agentcore.Runtime {
+  agentcoreRuntime(
+    shortTermMemoryId: string,
+    githubToken: string,
+  ): agentcore.Runtime {
     const name = `${getResourceNamePrefix()}-example-agent-runtime`;
 
     const agentcoreRuntime = new agentcore.Runtime(this, name, {
       // runtime name cannot have dash characters
       runtimeName: name.replace(/-/g, '_'),
-      agentRuntimeArtifact: this.agentCode(),
+      agentRuntimeArtifact: this.agentCode(githubToken),
       environmentVariables: {
         BEDROCK_AGENTCORE_MEMORY_ID: shortTermMemoryId,
       },
@@ -95,7 +102,7 @@ export class ExampleAgentStack extends cdk.Stack {
     return agentcoreRuntime;
   }
 
-  agentCode(): agentcore.AgentRuntimeArtifact {
+  agentCode(githubToken: string): agentcore.AgentRuntimeArtifact {
     const assetHash = hashGlobs(
       path.resolve(repoRoot(), 'services/example-agent/src/**/*.py'),
       path.resolve(repoRoot(), 'uv.lock'),
@@ -128,6 +135,9 @@ export class ExampleAgentStack extends cdk.Stack {
             ),
           },
         ],
+        environment: {
+          GITHUB_TOKEN: githubToken,
+        },
         command: [
           'bash',
           '-c',
