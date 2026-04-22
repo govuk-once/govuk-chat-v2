@@ -1,7 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import baseContext from '../cdk.json' with { type: 'json' };
+import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { Tags, Template } from 'aws-cdk-lib/assertions';
-import { describe, it } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ExampleAgentStack } from './example-agent-stack.ts';
 
 const context = {
@@ -16,6 +17,7 @@ describe('ExampleAgentStack', () => {
     teamName: 'chat',
     repositoryUrl: 'https://example.com/repo',
     environment: 'testing',
+    githubToken: 'fake-token',
   };
 
   function stackTemplate() {
@@ -23,6 +25,32 @@ describe('ExampleAgentStack', () => {
     const stack = new ExampleAgentStack(app, 'TestStack', baseProps);
     return Template.fromStack(stack);
   }
+
+  it('passes the token all the way to AgentRuntimeArtifact.fromCodeAsset', () => {
+    const fromAssetSpy = vi.spyOn(
+      agentcore.AgentRuntimeArtifact,
+      'fromCodeAsset',
+    );
+
+    const app = new cdk.App({ context });
+    const expectedToken = 'expected-token';
+
+    new ExampleAgentStack(app, 'TestStack', {
+      ...baseProps,
+      githubToken: expectedToken,
+    });
+
+    expect(fromAssetSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bundling: expect.objectContaining({
+          environment: expect.objectContaining({
+            GITHUB_TOKEN: expectedToken,
+          }),
+        }),
+      }),
+    );
+    fromAssetSpy.mockRestore();
+  });
 
   describe('Stack tags', () => {
     function stackTags() {
