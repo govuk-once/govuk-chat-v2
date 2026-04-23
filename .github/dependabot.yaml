@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: uv
     directory: /
+    registries: "*"
     schedule:
       interval: weekly
     cooldown:
@@ -18,3 +19,9 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+registries:
+  github:
+    type: git
+    url: https://github.com
+    username: x-access-token
+    password: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
