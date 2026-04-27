@@ -7,8 +7,10 @@ from sse_starlette.sse import EventSourceResponse
 from chat_api.agent import invoke_agent_runtime, parse_agent_response_stream
 
 import chat_assistants.anthropic as anthropic_assistant
+from chat_api.conversation_api.routes import router as conversation_router
 
 app = FastAPI()
+app.include_router(conversation_router)
 
 
 class UserInput(BaseModel):
