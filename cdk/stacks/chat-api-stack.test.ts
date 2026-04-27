@@ -139,4 +139,12 @@ describe('ChatApiStack', () => {
       template.hasOutput('GatewayUrl', {});
     });
   });
+
+  describe('DynamoDB table', () => {
+    it('creates a DynamoDB table', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::DynamoDB::Table', {});
+    });
+  });
 });
