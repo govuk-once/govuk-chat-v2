@@ -21,17 +21,18 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION || 'eu-west-1',
 };
 
-new ChatApiStack(app, 'ChatApiStack', {
-  env: env,
-  environment: getEnvironment(),
-  stackName: `${getResourceNamePrefix()}-ChatApiStack`,
-  ...serviceMetadata,
-});
-
-new ExampleAgentStack(app, 'ExampleAgentStack', {
+const exampleAgentStack = new ExampleAgentStack(app, 'ExampleAgentStack', {
   env: env,
   environment: getEnvironment(),
   githubToken: githubToken,
   stackName: `${getResourceNamePrefix()}-ExampleAgentStack`,
+  ...serviceMetadata,
+});
+
+new ChatApiStack(app, 'ChatApiStack', {
+  env: env,
+  environment: getEnvironment(),
+  agentRuntimeArn: exampleAgentStack.agentRuntimeArn,
+  stackName: `${getResourceNamePrefix()}-ChatApiStack`,
   ...serviceMetadata,
 });
