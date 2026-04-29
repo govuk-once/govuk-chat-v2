@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as path from 'path';
 import { Construct } from 'constructs';
 import {
@@ -27,7 +28,8 @@ export class ChatApiStack extends cdk.Stack {
     cdk.Tags.of(this).add('RepositoryUrl', props.repositoryUrl);
     cdk.Tags.of(this).add('Environment', props.environment);
 
-    const lambdaAlias = this.lambdaHandler();
+    const conversationTable = this.conversationTable();
+    const lambdaAlias = this.lambdaHandler(conversationTable);
     const apiGateway = this.apiGateway(props, lambdaAlias);
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
@@ -35,7 +37,7 @@ export class ChatApiStack extends cdk.Stack {
     });
   }
 
-  lambdaHandler(): lambda.Alias {
+  lambdaHandler(conversationTable: dynamodb.Table): lambda.Alias {
     const code = this.lambdaCode();
     const apiLambdaName = `${getResourceNamePrefix()}-api-function`;
 
@@ -50,6 +52,7 @@ export class ChatApiStack extends cdk.Stack {
         AWS_LWA_INVOKE_MODE: 'RESPONSE_STREAM',
         PORT: '8000',
         AGENT_RUNTIME_ARN: cdk.Fn.importValue('AgentRuntimeArn'),
+        CONVERSATION_DYNAMODB_TABLE: conversationTable.tableName,
       },
       snapStart: isEphemeralEnvironment()
         ? undefined
@@ -89,6 +92,7 @@ export class ChatApiStack extends cdk.Stack {
         ],
       }),
     );
+    conversationTable.grantReadWriteData(apiLambda);
 
     // we return an alias so a specific version of the function can be used
     // as a handler, allowing lambda snap start
@@ -120,6 +124,24 @@ export class ChatApiStack extends cdk.Stack {
         },
       },
     );
+  }
+
+  conversationTable(): dynamodb.Table {
+    const table = new dynamodb.Table(this, `ConversationTable`, {
+      tableName: `${getResourceNamePrefix()}-chat-api-conversation-table`,
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    table.addGlobalSecondaryIndex({
+      indexName: 'GSI1',
+      partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    return table;
   }
 
   lambdaCode(): lambda.AssetCode {

@@ -1,11 +1,62 @@
 import json
-from fastapi.testclient import TestClient
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 
+import pytest
+from fastapi.testclient import TestClient
+
+from chat_api.conversation_persistence.conversation_repository import (
+    ConversationRepository,
+)
 from chat_api.main import app
+from chat_api.conversation_persistence.data_models import (
+    ConversationMessageItem,
+    ConversationMetadataItem,
+    MessageRole,
+)
 from chat_assistants.anthropic import UserInput, AssistantResponseDelta
 
 client = TestClient(app)
+
+
+def utc_time(second: int) -> datetime:
+    return datetime(2026, 1, 1, 12, 0, second, tzinfo=timezone.utc)
+
+
+def make_conversation(
+    conversation_id: str, title: str, second: int
+) -> ConversationMetadataItem:
+    return ConversationMetadataItem.new_conversation(
+        conversation_id=conversation_id,
+        user_id="user-123",
+        title=title,
+        created_at=utc_time(second),
+    )
+
+
+def make_message(
+    conversation_id: str, role: MessageRole, content: str, second: int
+) -> ConversationMessageItem:
+    return ConversationMessageItem.new_message(
+        conversation_id=conversation_id,
+        role=role,
+        content=content,
+        timestamp=utc_time(second),
+    )
+
+
+@pytest.fixture(autouse=True)
+def clear_dependency_overrides():
+    app.dependency_overrides.clear()
+    yield
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def repository(mocker):
+    repository = mocker.Mock(spec=ConversationRepository)
+    app.dependency_overrides[ConversationRepository] = lambda: repository
+    return repository
 
 
 def test_read_root():
@@ -231,3 +282,151 @@ def test_sonnet_streaming_assistant_response_blank_message():
     data = response.json()
     # don't know how to get rid of the ugly "Value error, " prefix
     assert data["detail"][0]["msg"] == "Value error, Message must not be empty"
+
+
+def test_create_conversation(repository):
+    repository.create_conversation.return_value = make_conversation(
+        "conversation-123", "Prototype chat", 0
+    )
+
+    response = client.post(
+        "/conversations",
+        json={"title": "Prototype chat", "user_id": "user-123"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"conversation_id": "conversation-123"}
+    repository.create_conversation.assert_called_once_with("user-123", "Prototype chat")
+
+
+def test_add_message(repository):
+    repository.add_message.return_value = make_message(
+        conversation_id="conversation-123",
+        role="user",
+        content="How much tax should I pay?",
+        second=3,
+    )
+
+    response = client.post(
+        "/conversations/conversation-123/messages",
+        json={"message": "How much tax should I pay?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "conversation_id": "conversation-123",
+        "content": "How much tax should I pay?",
+        "timestamp": "2026-01-01T12:00:03Z",
+        "role": "user",
+    }
+    repository.add_message.assert_called_once_with(
+        "conversation-123", "user", "How much tax should I pay?"
+    )
+
+
+def test_create_conversation_requires_user_id(repository):
+    response = client.post(
+        "/conversations",
+        json={"title": "Prototype chat"},
+    )
+
+    assert response.status_code == 422
+    assert response.headers["content-type"].startswith("application/json")
+    repository.create_conversation.assert_not_called()
+
+
+def test_list_conversations_for_user(repository):
+    repository.list_conversations_for_user.return_value = [
+        make_conversation("conversation-2", "Most recent", 5),
+        make_conversation("conversation-1", "Older conversation", 0),
+    ]
+
+    response = client.get("/users/user-123/conversations")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "id": "conversation-2",
+            "user_id": "user-123",
+            "title": "Most recent",
+            "created_at": "2026-01-01T12:00:05Z",
+        },
+        {
+            "id": "conversation-1",
+            "user_id": "user-123",
+            "title": "Older conversation",
+            "created_at": "2026-01-01T12:00:00Z",
+        },
+    ]
+    repository.list_conversations_for_user.assert_called_once_with("user-123")
+
+
+def test_list_conversations_for_user_returns_empty_list(repository):
+    repository.list_conversations_for_user.return_value = []
+
+    response = client.get("/users/user-999/conversations")
+
+    assert response.status_code == 200
+    assert response.json() == []
+    repository.list_conversations_for_user.assert_called_once_with("user-999")
+
+
+def test_get_conversation(repository):
+    repository.get_conversation_with_messages.return_value = (
+        make_conversation("conversation-123", "Prototype chat", 0),
+        [
+            make_message(
+                conversation_id="conversation-123",
+                role="user",
+                content="Hello",
+                second=1,
+            ),
+            make_message(
+                conversation_id="conversation-123",
+                role="assistant",
+                content="Hi there",
+                second=2,
+            ),
+        ],
+    )
+
+    response = client.get("/conversations/conversation-123")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "conversation": {
+            "id": "conversation-123",
+            "user_id": "user-123",
+            "title": "Prototype chat",
+            "created_at": "2026-01-01T12:00:00Z",
+        },
+        "messages": [
+            {
+                "conversation_id": "conversation-123",
+                "content": "Hello",
+                "timestamp": "2026-01-01T12:00:01Z",
+                "role": "user",
+            },
+            {
+                "conversation_id": "conversation-123",
+                "content": "Hi there",
+                "timestamp": "2026-01-01T12:00:02Z",
+                "role": "assistant",
+            },
+        ],
+    }
+    repository.get_conversation_with_messages.assert_called_once_with(
+        "conversation-123"
+    )
+
+
+def test_get_conversation_returns_404_for_missing_conversation(repository):
+    repository.get_conversation_with_messages.return_value = None
+
+    response = client.get("/conversations/conversation-999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Conversation not found"}
+    repository.get_conversation_with_messages.assert_called_once_with(
+        "conversation-999"
+    )
