@@ -17,6 +17,7 @@ export interface ChatApiStackProps extends cdk.StackProps {
   teamName: string;
   repositoryUrl: string;
   environment: string;
+  agentRuntimeArn: string;
 }
 
 export class ChatApiStack extends cdk.Stack {
@@ -29,7 +30,10 @@ export class ChatApiStack extends cdk.Stack {
     cdk.Tags.of(this).add('Environment', props.environment);
 
     const conversationTable = this.conversationTable();
-    const lambdaAlias = this.lambdaHandler(conversationTable);
+    const lambdaAlias = this.lambdaHandler(
+      props.agentRuntimeArn,
+      conversationTable,
+    );
     const apiGateway = this.apiGateway(props, lambdaAlias);
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
@@ -37,7 +41,10 @@ export class ChatApiStack extends cdk.Stack {
     });
   }
 
-  lambdaHandler(conversationTable: dynamodb.Table): lambda.Alias {
+  lambdaHandler(
+    agentRuntimeArn: string,
+    conversationTable: dynamodb.Table,
+  ): lambda.Alias {
     const code = this.lambdaCode();
     const apiLambdaName = `${getResourceNamePrefix()}-api-function`;
 
@@ -51,7 +58,7 @@ export class ChatApiStack extends cdk.Stack {
         AWS_LAMBDA_EXEC_WRAPPER: '/opt/bootstrap',
         AWS_LWA_INVOKE_MODE: 'RESPONSE_STREAM',
         PORT: '8000',
-        AGENT_RUNTIME_ARN: cdk.Fn.importValue('AgentRuntimeArn'),
+        AGENT_RUNTIME_ARN: agentRuntimeArn,
         CONVERSATION_DYNAMODB_TABLE: conversationTable.tableName,
       },
       snapStart: isEphemeralEnvironment()
@@ -87,8 +94,8 @@ export class ChatApiStack extends cdk.Stack {
         resources: [
           // AgentCore requires both the base runtime ARN and a wildcard for sub-paths
           // (e.g. /runtime-endpoint/DEFAULT).
-          cdk.Fn.importValue('AgentRuntimeArn'),
-          `${cdk.Fn.importValue('AgentRuntimeArn')}/*`,
+          agentRuntimeArn,
+          `${agentRuntimeArn}/*`,
         ],
       }),
     );

@@ -17,6 +17,8 @@ describe('ChatApiStack', () => {
     teamName: 'chat',
     repositoryUrl: 'https://example.com/repo',
     environment: 'testing',
+    agentRuntimeArn:
+      'arn:aws:bedrock-agentcore:eu-west-1:123456789012:runtime/test-runtime',
   };
 
   function stackTemplate() {

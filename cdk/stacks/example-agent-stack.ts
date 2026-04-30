@@ -19,6 +19,8 @@ export interface ExampleAgentStackProps extends cdk.StackProps {
 }
 
 export class ExampleAgentStack extends cdk.Stack {
+  public readonly agentRuntimeArn: string;
+
   constructor(scope: Construct, id: string, props: ExampleAgentStackProps) {
     super(scope, id, props);
 
@@ -32,6 +34,7 @@ export class ExampleAgentStack extends cdk.Stack {
       shortTermMemory.memoryId,
       props.githubToken,
     );
+    this.agentRuntimeArn = runtime.agentRuntimeArn;
 
     new cdk.CfnOutput(this, 'AgentRuntimeName', {
       value: runtime.agentRuntimeName,
@@ -39,7 +42,6 @@ export class ExampleAgentStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'AgentRuntimeArn', {
       value: runtime.agentRuntimeArn,
-      exportName: 'AgentRuntimeArn',
     });
 
     new cdk.CfnOutput(this, 'ShortTermMemoryId', {
