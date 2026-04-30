@@ -5,7 +5,13 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
 )
 from strands import Agent
 from strands.models import BedrockModel
-from agent_runtime_types import AgentStreamEvent
+from agent_runtime_types import (
+    AgentStreamEvent,
+    StreamStartEvent,
+    StreamEndEvent,
+    ContentDeltaEvent,
+    ErrorEvent,
+)
 from typing import AsyncGenerator
 import os
 from govuk_chat_v2_prototype_private import load_prompts
@@ -16,23 +22,17 @@ app = BedrockAgentCoreApp()
 def process_event(event) -> AgentStreamEvent | None:
     match event:
         case {"init_event_loop": True}:
-            return {"type": "stream_start"}
+            return StreamStartEvent()
         case {"event": {"contentBlockDelta": {"delta": {"text": text}}}}:
-            return {"type": "content_delta", "delta": text}
+            return ContentDeltaEvent(delta=text)
         case {"result": result} if result.stop_reason == "end_turn":
-            return {"type": "stream_end", "complete": True}
+            return StreamEndEvent(complete=True)
         case {"result": result}:
-            return {
-                "type": "stream_end",
-                "complete": False,
-                "stop_reason": result.stop_reason,
-            }
+            return StreamEndEvent(complete=False, stop_reason=result.stop_reason)
         case {"force_stop": True}:
-            return {
-                "type": "stream_end",
-                "complete": False,
-                "stop_reason": event.get("force_stop_reason", "unknown"),
-            }
+            return StreamEndEvent(
+                complete=False, stop_reason=event.get("force_stop_reason", "unknown")
+            )
 
 
 @app.entrypoint
@@ -69,11 +69,10 @@ async def invoke(payload, context) -> AsyncGenerator[AgentStreamEvent, None]:
 
         except Exception as e:
             # TODO: Log the exception in Sentry
-            yield {
-                "type": "error",
-                "error_type": "agent_error",
-                "error_message": str(e),
-            }
+            yield ErrorEvent(
+                error_type="agent_error",
+                error_message=str(e),
+            )
 
 
 if __name__ == "__main__":

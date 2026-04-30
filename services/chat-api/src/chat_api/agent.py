@@ -3,6 +3,14 @@ import os
 import uuid
 
 import boto3
+from agent_runtime_types import (
+    AgentStreamEventModel,
+    StreamStartEvent,
+    ContentDeltaEvent,
+    StreamEndEvent,
+    ErrorEvent,
+)
+from typing import assert_never
 
 
 def invoke_agent_runtime(
@@ -25,11 +33,20 @@ def parse_agent_response_stream(response: dict):
     for line in response["response"].iter_lines(chunk_size=10):
         line = line.decode("utf-8")
         if line.startswith("data: "):
-            data = json.loads(line[6:])  # strip "data: " from the start of the line
-            message_type = data["type"]
+            raw_data = line[6:]  # strip "data: " from the start of the line
 
-            match message_type:
-                case "data":
-                    yield {"data": data["content"]}
-                case _:
-                    raise ValueError(f"Unexpected message type: {message_type}")
+            try:
+                data = AgentStreamEventModel.model_validate_json(raw_data).root
+
+                match data:
+                    case ErrorEvent():
+                        # TODO: Log the error in Sentry
+                        yield {"data": data.model_dump_json()}
+                    case StreamStartEvent() | ContentDeltaEvent() | StreamEndEvent():
+                        yield {"data": data.model_dump_json()}
+                    case _ as unreachable:
+                        assert_never(unreachable)
+            except Exception:
+                # TODO: Log the error in Sentry
+                error = ErrorEvent(type="error", error_type="agent_error")
+                yield {"data": error.model_dump_json()}

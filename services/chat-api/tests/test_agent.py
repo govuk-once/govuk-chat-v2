@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock
 from chat_api.agent import invoke_agent_runtime, parse_agent_response_stream
 import json
@@ -43,37 +42,42 @@ def test_parse_agent_response_stream_yields_content_for_data_messages():
     class MockStreamingBody:
         def iter_lines(self, chunk_size=None):
             for token in tokens:
-                payload = json.dumps({"type": "data", "content": token})
+                payload = json.dumps({"type": "content_delta", "delta": token})
                 yield f"data: {payload}".encode("utf-8")
 
     result = list(parse_agent_response_stream({"response": MockStreamingBody()}))
-    assert result == [{"data": token} for token in tokens]
-
-
-def test_parse_agent_response_stream_raises_error_for_unknown_message_types():
-    class MockStreamingBody:
-        def iter_lines(self, chunk_size=None):
-            yield b"data: " + json.dumps({"type": "unknown", "content": "x"}).encode()
-
-    with pytest.raises(ValueError, match="Unexpected message type: unknown"):
-        list(parse_agent_response_stream({"response": MockStreamingBody()}))
+    assert result == [
+        {
+            "data": json.dumps(
+                {"type": "content_delta", "delta": token},
+                separators=(",", ":"),  # Remove spaces with the `separators` parameter
+            )
+        }
+        for token in tokens
+    ]
 
 
 def test_parse_agent_response_stream_ignores_empty_lines():
     class MockStreamingBody:
         def iter_lines(self, chunk_size=None):
             yield b""
-            yield b"data: " + json.dumps({"type": "data", "content": "hello"}).encode()
+            yield (
+                b"data: "
+                + json.dumps({"type": "content_delta", "delta": "hello"}).encode()
+            )
 
     result = list(parse_agent_response_stream({"response": MockStreamingBody()}))
-    assert result == [{"data": "hello"}]
+    assert result == [{"data": '{"type":"content_delta","delta":"hello"}'}]
 
 
 def test_parse_agent_response_stream_ignores_non_data_prefixed_lines():
     class MockStreamingBody:
         def iter_lines(self, chunk_size=None):
             yield b"event: something"
-            yield b"data: " + json.dumps({"type": "data", "content": "hello"}).encode()
+            yield (
+                b"data: "
+                + json.dumps({"type": "content_delta", "delta": "hello"}).encode()
+            )
 
     result = list(parse_agent_response_stream({"response": MockStreamingBody()}))
-    assert result == [{"data": "hello"}]
+    assert result == [{"data": '{"type":"content_delta","delta":"hello"}'}]
