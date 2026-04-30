@@ -51,18 +51,6 @@ async def stream():
     return EventSourceResponse(streamer())
 
 
-@app.get("/agent-stream")
-def agent_stream():
-    try:
-        response = invoke_agent_runtime(
-            "Tell me about the state of the automotive industry, in 2 sentences"
-        )
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
-
-    return EventSourceResponse(parse_agent_response_stream(response))
-
-
 @app.post("/invoke-agent")
 def invoke_agent(user_input: ConversationInput):
     try:
