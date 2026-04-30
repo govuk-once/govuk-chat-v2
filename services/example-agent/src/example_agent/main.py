@@ -5,7 +5,7 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
 )
 from strands import Agent
 from strands.models import BedrockModel
-from example_agent.types import AgentStreamEvent
+from agent_runtime_types import AgentStreamEvent
 from typing import AsyncGenerator
 import os
 from govuk_chat_v2_prototype_private import load_prompts
