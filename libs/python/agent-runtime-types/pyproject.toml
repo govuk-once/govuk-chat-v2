@@ -1,0 +1,18 @@
+[project]
+name = "agent-runtime-types"
+version = "0.1.0"
+description = "Shared type definitions for the agent runtime streaming protocol"
+readme = "README.md"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.408",
+    "ruff>=0.15.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".",
+  "src"
+]

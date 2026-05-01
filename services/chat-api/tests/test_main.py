@@ -15,6 +15,7 @@ from chat_api.conversation_persistence.data_models import (
     MessageRole,
 )
 from chat_assistants.anthropic import UserInput, AssistantResponseDelta
+from agent_runtime_types import StreamStartEvent, ContentDeltaEvent, StreamEndEvent
 
 client = TestClient(app)
 
@@ -83,63 +84,19 @@ def test_stream(mocker):
     assert sleep_mock.call_count == len(tokens)
 
 
-def test_agent_stream(mocker):
-    agent_responses = [
-        {"type": "data", "content": "This is"},
-        {"type": "data", "content": "an"},
-        {"type": "data", "content": "SSE stream"},
-    ]
-
-    class MockStreamingBody:
-        def iter_lines(self, chunk_size=None):
-            for content in agent_responses:
-                yield f"data: {json.dumps(content)}".encode(
-                    "utf-8"
-                )  # iter_lines returns bytes
-
-    mock_client = mocker.Mock()
-    mock_client.invoke_agent_runtime.return_value = {
-        "response": MockStreamingBody(),
-        "contentType": "text/event-stream",
-    }
-
-    mocker.patch("chat_api.agent.boto3.client", return_value=mock_client)
-    mocker.patch.dict("os.environ", {"AGENT_RUNTIME_ARN": "test-arn"})
-
-    response = client.get("/agent-stream")
-
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/event-stream")
-
-    body = [line for line in response.text.splitlines() if line]
-    for index, content in enumerate(agent_responses):
-        assert body[index] == f"data: {content['content']}"
-
-
-def test_agent_stream_error(mocker):
-    mock_client = mocker.Mock()
-    mock_client.invoke_agent_runtime.side_effect = Exception("Bedrock error")
-
-    mocker.patch("boto3.client", return_value=mock_client)
-    mocker.patch.dict("os.environ", {"AGENT_RUNTIME_ARN": "test-arn"})
-
-    response = client.get("/agent-stream")
-
-    assert response.status_code == 500
-    assert response.json() == {"error": "Bedrock error"}
-
-
 def test_invoke_agent(mocker):
     agent_responses = [
-        {"type": "data", "content": "This is"},
-        {"type": "data", "content": "an"},
-        {"type": "data", "content": "SSE stream"},
+        StreamStartEvent(),
+        ContentDeltaEvent(delta="This is"),
+        ContentDeltaEvent(delta="an"),
+        ContentDeltaEvent(delta="SSE stream"),
+        StreamEndEvent(complete=True),
     ]
 
     class MockStreamingBody:
         def iter_lines(self, chunk_size=None):
             for content in agent_responses:
-                yield f"data: {json.dumps(content)}".encode(
+                yield f"data: {content.model_dump_json()}".encode(
                     "utf-8"
                 )  # iter_lines returns bytes
 
@@ -166,7 +123,39 @@ def test_invoke_agent(mocker):
 
     body = [line for line in response.text.splitlines() if line]
     for index, content in enumerate(agent_responses):
-        assert body[index] == f"data: {content['content']}"
+        assert body[index] == f"data: {content.model_dump_json()}"
+
+
+def test_invoke_agent_handles_invalid_json(mocker):
+    class MockStreamingBody:
+        def iter_lines(self, chunk_size=None):
+            yield "data: invalid_json".encode("utf-8")
+
+    mock_client = mocker.Mock()
+    mock_client.invoke_agent_runtime.return_value = {
+        "response": MockStreamingBody(),
+        "contentType": "text/event-stream",
+    }
+
+    mocker.patch("chat_api.agent.boto3.client", return_value=mock_client)
+    mocker.patch.dict("os.environ", {"AGENT_RUNTIME_ARN": "test-arn"})
+
+    response = client.post(
+        "/invoke-agent",
+        json={
+            "message": "How much VAT do I pay?",
+            "session_id": "123",
+            "end_user_id": "user_123",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+
+    body = [line for line in response.text.splitlines() if line]
+    assert body == [
+        f"data: {json.dumps({'type': 'error', 'error_type': 'agent_error', 'error_message': None}, separators=(',', ':'))}",
+    ]
 
 
 def test_invoke_agent_validates_message_presence(mocker):

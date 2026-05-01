@@ -15,4 +15,5 @@ members = [
 ]
 
 [tool.uv.sources]
+agent-runtime-types = { workspace = true }
 chat-assistants = { workspace = true }

@@ -5,6 +5,12 @@ from types import SimpleNamespace
 from govuk_chat_v2_prototype_private import load_prompts
 from strands.agent import AgentResult
 from unittest.mock import MagicMock
+from agent_runtime_types import (
+    StreamStartEvent,
+    StreamEndEvent,
+    ContentDeltaEvent,
+    ErrorEvent,
+)
 
 
 async def fake_agent_stream():
@@ -91,11 +97,11 @@ async def test_invoke_yields_data(mocker):
         result.append(item)
 
     assert result == [
-        {"type": "stream_start"},
-        {"type": "content_delta", "delta": "Knock knock"},
-        {"type": "content_delta", "delta": "Who's there?"},
-        {"type": "content_delta", "delta": "A chicken"},
-        {"type": "stream_end", "complete": True},
+        StreamStartEvent(),
+        ContentDeltaEvent(delta="Knock knock"),
+        ContentDeltaEvent(delta="Who's there?"),
+        ContentDeltaEvent(delta="A chicken"),
+        StreamEndEvent(complete=True),
     ]
 
 
@@ -132,13 +138,9 @@ async def test_invoke_yields_force_stop_event(mocker):
         result.append(item)
 
     assert result == [
-        {"type": "stream_start"},
-        {"type": "content_delta", "delta": "Knock knock"},
-        {
-            "type": "stream_end",
-            "complete": False,
-            "stop_reason": "Stop reason",
-        },
+        StreamStartEvent(),
+        ContentDeltaEvent(delta="Knock knock"),
+        StreamEndEvent(complete=False, stop_reason="Stop reason"),
     ]
 
 
@@ -160,11 +162,7 @@ async def test_invoke_handles_general_exception(mocker):
         result.append(item)
 
     assert result == [
-        {
-            "type": "error",
-            "error_type": "agent_error",
-            "error_message": "Generic error",
-        },
+        ErrorEvent(error_type="agent_error", error_message="Generic error")
     ]
 
 

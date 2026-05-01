@@ -12,11 +12,31 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "agent-runtime-types",
     "chat-api",
     "chat-assistants",
     "chat-prototyping",
     "example-agent",
     "govuk-chat-v2-prototype",
+]
+
+[[package]]
+name = "agent-runtime-types"
+version = "0.1.0"
+source = { editable = "libs/python/agent-runtime-types" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyright" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyright", specifier = ">=1.1.408" },
+    { name = "ruff", specifier = ">=0.15.0" },
 ]
 
 [[package]]
@@ -507,6 +527,7 @@ name = "chat-api"
 version = "0.1.0"
 source = { editable = "services/chat-api" }
 dependencies = [
+    { name = "agent-runtime-types" },
     { name = "boto3" },
     { name = "chat-assistants" },
     { name = "fastapi", extra = ["standard"] },
@@ -527,6 +548,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
     { name = "boto3", specifier = ">=1.42.66" },
     { name = "chat-assistants", editable = "libs/python/chat-assistants" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.118.0" },
@@ -732,6 +754,7 @@ name = "example-agent"
 version = "0.1.0"
 source = { editable = "services/example-agent" }
 dependencies = [
+    { name = "agent-runtime-types" },
     { name = "aws-opentelemetry-distro" },
     { name = "bedrock-agentcore" },
     { name = "govuk-chat-v2-prototype-private" },
@@ -750,6 +773,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
     { name = "aws-opentelemetry-distro", specifier = ">=0.16.0" },
     { name = "bedrock-agentcore", specifier = ">=1.4.5" },
     { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
