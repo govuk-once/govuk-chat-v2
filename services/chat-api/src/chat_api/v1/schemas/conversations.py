@@ -1,7 +1,7 @@
 from pydantic import BaseModel, field_validator, ValidationInfo
 
 
-class CreateConversationRequest(BaseModel):
+class ConversationPostRequest(BaseModel):
     message: str
     end_user_id: str
     session_id: str | None = None

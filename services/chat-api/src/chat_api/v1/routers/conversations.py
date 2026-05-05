@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks
 from sse_starlette.sse import EventSourceResponse
 
-from chat_api.v1.schemas.conversations import CreateConversationRequest
+from chat_api.v1.schemas.conversations import ConversationPostRequest
 from chat_api.v1.data_models.messages import ConversationUserMessage
 from chat_api.agent import invoke_agent_runtime
 import uuid
@@ -17,13 +17,14 @@ router = APIRouter(prefix="/v1/conversations", tags=["conversations"])
 
 
 async def _persist_user_message(
-    user_message: CreateConversationRequest,
+    user_message: ConversationPostRequest,
+    conversation_id: str | None = None,
 ) -> str:
     conversation_user_message = ConversationUserMessage(
         message=user_message.message,
         end_user_id=user_message.end_user_id,
         session_id=user_message.session_id,
-        conversation_id=getattr(user_message, "conversation_id", None),
+        conversation_id=conversation_id,
     )
     return await persist_message(conversation_user_message)
 
@@ -52,7 +53,7 @@ async def _generate_and_stream_response(
 
 @router.post("")
 async def create_conversation(
-    request: CreateConversationRequest, background_tasks: BackgroundTasks
+    request: ConversationPostRequest, background_tasks: BackgroundTasks
 ):
     session_id = request.session_id or str(uuid.uuid4())
     conversation_id = await _persist_user_message(request)
@@ -61,6 +62,25 @@ async def create_conversation(
         conversation_id,
         request.message,
     )
+
+    return await _generate_and_stream_response(
+        message=request.message,
+        end_user_id=request.end_user_id,
+        session_id=session_id,
+        conversation_id=conversation_id,
+        background_tasks=background_tasks,
+    )
+
+
+@router.post("/{conversation_id}/messages")
+async def create_message(
+    conversation_id: str,
+    request: ConversationPostRequest,
+    background_tasks: BackgroundTasks,
+):
+    session_id = request.session_id or str(uuid.uuid4())
+
+    await _persist_user_message(request, conversation_id)
 
     return await _generate_and_stream_response(
         message=request.message,
