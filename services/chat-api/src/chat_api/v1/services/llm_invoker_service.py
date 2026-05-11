@@ -8,6 +8,9 @@ client = None
 
 
 def _get_client():
+    """
+    Generates a boto3 client for Bedrock if one doesn't already exist.
+    """
     global client
     if not client:
         client = boto3.client(service_name="bedrock-runtime", region_name="eu-west-1")
@@ -28,7 +31,13 @@ async def invoke_model(
             "temperature": 0.0,
         }
     )
+    """
+    Invokes a model using the Bedrock client.
 
+    **prompt:** The prompt to send to the model.
+    **max_tokens:** The maximum number of tokens to generate in the response. Defaults to 50.
+    **model:** The ID of the model to invoke. Defaults to "eu.anthropic.claude-haiku-4-5-20251001-v1:0".
+    """
     try:
         loop = asyncio.get_running_loop()
         response = await loop.run_in_executor(

@@ -11,9 +11,13 @@ from chat_api.v1.services.llm_invoker_service import (
 async def persist_message(
     message: ConversationUserMessage | ConversationAssistantMessage,
 ) -> str:
-    # This will be utlised to persist a message and conversation record (if required)
-    # to the database once the stream has ended. For now, it just prints the question to the console.
+    """
+    Will be used to persist messages to the database. For now, it just prints the message to the console and
+    returns the conversation_id that was passed in (or generated if it was a user message with no conversation_id).
 
+    **message:** The message object to be persisted, which can be either a ConversationUserMessage or ConversationAssistantMessage.
+    This object contains the message text and relevant metadata such as end_user_id, session_id, and conversation_id.
+    """
     if message.conversation_id is None:
         conversation_id = str(uuid.uuid4())
         attrs = message.model_dump()
@@ -40,6 +44,13 @@ async def name_conversation(conversation_id: str, message: str):
     prompt = (
         f"Summarise this query into a 3-5 word title. Output ONLY the title: {message}"
     )
+    """
+    This will be utlised to persist the conversation name to the database. For now, it just invokes the model to
+    get a title for the conversation and returns a string with the conversation_id and title, but in the future we
+    will want to update the conversation record in the database with the generated title.
+    """
     title = await invoke_model(prompt)
+
+    # message = Message.update(title=title).where(Message.conversation_id == conversation_id)
 
     return f"Conversation {conversation_id} named: {title}"
