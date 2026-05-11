@@ -18,6 +18,7 @@ router = APIRouter(prefix="/v1/conversations", tags=["conversations"])
 
 async def _persist_user_message(
     user_message: ConversationPostRequest,
+    session_id: str,
     conversation_id: str | None = None,
 ) -> str:
     """
@@ -31,7 +32,7 @@ async def _persist_user_message(
     conversation_user_message = ConversationUserMessage(
         message=user_message.message,
         end_user_id=user_message.end_user_id,
-        session_id=user_message.session_id,
+        session_id=session_id,
         conversation_id=conversation_id,
     )
     return await persist_message(conversation_user_message)
@@ -85,7 +86,7 @@ async def create_conversation(
     **background_tasks:** The FastAPI BackgroundTasks instance, used to schedule background tasks.
     """
     session_id = request.session_id or str(uuid.uuid4())
-    conversation_id = await _persist_user_message(request)
+    conversation_id = await _persist_user_message(request, session_id)
     background_tasks.add_task(
         name_conversation,
         conversation_id,
@@ -119,7 +120,7 @@ async def create_message(
     """
     session_id = request.session_id or str(uuid.uuid4())
 
-    await _persist_user_message(request, conversation_id)
+    await _persist_user_message(request, session_id, conversation_id)
 
     return await _generate_and_stream_response(
         message=request.message,

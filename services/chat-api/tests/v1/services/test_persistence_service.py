@@ -12,7 +12,12 @@ import json
 
 
 @pytest.mark.asyncio
-async def test_persist_message_assistant_message():
+async def test_persist_message_assistant_message(mocker):
+    repository = mocker.Mock()
+    mocker.patch(
+        "chat_api.v1.services.persistence_service.get_conversation_repository",
+        return_value=repository,
+    )
     conversation_assistant_message = ConversationAssistantMessage(
         message="Hello world",
         end_user_id="user-123",
@@ -26,10 +31,30 @@ async def test_persist_message_assistant_message():
     result_id = await persist_message(conversation_assistant_message)
 
     assert result_id == "conversation-123"
+    repository.append_assistant_message.assert_called_once_with(
+        conversation_id="conversation-123",
+        message="Hello world",
+        session_id="session-123",
+        status="complete",
+        stop_reason="end_turn",
+        message_id="message-123",
+        error_type=None,
+        error_message=None,
+    )
 
 
 @pytest.mark.asyncio
-async def test_persist_message_user_message_generates_new_id_when_none_provided():
+async def test_persist_message_user_message_creates_conversation_when_none_provided(
+    mocker,
+):
+    conversation_id = str(uuid.uuid4())
+    conversation = mocker.Mock(conversation_id=conversation_id)
+    repository = mocker.Mock()
+    repository.create_conversation_with_user_message.return_value = conversation
+    mocker.patch(
+        "chat_api.v1.services.persistence_service.get_conversation_repository",
+        return_value=repository,
+    )
     conversation_user_message = ConversationUserMessage(
         message="Hello world",
         end_user_id="user-123",
@@ -39,12 +64,21 @@ async def test_persist_message_user_message_generates_new_id_when_none_provided(
 
     result_id = await persist_message(conversation_user_message)
 
-    assert isinstance(result_id, str)
-    assert uuid.UUID(result_id)
+    assert result_id == conversation_id
+    repository.create_conversation_with_user_message.assert_called_once_with(
+        end_user_id="user-123",
+        message="Hello world",
+        session_id="session-456",
+    )
 
 
 @pytest.mark.asyncio
-async def test_persist_message_user_message_uses_existing_id_when_provided():
+async def test_persist_message_user_message_uses_existing_id_when_provided(mocker):
+    repository = mocker.Mock()
+    mocker.patch(
+        "chat_api.v1.services.persistence_service.get_conversation_repository",
+        return_value=repository,
+    )
     existing_id = str(uuid.uuid4())
     conversation_user_message = ConversationUserMessage(
         message="Hello again",
@@ -56,6 +90,11 @@ async def test_persist_message_user_message_uses_existing_id_when_provided():
     result_id = await persist_message(conversation_user_message)
 
     assert result_id == existing_id
+    repository.append_user_message.assert_called_once_with(
+        conversation_id=existing_id,
+        message="Hello again",
+        session_id="session-456",
+    )
 
 
 @pytest.mark.asyncio
