@@ -73,17 +73,21 @@ async def name_conversation(conversation_id: str, message: str):
 
     **conversation_id:** The conversation record to update.
     **message:** The user message text used to generate the title.
+
+    Failures are contained so title generation cannot prevent later background
+    persistence tasks from running.
     """
-    repository = get_conversation_repository()
-    prompt = (
-        f"Summarise this query into a 3-5 word title. Output ONLY the title: {message}"
-    )
-    title = await invoke_model(prompt)
+    try:
+        repository = get_conversation_repository()
+        prompt = f"Summarise this query into a 3-5 word title. Output ONLY the title: {message}"
+        title = await invoke_model(prompt)
 
-    await asyncio.to_thread(
-        repository.update_conversation_label,
-        conversation_id=conversation_id,
-        label=title,
-    )
+        await asyncio.to_thread(
+            repository.update_conversation_label,
+            conversation_id=conversation_id,
+            label=title,
+        )
 
-    return f"Conversation {conversation_id} named: {title}"
+        return f"Conversation {conversation_id} named: {title}"
+    except Exception as e:
+        return f"Conversation {conversation_id} could not be named: {e}"

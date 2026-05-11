@@ -116,3 +116,19 @@ async def test_name_conversation(mock_bedrock_client, mocker):
         conversation_id="conversation-123",
         label="Stubbed LLM response",
     )
+
+
+@pytest.mark.asyncio
+async def test_name_conversation_does_not_raise_when_title_persistence_fails(
+    mock_bedrock_client, mocker
+):
+    repository = mocker.Mock()
+    repository.update_conversation_label.side_effect = RuntimeError("DynamoDB failed")
+    mocker.patch(
+        "chat_api.v1.services.persistence_service.get_conversation_repository",
+        return_value=repository,
+    )
+
+    result = await name_conversation("conversation-123", "The users first message.")
+
+    assert result == "Conversation conversation-123 could not be named: DynamoDB failed"
