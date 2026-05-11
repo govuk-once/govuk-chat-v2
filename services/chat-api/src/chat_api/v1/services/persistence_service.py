@@ -74,16 +74,16 @@ async def name_conversation(conversation_id: str, message: str):
     **conversation_id:** The conversation record to update.
     **message:** The user message text used to generate the title.
     """
+    repository = get_conversation_repository()
     prompt = (
         f"Summarise this query into a 3-5 word title. Output ONLY the title: {message}"
     )
-    """
-    This will be utlised to persist the conversation name to the database. For now, it just invokes the model to
-    get a title for the conversation and returns a string with the conversation_id and title, but in the future we
-    will want to update the conversation record in the database with the generated title.
-    """
     title = await invoke_model(prompt)
 
-    # message = Message.update(title=title).where(Message.conversation_id == conversation_id)
+    await asyncio.to_thread(
+        repository.update_conversation_label,
+        conversation_id=conversation_id,
+        label=title,
+    )
 
     return f"Conversation {conversation_id} named: {title}"

@@ -98,7 +98,13 @@ async def test_persist_message_user_message_uses_existing_id_when_provided(mocke
 
 
 @pytest.mark.asyncio
-async def test_name_conversation(mock_bedrock_client):
+async def test_name_conversation(mock_bedrock_client, mocker):
+    repository = mocker.Mock()
+    mocker.patch(
+        "chat_api.v1.services.persistence_service.get_conversation_repository",
+        return_value=repository,
+    )
+
     result = await name_conversation("conversation-123", "The users first message.")
     assert result == "Conversation conversation-123 named: Stubbed LLM response"
 
@@ -106,3 +112,7 @@ async def test_name_conversation(mock_bedrock_client):
     sent_body = json.loads(kwargs["body"])
     expected_prompt = "Summarise this query into a 3-5 word title. Output ONLY the title: The users first message."
     assert sent_body["messages"][0]["content"] == expected_prompt
+    repository.update_conversation_label.assert_called_once_with(
+        conversation_id="conversation-123",
+        label="Stubbed LLM response",
+    )

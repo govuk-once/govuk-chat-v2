@@ -34,6 +34,12 @@ def mock_persist():
 
 
 @pytest.fixture(autouse=True)
+def mock_name_conversation():
+    with patch("chat_api.v1.routers.conversations.name_conversation") as mock:
+        yield mock
+
+
+@pytest.fixture(autouse=True)
 def mock_event_gen():
     with patch("chat_api.v1.routers.conversations.event_generator") as mock:
         yield mock
