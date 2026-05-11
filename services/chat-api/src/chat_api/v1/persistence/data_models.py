@@ -94,6 +94,12 @@ class ConversationMetadataItem(ConversationTableItem, discriminator="Conversatio
             default_branch_id=default_branch_id,
         )
 
+    def record_activity(self, last_activity_at: datetime) -> None:
+        self.last_activity_at = last_activity_at
+        self.GSI1SK = _make_active_conversations_gsi_sk(
+            last_activity_at, self.conversation_id
+        )
+
 
 class ConversationBranchItem(ConversationTableItem, discriminator="Branch"):
     branch_id = UnicodeAttribute()
@@ -104,6 +110,10 @@ class ConversationBranchItem(ConversationTableItem, discriminator="Branch"):
     tip_message_id = UnicodeAttribute(null=True)
     tip_sequence = NumberAttribute(default=0)
     message_count = NumberAttribute(default=0)
+
+    @classmethod
+    def branch_sk(cls, branch_id: str) -> str:
+        return _make_branch_sk(branch_id)
 
     @classmethod
     def new_default_branch(
@@ -120,6 +130,14 @@ class ConversationBranchItem(ConversationTableItem, discriminator="Branch"):
             created_at=created_at,
             updated_at=created_at,
         )
+
+    def record_message(
+        self, message_id: str, sequence: int, updated_at: datetime
+    ) -> None:
+        self.tip_message_id = message_id
+        self.tip_sequence = sequence
+        self.message_count = sequence
+        self.updated_at = updated_at
 
 
 class ConversationMessageItem(ConversationTableItem, discriminator="Message"):
