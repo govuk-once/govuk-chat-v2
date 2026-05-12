@@ -555,12 +555,12 @@ requires-dist = [
     { name = "chat-assistants", editable = "libs/python/chat-assistants" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.118.0" },
     { name = "pynamodb", specifier = ">=6.1.0" },
-    { name = "sse-starlette", specifier = ">=3.0.3" },
+    { name = "sse-starlette", specifier = ">=3.4.1" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "boto3-stubs", extras = ["dynamodb"], specifier = ">=1.43.3" },
+    { name = "boto3-stubs", extras = ["dynamodb"], specifier = ">=1.42.79" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "moto", specifier = ">=5.1.22" },
     { name = "pyright", specifier = ">=1.1.406" },
@@ -779,7 +779,7 @@ requires-dist = [
     { name = "aws-opentelemetry-distro", specifier = ">=0.16.0" },
     { name = "bedrock-agentcore", specifier = ">=1.4.5" },
     { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
-    { name = "strands-agents", specifier = ">=1.38.0" },
+    { name = "strands-agents", specifier = ">=1.30.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -3361,15 +3361,15 @@ wheels = [
 
 [[package]]
 name = "sse-starlette"
-version = "3.2.0"
+version = "3.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
     { name = "starlette" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8b/8d/00d280c03ffd39aaee0e86ec81e2d3b9253036a0f93f51d10503adef0e65/sse_starlette-3.2.0.tar.gz", hash = "sha256:8127594edfb51abe44eac9c49e59b0b01f1039d0c7461c6fd91d4e03b70da422", size = 27253, upload-time = "2026-01-17T13:11:05.62Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/9a/f35932a8c0eb6b2287b66fa65a0321df8c84e4e355a659c1841a37c39fdb/sse_starlette-3.4.1.tar.gz", hash = "sha256:f780bebcf6c8997fe514e3bd8e8c648d8284976b391c8bed0bcb1f611632b555", size = 35127, upload-time = "2026-04-26T13:32:32.292Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/7f/832f015020844a8b8f7a9cbc103dd76ba8e3875004c41e08440ea3a2b41a/sse_starlette-3.2.0-py3-none-any.whl", hash = "sha256:5876954bd51920fc2cd51baee47a080eb88a37b5b784e615abb0b283f801cdbf", size = 12763, upload-time = "2026-01-17T13:11:03.775Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/07/45c21ed03d708c477367305726b89919b020a3a2a01f72aaf5ad941caf35/sse_starlette-3.4.1-py3-none-any.whl", hash = "sha256:6b43cf21f1d574d582a6e1b0cfbde1c94dc86a32a701a7168c99c4475c6bd1d0", size = 16487, upload-time = "2026-04-26T13:32:30.819Z" },
 ]
 
 [[package]]
