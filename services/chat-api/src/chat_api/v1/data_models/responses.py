@@ -13,3 +13,9 @@ class ConversationResponse(BaseModel):
     end_user_id: str
     created_at: datetime
     messages: list[MessageResponse]
+
+
+class ConversationPatchResponse(BaseModel):
+    label: str
+    end_user_id: str
+    updated_at: datetime

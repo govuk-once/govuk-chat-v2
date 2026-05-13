@@ -429,3 +429,53 @@ class TestCreateMessage:
             == "An error occurred (TimeoutError) when calling the OperationName operation: Connection Timeout"
         )
         assert data["error_type"] == "ClientError"
+
+
+class TestUpdateConversation:
+    def test_update_conversation_200(self, client, repository):
+        conversation, _ = repository.create_conversation_with_user_message(
+            end_user_id="user-123",
+            message="Hello world",
+            session_id="session-123",
+        )
+        response = client.patch(
+            f"/v1/conversations/{conversation.conversation_id}",
+            headers={"end-user-id": "user-123"},
+            json={"title": "Updated Title"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["label"] == "Updated Title"
+        assert response.json()["end_user_id"] == "user-123"
+        assert (
+            datetime.fromisoformat(response.json()["updated_at"])
+            > conversation.created_at
+        )
+
+    def test_update_coversation_404_conversation_not_found(self, client, repository):
+        response = client.patch(
+            "/v1/conversations/nonexistent-conv",
+            headers={"end-user-id": "user-123"},
+            json={"title": "New Title"},
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Conversation not found"}
+
+    def test_update_conversation_422_invalid_json(self, client):
+        response = client.patch(
+            "/v1/conversations/conv-123",
+            headers={"end-user-id": "user-123"},
+            json={"title": ""},
+        )
+
+        assert response.status_code == 422
+        assert "title" in response.text
+
+    def test_update_conversation_422_no_end_user_id_in_headers(self, client):
+        response = client.patch(
+            "/v1/conversations/conv-123", json={"title": "New Title"}
+        )
+
+        assert response.status_code == 422
+        assert "end-user-id" in response.text

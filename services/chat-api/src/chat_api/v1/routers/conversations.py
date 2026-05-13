@@ -1,7 +1,10 @@
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from sse_starlette.sse import EventSourceResponse
 
-from chat_api.v1.schemas.conversations import ConversationPostRequest
+from chat_api.v1.schemas.conversations import (
+    ConversationPostRequest,
+    ConversationPatchRequest,
+)
 from chat_api.v1.data_models.messages import ConversationUserMessage
 from chat_api.agent import invoke_agent_runtime
 import uuid
@@ -9,6 +12,7 @@ from chat_api.v1.services.persistence_service import (
     persist_message,
     get_conversation_repository,
     name_conversation,
+    rename_conversation,
 )
 from chat_api.v1.services.stream_service import (
     event_generator,
@@ -17,6 +21,7 @@ from chat_api.v1.persistence.conversation_repository import ConversationNotFound
 from chat_api.v1.data_models.responses import (
     ConversationResponse,
     MessageResponse,
+    ConversationPatchResponse,
 )
 
 router = APIRouter(prefix="/v1/conversations", tags=["conversations"])
@@ -144,6 +149,36 @@ async def view_conversation(
             )
             for message in messages
         ],
+    )
+
+
+@router.patch("/{conversation_id}")
+async def update_conversation(
+    conversation_id: str,
+    request: ConversationPatchRequest,
+    end_user_id: str = Header(...),
+):
+    """
+    This endpoint is responsible for updating an existing conversation. For now, you can only update
+    the conversation title.
+
+    **request:** The ConversationPatchRequest object containing the updated conversation title.
+    **end_user_id:** The unique identifier for the end user, passed in the request header.
+    """
+
+    try:
+        conversation = await rename_conversation(
+            conversation_id=conversation_id,
+            title=request.title,
+            end_user_id=end_user_id,
+        )
+    except ConversationNotFoundError:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    return ConversationPatchResponse(
+        label=conversation.label,
+        end_user_id=conversation.end_user_id,
+        updated_at=conversation.last_activity_at,
     )
 
 

@@ -6,7 +6,7 @@ from chat_api.v1.data_models.messages import (
     ConversationAssistantMessage,
 )
 from chat_api.v1.persistence.conversation_repository import ConversationRepository
-from chat_api.v1.persistence.data_models import MessageStatus
+from chat_api.v1.persistence.data_models import MessageStatus, ConversationMetadataItem
 from chat_api.v1.services.llm_invoker_service import (
     invoke_model,
 )
@@ -97,3 +97,23 @@ async def name_conversation(
         return f"Conversation {conversation_id} named: {title}"
     except Exception as e:
         return f"Conversation {conversation_id} could not be named: {e}"
+
+
+async def rename_conversation(
+    conversation_id: str, title: str, end_user_id: str
+) -> ConversationMetadataItem:
+    """
+    Updates the title of an existing conversation.
+
+    **conversation_id:** The conversation record to update.
+    **title:** The new title for the conversation.
+    **end_user_id:** The ID of the end user associated with the conversation.
+    """
+
+    repository = get_conversation_repository()
+    return await asyncio.to_thread(
+        repository.update_conversation_label,
+        conversation_id=conversation_id,
+        label=title,
+        end_user_id=end_user_id,
+    )

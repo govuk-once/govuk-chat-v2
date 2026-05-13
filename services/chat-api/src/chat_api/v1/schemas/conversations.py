@@ -20,3 +20,20 @@ class ConversationPostRequest(BaseModel):
         if not value.strip():
             raise ValueError(f"{info.field_name} must not be empty")
         return value
+
+
+class ConversationPatchRequest(BaseModel):
+    """
+    Schema for a patch conversation request.
+
+    **conversation_id:** The ID of the conversation to update.
+    **title:** The new title for the conversation.
+    """
+
+    title: str
+
+    @field_validator("title")
+    def not_empty_fields(cls, value, info: ValidationInfo):
+        if not value.strip():
+            raise ValueError(f"{info.field_name} must not be empty")
+        return value

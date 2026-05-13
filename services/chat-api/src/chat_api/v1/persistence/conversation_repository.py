@@ -100,6 +100,7 @@ class ConversationRepository:
     ) -> ConversationMetadataItem:
         conversation = self._get_conversation(conversation_id, end_user_id)
         conversation.label = label
+        conversation.record_activity(datetime.now(timezone.utc))
         conversation.save()
         return conversation
 
