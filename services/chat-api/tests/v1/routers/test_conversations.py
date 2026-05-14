@@ -26,9 +26,16 @@ def mock_invoke():
         yield mock
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_persist():
     with patch("chat_api.v1.routers.conversations.persist_message") as mock:
+        mock.return_value = "conversation-123"
+        yield mock
+
+
+@pytest.fixture(autouse=True)
+def mock_name_conversation():
+    with patch("chat_api.v1.routers.conversations.name_conversation") as mock:
         yield mock
 
 
@@ -52,6 +59,23 @@ class TestCreateConversation:
 
         mock_persist.assert_called_once()
         assert_model_matches(mock_persist.call_args[0][0], valid_payload)
+
+    def test_create_conversation_persists_generated_session_id(
+        self, client, valid_payload, mock_invoke, mock_persist, mocker
+    ):
+        valid_payload.pop("session_id")
+        mocker.patch("chat_api.v1.routers.conversations.uuid.uuid4", return_value="123")
+
+        client.post("/v1/conversations", json=valid_payload)
+
+        mock_persist.assert_called_once()
+        assert_model_matches(
+            mock_persist.call_args[0][0],
+            {
+                **valid_payload,
+                "session_id": "123",
+            },
+        )
 
     def test_create_conversation_correct_args_are_passed_to_agent(
         self, client, valid_payload, mock_invoke
@@ -127,6 +151,23 @@ class TestCreateMessage:
 
         mock_persist.assert_called_once()
         assert_model_matches(mock_persist.call_args[0][0], valid_payload)
+
+    def test_create_message_persists_generated_session_id(
+        self, client, valid_payload, mock_invoke, mock_persist, mocker
+    ):
+        valid_payload.pop("session_id")
+        mocker.patch("chat_api.v1.routers.conversations.uuid.uuid4", return_value="123")
+
+        client.post("/v1/conversations/conv-123/messages", json=valid_payload)
+
+        mock_persist.assert_called_once()
+        assert_model_matches(
+            mock_persist.call_args[0][0],
+            {
+                **valid_payload,
+                "session_id": "123",
+            },
+        )
 
     def test_create_message_correct_args_are_passed_to_agent(
         self, client, valid_payload, mock_invoke
