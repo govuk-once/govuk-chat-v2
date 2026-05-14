@@ -7,15 +7,21 @@ from chat_api.agent import invoke_agent_runtime
 import uuid
 from chat_api.v1.services.persistence_service import (
     persist_message,
+    get_conversation_repository,
     name_conversation,
 )
 from chat_api.v1.services.stream_service import (
     event_generator,
 )
 from chat_api.v1.persistence.conversation_repository import ConversationNotFoundError
-
+from chat_api.v1.data_models.responses import (
+    ConversationResponse,
+    MessageResponse,
+)
 
 router = APIRouter(prefix="/v1/conversations", tags=["conversations"])
+
+RECENT_MESSAGE_COUNT = 50
 
 
 async def _persist_user_message(
@@ -106,6 +112,38 @@ async def create_conversation(
         session_id=session_id,
         conversation_id=conversation_id,
         background_tasks=background_tasks,
+    )
+
+
+@router.get("/{conversation_id}")
+async def view_conversation(
+    conversation_id: str,
+    end_user_id: str = Header(...),
+):
+    """
+    This endpoint is responsible for getting details about a specific conversation.
+    """
+    repo = get_conversation_repository()
+
+    try:
+        conversation, messages = repo.get_conversation_with_messages(
+            conversation_id, end_user_id, RECENT_MESSAGE_COUNT
+        )
+    except ConversationNotFoundError:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    return ConversationResponse(
+        label=conversation.label,
+        end_user_id=conversation.end_user_id,
+        created_at=conversation.created_at,
+        messages=[
+            MessageResponse(
+                participant=message.participant,
+                content=message.payload.text,
+                created_at=message.created_at,
+            )
+            for message in messages
+        ],
     )
 
 
