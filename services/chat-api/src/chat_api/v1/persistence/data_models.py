@@ -100,6 +100,20 @@ class ConversationMetadataItem(ConversationTableItem, discriminator="Conversatio
             last_activity_at, self.conversation_id
         )
 
+    @classmethod
+    def list_for_user(
+        cls, end_user_id: str, limit: int = 50
+    ) -> list["ConversationMetadataItem"]:
+        partition_key = _make_active_conversations_gsi_pk(end_user_id)
+
+        return list(
+            cls.conversations_by_user.query(
+                partition_key,
+                scan_index_forward=False,
+                limit=limit,
+            )
+        )
+
 
 class ConversationBranchItem(ConversationTableItem, discriminator="Branch"):
     branch_id = UnicodeAttribute()

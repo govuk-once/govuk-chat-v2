@@ -43,6 +43,66 @@ def message_items(items: list[dict]) -> list[dict]:
     return [item for item in items if item["entityType"] == "Message"]
 
 
+def test_get_conversations_for_end_user_returns_empty_list_for_no_conversations(
+    repository,
+):
+    conversations = repository.get_conversations_for_end_user("user-123")
+    assert conversations == []
+
+
+def test_get_conversations_for_end_user_returns_records_ordered_by_last_activity(
+    repository,
+):
+    older_conversation = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+        session_id="session-123",
+    )
+
+    newer_conversation = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello again",
+        session_id="session-123",
+    )
+
+    repository.create_conversation_with_user_message(
+        end_user_id="user-999",
+        message="Hello from another user",
+        session_id="session-999",
+    )
+
+    repository.append_user_message(
+        conversation_id=older_conversation.conversation_id, message="Hello again"
+    )
+
+    conversations = repository.get_conversations_for_end_user("user-123")
+
+    expected_conversation_ids = [
+        older_conversation.conversation_id,
+        newer_conversation.conversation_id,
+    ]
+    assert len(conversations) == 2
+    assert [
+        conversation.conversation_id for conversation in conversations
+    ] == expected_conversation_ids
+
+
+def test_get_conversations_for_end_user_has_configurable_limit(repository):
+    repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+        session_id="session-123",
+    )
+    repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello again",
+        session_id="session-123",
+    )
+
+    conversations = repository.get_conversations_for_end_user("user-123", limit=1)
+    assert len(conversations) == 1
+
+
 def test_create_conversation_with_user_message(dynamo_table, repository):
     conversation = repository.create_conversation_with_user_message(
         end_user_id="user-123",

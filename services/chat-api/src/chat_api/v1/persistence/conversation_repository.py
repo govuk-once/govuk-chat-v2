@@ -19,6 +19,23 @@ class ConversationNotFoundError(Exception):
 
 
 class ConversationRepository:
+    def get_conversations_for_end_user(
+        self, end_user_id: str, limit: int = 50
+    ) -> list[ConversationMetadataItem]:
+        """
+        Retrieves a list of conversations for a given end user.
+
+        **end_user_id:** The ID of the end user whose conversations are being retrieved. This is used to
+        query the database for conversations associated with the user and is included in the returned
+        metadata.
+
+         **returns:** A list of conversations for an end user.
+        """
+
+        conversations = ConversationMetadataItem.list_for_user(end_user_id, limit)
+
+        return conversations
+
     def create_conversation_with_user_message(
         self,
         end_user_id: str,
