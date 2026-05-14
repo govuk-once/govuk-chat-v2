@@ -264,7 +264,7 @@ wheels = [
 
 [[package]]
 name = "bedrock-agentcore"
-version = "1.4.5"
+version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -276,9 +276,9 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/41/0e/f03760b2de0456702a604db3a4873c0c58299aa277b33e163daab5901817/bedrock_agentcore-1.4.5.tar.gz", hash = "sha256:6e7b4c81c27c00c5f46caaa7d4f45f40eafe4aa10d3935fb774e8beca080f1d3", size = 455211, upload-time = "2026-03-11T15:17:33.644Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e5/56/992ff28a1aaf674f525ea82c0f1e2d940bdf91c08322d8c258a2b1469dbd/bedrock_agentcore-1.8.0.tar.gz", hash = "sha256:99fb4fafed0e832bcfe0c588572ecc5cdf296692052f1f0607dc656510aa24d0", size = 579760, upload-time = "2026-04-30T23:28:02.315Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/d6/56ba056d4594880d9c90ca58746fe858b33c7c429d9e0171fc4a421618c7/bedrock_agentcore-1.4.5-py3-none-any.whl", hash = "sha256:8757c90f5b8f10e0ac5d62dd8f160f56b7de8f4935aa0855c0254f586dce7724", size = 135511, upload-time = "2026-03-11T15:17:32.131Z" },
+    { url = "https://files.pythonhosted.org/packages/24/28/1a47ee1cf275a9a205cb646db12ff42d0c59869112ef636727773b87ce6b/bedrock_agentcore-1.8.0-py3-none-any.whl", hash = "sha256:0b0146cbc6a31dc5d17efafc62a5b87bec98b5bcd7cdf8ec26507eb6448de02e", size = 206118, upload-time = "2026-04-30T23:28:00.546Z" },
 ]
 
 [[package]]
@@ -552,7 +552,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
-    { name = "boto3", specifier = ">=1.43.5" },
+    { name = "boto3", specifier = ">=1.42.66" },
     { name = "chat-assistants", editable = "libs/python/chat-assistants" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.118.0" },
     { name = "pynamodb", specifier = ">=6.1.0" },
@@ -779,7 +779,7 @@ dev = [
 requires-dist = [
     { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
     { name = "aws-opentelemetry-distro", specifier = ">=0.16.0" },
-    { name = "bedrock-agentcore", specifier = ">=1.4.5" },
+    { name = "bedrock-agentcore", specifier = ">=1.8.0" },
     { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
     { name = "strands-agents", specifier = ">=1.30.0" },
 ]
