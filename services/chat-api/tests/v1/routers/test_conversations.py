@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from chat_api.main import app
 from botocore.exceptions import ClientError
 from chat_api.v1.persistence.conversation_repository import ConversationNotFoundError
+from chat_api.conversation_persistence.data_models import ConversationMetadataItem
 
 
 @pytest.fixture
@@ -49,6 +50,78 @@ def assert_model_matches(model, expected_dict):
     model_dict = model.model_dump()
     for key, value in expected_dict.items():
         assert model_dict[key] == value
+
+
+class TestGetConversations:
+    @pytest.fixture
+    def mock_repository(self):
+        with patch(
+            "chat_api.v1.routers.conversations.get_conversation_repository"
+        ) as mock_class:
+            mock = mock_class.return_value
+            yield mock
+
+    def test_get_conversations_200_calls_repository_with_correct_args(
+        self, client, mock_repository
+    ):
+        mock_repository.get_conversations_for_end_user.return_value = [
+            MagicMock(
+                spec=ConversationMetadataItem,
+                conversation_id="conversation-123",
+                label="Test Conversation 1",
+            ),
+        ]
+
+        response = client.get("/v1/conversations", headers={"end-user-id": "user-123"})
+
+        assert response.status_code == 200
+        mock_repository.get_conversations_for_end_user.assert_called_once_with(
+            "user-123"
+        )
+
+    def test_get_conversations_200_returns_list_of_conversations(
+        self, client, mock_repository
+    ):
+        mock_repository.get_conversations_for_end_user.return_value = [
+            MagicMock(
+                spec=ConversationMetadataItem,
+                conversation_id="conversation-123",
+                label="Test Conversation 1",
+            ),
+            MagicMock(
+                spec=ConversationMetadataItem,
+                conversation_id="conversation-456",
+                label="Test Conversation 2",
+            ),
+        ]
+
+        response = client.get("/v1/conversations", headers={"end-user-id": "user-123"})
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "conversations" in data
+        assert len(data["conversations"]) == 2
+        assert data["conversations"][0]["conversation_id"] == "conversation-123"
+        assert data["conversations"][0]["name"] == "Test Conversation 1"
+        assert data["conversations"][1]["conversation_id"] == "conversation-456"
+        assert data["conversations"][1]["name"] == "Test Conversation 2"
+
+    def test_get_conversations_404_when_no_conversations_found(
+        self, client, mock_repository
+    ):
+        mock_repository.get_conversations_for_end_user.return_value = []
+
+        response = client.get("/v1/conversations", headers={"end-user-id": "user-123"})
+
+        assert response.status_code == 404
+        details = response.json()["detail"]
+        assert details == "No conversations found for end user 'user-123'"
+
+    def test_get_conversations_422_invalid_request(self, client):
+        response = client.get("/v1/conversations")
+
+        assert response.status_code == 422
+        assert "end-user-id" in response.text
 
 
 class TestCreateConversation:

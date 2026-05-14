@@ -8,6 +8,7 @@ import uuid
 from chat_api.v1.services.persistence_service import (
     persist_message,
     name_conversation,
+    get_conversation_repository,
 )
 from chat_api.v1.services.stream_service import (
     event_generator,
@@ -73,6 +74,30 @@ async def _generate_and_stream_response(
             background_tasks=background_tasks,
         )
     )
+
+
+@router.get("")
+async def get_conversations(end_user_id: str = Header(...)):
+    """
+    This endpoint is responsible for retrieving a list of conversations for an end user.
+
+    **returns:** A list of conversation_ids and names.
+    """
+
+    repository = get_conversation_repository()
+    conversations = repository.get_conversations_for_end_user(end_user_id)
+
+    if not conversations:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No conversations found for end user '{end_user_id}'",
+        )
+
+    conversations_json = [
+        {"conversation_id": conversation.conversation_id, "name": conversation.label}
+        for conversation in conversations
+    ]
+    return {"conversations": conversations_json}
 
 
 @router.post("")

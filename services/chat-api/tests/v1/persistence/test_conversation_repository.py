@@ -72,7 +72,9 @@ def test_get_conversations_for_end_user_returns_records_ordered_by_last_activity
     )
 
     repository.append_user_message(
-        conversation_id=older_conversation.conversation_id, message="Hello again"
+        conversation_id=older_conversation.conversation_id,
+        message="Hello again",
+        end_user_id="user-123",
     )
 
     conversations = repository.get_conversations_for_end_user("user-123")
