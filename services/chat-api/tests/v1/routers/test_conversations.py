@@ -14,7 +14,6 @@ def client():
 def valid_payload():
     return {
         "message": "Hello world",
-        "end_user_id": "user-123",
         "session_id": "session-123",
     }
 
@@ -55,7 +54,9 @@ class TestCreateConversation:
     def test_create_conversation_correct_args_passed_to_persist_user_message(
         self, client, valid_payload, mock_invoke, mock_persist
     ):
-        client.post("/v1/conversations", json=valid_payload)
+        client.post(
+            "/v1/conversations", headers={"end-user-id": "user-123"}, json=valid_payload
+        )
 
         mock_persist.assert_called_once()
         assert_model_matches(mock_persist.call_args[0][0], valid_payload)
@@ -66,7 +67,9 @@ class TestCreateConversation:
         valid_payload.pop("session_id")
         mocker.patch("chat_api.v1.routers.conversations.uuid.uuid4", return_value="123")
 
-        client.post("/v1/conversations", json=valid_payload)
+        client.post(
+            "/v1/conversations", headers={"end-user-id": "user-123"}, json=valid_payload
+        )
 
         mock_persist.assert_called_once()
         assert_model_matches(
@@ -80,17 +83,21 @@ class TestCreateConversation:
     def test_create_conversation_correct_args_are_passed_to_agent(
         self, client, valid_payload, mock_invoke
     ):
-        response = client.post("/v1/conversations", json=valid_payload)
+        response = client.post(
+            "/v1/conversations", headers={"end-user-id": "user-123"}, json=valid_payload
+        )
 
         assert response.status_code == 200
         mock_invoke.assert_called_once()
         _, kwargs = mock_invoke.call_args
-        assert kwargs["end_user_id"] == valid_payload["end_user_id"]
+        assert kwargs["end_user_id"] == "user-123"
         assert kwargs["session_id"] == valid_payload["session_id"]
         assert mock_invoke.call_args.args[0] == valid_payload["message"]
 
     def test_create_conversation_200(self, client, valid_payload, mock_invoke):
-        response = client.post("/v1/conversations", json=valid_payload)
+        response = client.post(
+            "/v1/conversations", headers={"end-user-id": "user-123"}, json=valid_payload
+        )
 
         assert response.status_code == 200
         assert "text/event-stream" in response.headers["content-type"]
@@ -98,22 +105,34 @@ class TestCreateConversation:
     def test_create_conversation_200_event_generator_called_with_correct_args(
         self, client, valid_payload, mock_invoke, mock_event_gen
     ):
-        client.post("/v1/conversations", json=valid_payload)
+        client.post(
+            "/v1/conversations", headers={"end-user-id": "user-123"}, json=valid_payload
+        )
 
         mock_event_gen.assert_called_once()
         _, kwargs = mock_event_gen.call_args
         assert kwargs["agent_response"] == mock_invoke.return_value
-        assert kwargs["end_user_id"] == valid_payload["end_user_id"]
+        assert kwargs["end_user_id"] == "user-123"
         assert kwargs["session_id"] == valid_payload["session_id"]
         assert "conversation_id" in kwargs
         assert kwargs["background_tasks"] is not None
 
-    def test_create_conversation_422_invalid_data(self, client, valid_payload):
+    def test_create_conversation_422_invalid_json(self, client, valid_payload):
         valid_payload["message"] = "  "
-        response = client.post("/v1/conversations", json=valid_payload)
+        response = client.post(
+            "/v1/conversations", headers={"end-user-id": "user-123"}, json=valid_payload
+        )
 
         assert response.status_code == 422
         assert "message must not be empty" in response.text
+
+    def test_create_conversation_422_no_end_user_id_in_headers(
+        self, client, valid_payload
+    ):
+        response = client.post("/v1/conversations", json=valid_payload)
+
+        assert response.status_code == 422
+        assert "end-user-id" in response.text
 
     def test_create_conversation_500_when_agent_call_returns_client_error(
         self, client, valid_payload, mock_invoke
@@ -131,7 +150,9 @@ class TestCreateConversation:
             },
             "OperationName",
         )
-        response = client.post("/v1/conversations", json=valid_payload)
+        response = client.post(
+            "/v1/conversations", headers={"end-user-id": "user-123"}, json=valid_payload
+        )
 
         data = response.json()
 
@@ -147,7 +168,11 @@ class TestCreateMessage:
     def test_create_message_correct_args_passed_to_persist_user_message(
         self, client, valid_payload, mock_invoke, mock_persist
     ):
-        client.post("/v1/conversations/conv-123/messages", json=valid_payload)
+        client.post(
+            "/v1/conversations/conv-123/messages",
+            headers={"end-user-id": "user-123"},
+            json=valid_payload,
+        )
 
         mock_persist.assert_called_once()
         assert_model_matches(mock_persist.call_args[0][0], valid_payload)
@@ -158,7 +183,11 @@ class TestCreateMessage:
         valid_payload.pop("session_id")
         mocker.patch("chat_api.v1.routers.conversations.uuid.uuid4", return_value="123")
 
-        client.post("/v1/conversations/conv-123/messages", json=valid_payload)
+        client.post(
+            "/v1/conversations/conv-123/messages",
+            headers={"end-user-id": "user-123"},
+            json=valid_payload,
+        )
 
         mock_persist.assert_called_once()
         assert_model_matches(
@@ -172,16 +201,22 @@ class TestCreateMessage:
     def test_create_message_correct_args_are_passed_to_agent(
         self, client, valid_payload, mock_invoke
     ):
-        client.post("/v1/conversations/conv-123/messages", json=valid_payload)
+        client.post(
+            "/v1/conversations/conv-123/messages",
+            headers={"end-user-id": "user-123"},
+            json=valid_payload,
+        )
 
         mock_invoke.assert_called_once()
         _, kwargs = mock_invoke.call_args
-        assert kwargs["end_user_id"] == valid_payload["end_user_id"]
+        assert kwargs["end_user_id"] == "user-123"
         assert kwargs["session_id"] == valid_payload["session_id"]
 
     def test_create_message_200(self, client, valid_payload, mock_invoke):
         response = client.post(
-            "/v1/conversations/conv-123/messages", json=valid_payload
+            "/v1/conversations/conv-123/messages",
+            headers={"end-user-id": "user-123"},
+            json=valid_payload,
         )
 
         assert response.status_code == 200
@@ -190,21 +225,36 @@ class TestCreateMessage:
     def test_create_message_200_event_generator_called_with_correct_args(
         self, client, valid_payload, mock_invoke, mock_event_gen
     ):
-        client.post("/v1/conversations/conv-123/messages", json=valid_payload)
+        client.post(
+            "/v1/conversations/conv-123/messages",
+            headers={"end-user-id": "user-123"},
+            json=valid_payload,
+        )
 
         mock_event_gen.assert_called_once()
         _, kwargs = mock_event_gen.call_args
         assert kwargs["conversation_id"] == "conv-123"
         assert kwargs["agent_response"] == mock_invoke.return_value
 
-    def test_create_message_422_invalid_data(self, client, valid_payload):
-        valid_payload["end_user_id"] = ""
+    def test_create_message_422_invalid_json(self, client, valid_payload):
+        valid_payload["message"] = "  "
         response = client.post(
-            "/v1/conversations/conv-123/messages", json=valid_payload
+            "/v1/conversations/conv-123/messages",
+            headers={"end-user-id": "user-123"},
+            json=valid_payload,
         )
 
         assert response.status_code == 422
-        assert "end_user_id" in response.text
+        assert "message" in response.text
+
+    def test_create_message_422_no_end_user_id_in_headers(self, client, valid_payload):
+        response = client.post(
+            "/v1/conversations/conv-123/messages",
+            json=valid_payload,
+        )
+
+        assert response.status_code == 422
+        assert "end-user-id" in response.text
 
     def test_create_message_500_when_agent_call_returns_client_error(
         self, client, valid_payload, mock_invoke
@@ -223,7 +273,9 @@ class TestCreateMessage:
             "OperationName",
         )
         response = client.post(
-            "/v1/conversations/conv-123/messages", json=valid_payload
+            "/v1/conversations/conv-123/messages",
+            headers={"end-user-id": "user-123"},
+            json=valid_payload,
         )
 
         data = response.json()

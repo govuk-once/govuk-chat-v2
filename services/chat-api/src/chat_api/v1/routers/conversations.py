@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Header
 from sse_starlette.sse import EventSourceResponse
 
 from chat_api.v1.schemas.conversations import ConversationPostRequest
@@ -18,6 +18,7 @@ router = APIRouter(prefix="/v1/conversations", tags=["conversations"])
 
 async def _persist_user_message(
     user_message: ConversationPostRequest,
+    end_user_id: str,
     session_id: str,
     conversation_id: str | None = None,
 ) -> str:
@@ -31,7 +32,7 @@ async def _persist_user_message(
     """
     conversation_user_message = ConversationUserMessage(
         message=user_message.message,
-        end_user_id=user_message.end_user_id,
+        end_user_id=end_user_id,
         session_id=session_id,
         conversation_id=conversation_id,
     )
@@ -74,7 +75,9 @@ async def _generate_and_stream_response(
 
 @router.post("")
 async def create_conversation(
-    request: ConversationPostRequest, background_tasks: BackgroundTasks
+    request: ConversationPostRequest,
+    background_tasks: BackgroundTasks,
+    end_user_id: str = Header(...),
 ):
     """
     This endpoint is responsible for creating a new conversation. It takes the user's
@@ -83,10 +86,11 @@ async def create_conversation(
     The response is then streamed back to the client.
 
     **request:** The ConversationPostRequest object containing the user's message and relevant metadata.
+    **end_user_id:** The unique identifier for the end user, passed in the request header.
     **background_tasks:** The FastAPI BackgroundTasks instance, used to schedule background tasks.
     """
     session_id = request.session_id or str(uuid.uuid4())
-    conversation_id = await _persist_user_message(request, session_id)
+    conversation_id = await _persist_user_message(request, end_user_id, session_id)
     background_tasks.add_task(
         name_conversation,
         conversation_id,
@@ -95,7 +99,7 @@ async def create_conversation(
 
     return await _generate_and_stream_response(
         message=request.message,
-        end_user_id=request.end_user_id,
+        end_user_id=end_user_id,
         session_id=session_id,
         conversation_id=conversation_id,
         background_tasks=background_tasks,
@@ -107,6 +111,7 @@ async def create_message(
     conversation_id: str,
     request: ConversationPostRequest,
     background_tasks: BackgroundTasks,
+    end_user_id: str = Header(...),
 ):
     """
     This endpoint is responsible for adding a new message to an existing conversation.
@@ -116,15 +121,16 @@ async def create_message(
 
     **conversation_id:** The unique identifier for the conversation that the message will be added to.
     **request:** The ConversationPostRequest object containing the user's message and relevant metadata.
+    **end_user_id:** The unique identifier for the end user, passed in the request header.
     **background_tasks:** The FastAPI BackgroundTasks instance, used to schedule background tasks.
     """
     session_id = request.session_id or str(uuid.uuid4())
 
-    await _persist_user_message(request, session_id, conversation_id)
+    await _persist_user_message(request, end_user_id, session_id, conversation_id)
 
     return await _generate_and_stream_response(
         message=request.message,
-        end_user_id=request.end_user_id,
+        end_user_id=end_user_id,
         session_id=session_id,
         conversation_id=conversation_id,
         background_tasks=background_tasks,
