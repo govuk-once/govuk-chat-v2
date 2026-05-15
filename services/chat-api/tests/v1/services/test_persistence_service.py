@@ -40,6 +40,7 @@ async def test_persist_message_assistant_message(mocker):
         message_id="message-123",
         error_type=None,
         error_message=None,
+        end_user_id="user-123",
     )
 
 
@@ -94,6 +95,7 @@ async def test_persist_message_user_message_uses_existing_id_when_provided(mocke
         conversation_id=existing_id,
         message="Hello again",
         session_id="session-456",
+        end_user_id="user-123",
     )
 
 
@@ -105,7 +107,9 @@ async def test_name_conversation(mock_bedrock_client, mocker):
         return_value=repository,
     )
 
-    result = await name_conversation("conversation-123", "The users first message.")
+    result = await name_conversation(
+        "conversation-123", "The users first message.", "user-123"
+    )
     assert result == "Conversation conversation-123 named: Stubbed LLM response"
 
     _, kwargs = mock_bedrock_client.invoke_model.call_args
@@ -115,6 +119,7 @@ async def test_name_conversation(mock_bedrock_client, mocker):
     repository.update_conversation_label.assert_called_once_with(
         conversation_id="conversation-123",
         label="Stubbed LLM response",
+        end_user_id="user-123",
     )
 
 
@@ -129,6 +134,8 @@ async def test_name_conversation_does_not_raise_when_title_persistence_fails(
         return_value=repository,
     )
 
-    result = await name_conversation("conversation-123", "The users first message.")
+    result = await name_conversation(
+        "conversation-123", "The users first message.", "user-123"
+    )
 
     assert result == "Conversation conversation-123 could not be named: DynamoDB failed"

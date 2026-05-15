@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from chat_api.main import app
 from botocore.exceptions import ClientError
+from chat_api.v1.persistence.conversation_repository import ConversationNotFoundError
 
 
 @pytest.fixture
@@ -235,6 +236,19 @@ class TestCreateMessage:
         _, kwargs = mock_event_gen.call_args
         assert kwargs["conversation_id"] == "conv-123"
         assert kwargs["agent_response"] == mock_invoke.return_value
+
+    def test_create_message_404_if_conversation_not_found(
+        self, client, valid_payload, mock_persist
+    ):
+        mock_persist.side_effect = ConversationNotFoundError("Conversation not found")
+        response = client.post(
+            "/v1/conversations/nonexistent-conv/messages",
+            headers={"end-user-id": "user-123"},
+            json=valid_payload,
+        )
+
+        assert response.status_code == 404
+        assert "Conversation not found" in response.text
 
     def test_create_message_422_invalid_json(self, client, valid_payload):
         valid_payload["message"] = "  "
