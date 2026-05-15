@@ -118,6 +118,23 @@ class TestCreateConversation:
         assert "conversation_id" in kwargs
         assert kwargs["background_tasks"] is not None
 
+    def test_create_conversation_200_name_conversation_background_tasks_called_with_correct_args(
+        self, client, valid_payload, mock_event_gen, mock_invoke, mock_name_conversation
+    ):
+        with patch("fastapi.BackgroundTasks.add_task") as mock_add_task:
+            client.post(
+                "/v1/conversations",
+                headers={"end-user-id": "user-123"},
+                json=valid_payload,
+            )
+
+            args, _kwargs = mock_add_task.call_args
+
+            assert args[0] == mock_name_conversation
+            assert args[1] == "conversation-123"  # conversation_id
+            assert args[2] == valid_payload["message"]
+            assert args[3] == "user-123"
+
     def test_create_conversation_422_invalid_json(self, client, valid_payload):
         valid_payload["message"] = "  "
         response = client.post(

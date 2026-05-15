@@ -97,6 +97,7 @@ async def create_conversation(
         name_conversation,
         conversation_id,
         request.message,
+        end_user_id,
     )
 
     return await _generate_and_stream_response(
