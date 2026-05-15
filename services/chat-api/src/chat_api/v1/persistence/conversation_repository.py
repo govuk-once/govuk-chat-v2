@@ -115,6 +115,14 @@ class ConversationRepository:
             )
         )
 
+    def delete_conversation(
+        self, conversation_id: str, end_user_id: str
+    ) -> ConversationMetadataItem:
+        conversation = self._get_conversation(conversation_id, end_user_id)
+        conversation.record_deleted()
+        conversation.save()
+        return conversation
+
     def get_conversation_with_messages(
         self, conversation_id: str, end_user_id: str, message_count: int | None = None
     ) -> tuple[ConversationMetadataItem, list[ConversationMessageItem]]:
@@ -175,6 +183,11 @@ class ConversationRepository:
             )
 
             if conversation.end_user_id != end_user_id:
+                raise ConversationNotFoundError(
+                    f"Conversation not found: {conversation_id}"
+                )
+
+            if conversation.deleted_at is not None:
                 raise ConversationNotFoundError(
                     f"Conversation not found: {conversation_id}"
                 )

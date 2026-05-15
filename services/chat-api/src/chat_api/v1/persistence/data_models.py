@@ -56,6 +56,10 @@ class ConversationTableItem(Model):
     def active_conversations_gsi_pk(cls, end_user_id: str) -> str:
         return f"USER#{end_user_id}#CONVERSATIONS#ACTIVE"
 
+    @classmethod
+    def deleted_conversations_gsi_pk(cls, end_user_id: str) -> str:
+        return f"USER#{end_user_id}#CONVERSATIONS#DELETED"
+
     @property
     def conversation_id(self) -> str:
         return self.PK.split("#", maxsplit=1)[1]
@@ -102,6 +106,16 @@ class ConversationMetadataItem(ConversationTableItem, discriminator="Conversatio
         self.last_activity_at = last_activity_at
         self.GSI1SK = _make_active_conversations_gsi_sk(
             last_activity_at, self.conversation_id
+        )
+
+    def record_deleted(self, deleted_at: datetime | None = None) -> None:
+        deleted_at = deleted_at or datetime.now(timezone.utc)
+        self.deleted_at = deleted_at
+        self.GSI1PK = ConversationTableItem.deleted_conversations_gsi_pk(
+            self.end_user_id
+        )
+        self.GSI1SK = _make_deleted_conversations_gsi_sk(
+            deleted_at, self.conversation_id
         )
 
 
@@ -209,6 +223,13 @@ def _make_active_conversations_gsi_sk(
 ) -> str:
     timestamp = _serialise_timestamp(last_activity_at)
     return f"LAST_ACTIVITY#{timestamp}#CONVERSATION#{conversation_id}"
+
+
+def _make_deleted_conversations_gsi_sk(
+    deleted_at: datetime, conversation_id: str
+) -> str:
+    timestamp = _serialise_timestamp(deleted_at)
+    return f"DELETED_AT#{timestamp}#CONVERSATION#{conversation_id}"
 
 
 def _text_message_type_for_participant(
