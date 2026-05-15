@@ -52,6 +52,10 @@ class ConversationTableItem(Model):
     def conversation_pk(cls, conversation_id: str) -> str:
         return f"CONVERSATION#{conversation_id}"
 
+    @classmethod
+    def active_conversations_gsi_pk(cls, end_user_id: str) -> str:
+        return f"USER#{end_user_id}#CONVERSATIONS#ACTIVE"
+
     @property
     def conversation_id(self) -> str:
         return self.PK.split("#", maxsplit=1)[1]
@@ -85,7 +89,7 @@ class ConversationMetadataItem(ConversationTableItem, discriminator="Conversatio
         return cls(
             PK=cls.conversation_pk(conversation_id),
             SK="METADATA",
-            GSI1PK=_make_active_conversations_gsi_pk(end_user_id),
+            GSI1PK=ConversationTableItem.active_conversations_gsi_pk(end_user_id),
             GSI1SK=_make_active_conversations_gsi_sk(last_activity_at, conversation_id),
             end_user_id=end_user_id,
             label=label,
@@ -198,10 +202,6 @@ def _make_branch_sk(branch_id: str) -> str:
 
 def _make_message_sk(branch_id: str, sequence: int, message_id: str) -> str:
     return f"BRANCH#{branch_id}#MESSAGE#{sequence:010d}#{message_id}"
-
-
-def _make_active_conversations_gsi_pk(end_user_id: str) -> str:
-    return f"USER#{end_user_id}#CONVERSATIONS#ACTIVE"
 
 
 def _make_active_conversations_gsi_sk(
