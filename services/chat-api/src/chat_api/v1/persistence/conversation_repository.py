@@ -24,7 +24,7 @@ class ConversationRepository:
         end_user_id: str,
         message: str,
         session_id: str | None = None,
-    ) -> ConversationMetadataItem:
+    ) -> tuple[ConversationMetadataItem, ConversationMessageItem]:
         created_at = datetime.now(timezone.utc)
         conversation = ConversationMetadataItem.new_conversation(
             end_user_id=end_user_id,
@@ -53,7 +53,7 @@ class ConversationRepository:
             transaction.save(branch)
             transaction.save(user_message)
 
-        return conversation
+        return conversation, user_message
 
     def append_user_message(
         self,

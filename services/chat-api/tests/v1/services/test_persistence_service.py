@@ -50,8 +50,12 @@ async def test_persist_message_user_message_creates_conversation_when_none_provi
 ):
     conversation_id = str(uuid.uuid4())
     conversation = mocker.Mock(conversation_id=conversation_id)
+    message = mocker.Mock()
     repository = mocker.Mock()
-    repository.create_conversation_with_user_message.return_value = conversation
+    repository.create_conversation_with_user_message.return_value = (
+        conversation,
+        message,
+    )
     mocker.patch(
         "chat_api.v1.services.persistence_service.get_conversation_repository",
         return_value=repository,

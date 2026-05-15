@@ -44,7 +44,7 @@ def message_items(items: list[dict]) -> list[dict]:
 
 
 def test_create_conversation_with_user_message(dynamo_table, repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="Hello world",
         session_id="session-123",
@@ -88,7 +88,7 @@ def test_create_conversation_with_user_message(dynamo_table, repository):
 
 
 def test_append_user_message_updates_branch_tip(dynamo_table, repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="Hello world",
         session_id="session-123",
@@ -125,7 +125,7 @@ def test_append_user_message_updates_branch_tip(dynamo_table, repository):
 
 
 def test_append_user_message_wont_append_if_not_users_conversation(repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="Hello world",
         session_id="session-123",
@@ -141,7 +141,7 @@ def test_append_user_message_wont_append_if_not_users_conversation(repository):
 
 
 def test_append_assistant_message_updates_branch_tip(dynamo_table, repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="Hello world",
         session_id="session-123",
@@ -181,7 +181,7 @@ def test_append_assistant_message_updates_branch_tip(dynamo_table, repository):
 
 
 def test_append_assistant_error_message_stores_error_metadata(dynamo_table, repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="Hello world",
     )
@@ -212,7 +212,7 @@ def test_append_assistant_error_message_stores_error_metadata(dynamo_table, repo
 
 
 def test_append_assistant_message_wont_append_if_not_users_conversation(repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="Hello world",
         session_id="session-123",
@@ -233,7 +233,7 @@ def test_append_assistant_message_wont_append_if_not_users_conversation(reposito
 
 
 def test_update_conversation_label(dynamo_table, repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="Hello world",
     )
@@ -252,7 +252,7 @@ def test_update_conversation_label(dynamo_table, repository):
 
 
 def test_update_conversation_label_wont_update_if_not_users_conversation(repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="Hello world",
     )
@@ -266,7 +266,7 @@ def test_update_conversation_label_wont_update_if_not_users_conversation(reposit
 
 
 def test_get_conversation_with_messages(dynamo_table, repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="User message 1",
         session_id="session-123",
@@ -311,7 +311,7 @@ def test_get_conversation_with_messages(dynamo_table, repository):
 
 
 def test_get_conversation_with_messages_and_message_count(dynamo_table, repository):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="User message 1",
         session_id="session-123",
@@ -349,7 +349,7 @@ def test_get_conversation_with_messages_and_message_count(dynamo_table, reposito
 def test_get_conversation_with_messages_raises_exception_if_not_users_conversation(
     repository,
 ):
-    conversation = repository.create_conversation_with_user_message(
+    conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="User message 1",
         session_id="session-123",
