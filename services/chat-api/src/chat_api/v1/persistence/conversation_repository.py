@@ -24,7 +24,7 @@ class ConversationRepository:
         end_user_id: str,
         message: str,
         session_id: str | None = None,
-    ) -> ConversationMetadataItem:
+    ) -> tuple[ConversationMetadataItem, ConversationMessageItem]:
         created_at = datetime.now(timezone.utc)
         conversation = ConversationMetadataItem.new_conversation(
             end_user_id=end_user_id,
@@ -53,7 +53,7 @@ class ConversationRepository:
             transaction.save(branch)
             transaction.save(user_message)
 
-        return conversation
+        return conversation, user_message
 
     def append_user_message(
         self,
@@ -102,6 +102,13 @@ class ConversationRepository:
         conversation.label = label
         conversation.save()
         return conversation
+
+    def get_conversation_with_messages(
+        self, conversation_id: str, end_user_id: str, message_count: int | None = None
+    ) -> tuple[ConversationMetadataItem, list[ConversationMessageItem]]:
+        conversation = self._get_conversation(conversation_id, end_user_id)
+        messages = self._get_messages_for_conversation(conversation_id, message_count)
+        return conversation, messages
 
     def _append_text_message(
         self,
@@ -165,6 +172,15 @@ class ConversationRepository:
             raise ConversationNotFoundError(
                 f"Conversation not found: {conversation_id}"
             ) from e
+
+    def _get_messages_for_conversation(
+        self, conversation_id: str, count: int | None = None
+    ) -> list[ConversationMessageItem]:
+        return list(
+            ConversationMessageItem.query(
+                ConversationTableItem.conversation_pk(conversation_id), limit=count
+            )
+        )
 
     def _get_default_branch(
         self, conversation: ConversationMetadataItem

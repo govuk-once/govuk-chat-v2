@@ -9,12 +9,12 @@ from chat_api.agent import invoke_agent_runtime, parse_agent_response_stream
 import chat_assistants.anthropic as anthropic_assistant
 from chat_api.conversation_api.routes import router as conversation_router
 
-from chat_api.v1.routers.conversations import router as v1_conversation_router
+from chat_api.v1.routers.conversations import router as v1_conversations_router
 from botocore.exceptions import ClientError
 
 app = FastAPI()
 app.include_router(conversation_router)
-app.include_router(v1_conversation_router)
+app.include_router(v1_conversations_router)
 
 
 class UserInput(BaseModel):

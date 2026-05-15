@@ -36,7 +36,7 @@ async def persist_message(
     repository = get_conversation_repository()
     if isinstance(message, ConversationUserMessage):
         if message.conversation_id is None:
-            conversation = await asyncio.to_thread(
+            conversation, _ = await asyncio.to_thread(
                 repository.create_conversation_with_user_message,
                 end_user_id=message.end_user_id,
                 message=message.message,

@@ -3,7 +3,18 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from chat_api.main import app
 from botocore.exceptions import ClientError
-from chat_api.v1.persistence.conversation_repository import ConversationNotFoundError
+from chat_api.v1.persistence.conversation_repository import (
+    ConversationNotFoundError,
+    ConversationRepository,
+)
+from moto import mock_aws
+from chat_api.v1.persistence.data_models import (
+    ConversationTableItem,
+    DEFAULT_CONVERSATION_LABEL,
+)
+from datetime import datetime
+
+import boto3
 
 
 @pytest.fixture
@@ -24,6 +35,19 @@ def mock_invoke():
     with patch("chat_api.v1.routers.conversations.invoke_agent_runtime") as mock:
         mock.return_value = {"response": MagicMock()}
         yield mock
+
+
+@pytest.fixture
+def dynamo_table():
+    with mock_aws():
+        ConversationTableItem.create_table(billing_mode="PAY_PER_REQUEST", wait=True)
+        dynamodb = boto3.resource("dynamodb", region_name="eu-west-1")
+        yield dynamodb.Table("test-table")
+
+
+@pytest.fixture
+def repository(dynamo_table):
+    return ConversationRepository()
 
 
 @pytest.fixture(autouse=True)
@@ -180,6 +204,95 @@ class TestCreateConversation:
             == "An error occurred (TimeoutError) when calling the OperationName operation: Connection Timeout"
         )
         assert data["error_type"] == "ClientError"
+
+
+class TestGetConversation:
+    def test_get_conversation_not_found(self, client, dynamo_table):
+        response = client.get(
+            "/v1/conversations/123", headers={"end-user-id": "user-123"}
+        )
+
+        assert response.status_code == 404
+
+        data = response.json()
+        assert data["detail"] == "Conversation not found"
+
+    def test_get_conversation_successful_response(
+        self, client, dynamo_table, repository
+    ):
+        conversation, message_1 = repository.create_conversation_with_user_message(
+            end_user_id="user-123",
+            message="Hello world",
+            session_id="session-123",
+        )
+        message_2 = repository.append_user_message(
+            conversation_id=conversation.conversation_id,
+            message="Hello again",
+            end_user_id="user-123",
+        )
+
+        response = client.get(
+            f"/v1/conversations/{conversation.conversation_id}",
+            headers={"end-user-id": "user-123"},
+        )
+
+        assert response.status_code == 200
+
+        data = response.json()
+
+        assert data["label"] == DEFAULT_CONVERSATION_LABEL
+        assert data["end_user_id"] == "user-123"
+        assert data["created_at"]
+
+        assert len(data["messages"]) == 2
+        assert data["messages"][0]["participant"] == "user"
+        assert data["messages"][0]["content"] == "Hello world"
+        assert (
+            datetime.fromisoformat(data["messages"][0]["created_at"])
+            == message_1.created_at
+        )
+
+        assert data["messages"][1]["participant"] == "user"
+        assert data["messages"][1]["content"] == "Hello again"
+        assert (
+            datetime.fromisoformat(data["messages"][1]["created_at"])
+            == message_2.created_at
+        )
+
+    def test_get_conversation_successful_response_message_count(
+        self, client, dynamo_table, repository
+    ):
+        conversation, message_1 = repository.create_conversation_with_user_message(
+            end_user_id="user-123",
+            message="Hello 1",
+            session_id="session-123",
+        )
+        repository.append_user_message(
+            conversation_id=conversation.conversation_id,
+            message="Hello 2",
+            end_user_id="user-123",
+        )
+        repository.append_user_message(
+            conversation_id=conversation.conversation_id,
+            message="Hello 3",
+            end_user_id="user-123",
+        )
+        repository.append_user_message(
+            conversation_id=conversation.conversation_id,
+            message="Hello 4",
+            end_user_id="user-123",
+        )
+
+        with patch("chat_api.v1.routers.conversations.RECENT_MESSAGE_COUNT", 2):
+            response = client.get(
+                f"/v1/conversations/{conversation.conversation_id}",
+                headers={"end-user-id": "user-123"},
+            )
+
+            assert response.status_code == 200
+
+            data = response.json()
+            assert len(data["messages"]) == 2
 
 
 class TestCreateMessage:
