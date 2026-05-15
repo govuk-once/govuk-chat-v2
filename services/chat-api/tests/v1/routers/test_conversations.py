@@ -371,6 +371,53 @@ class TestGetConversations:
             assert len(data) == 2
 
 
+class TestDeleteConversation:
+    @pytest.fixture
+    def mock_repository(self):
+        with patch(
+            "chat_api.v1.routers.conversations.get_conversation_repository"
+        ) as mock:
+            yield mock.return_value
+
+    def test_delete_conversation_204_calls_repository_with_correct_args(
+        self, client, mock_repository
+    ):
+        response = client.delete(
+            "/v1/conversations/conversation-123",
+            headers={"end-user-id": "user-123"},
+        )
+
+        assert response.status_code == 204
+        assert response.content == b""
+        mock_repository.delete_conversation.assert_called_once_with(
+            "conversation-123", "user-123"
+        )
+
+    def test_delete_conversation_404_if_conversation_not_found(
+        self, client, mock_repository
+    ):
+        mock_repository.delete_conversation.side_effect = ConversationNotFoundError(
+            "Conversation not found"
+        )
+
+        response = client.delete(
+            "/v1/conversations/conversation-123",
+            headers={"end-user-id": "user-123"},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Conversation not found"
+
+    def test_delete_conversation_422_no_end_user_id_in_headers(
+        self, client, mock_repository
+    ):
+        response = client.delete("/v1/conversations/conversation-123")
+
+        assert response.status_code == 422
+        assert "end-user-id" in response.text
+        mock_repository.delete_conversation.assert_not_called()
+
+
 class TestCreateMessage:
     def test_create_message_correct_args_passed_to_persist_user_message(
         self, client, valid_payload, mock_invoke, mock_persist
