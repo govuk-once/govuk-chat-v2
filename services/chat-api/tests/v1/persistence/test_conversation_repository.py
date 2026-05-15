@@ -263,3 +263,100 @@ def test_update_conversation_label_wont_update_if_not_users_conversation(reposit
             "Generated title",
             "user-456",
         )
+
+
+def test_get_conversation_with_messages(dynamo_table, repository):
+    conversation = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="User message 1",
+        session_id="session-123",
+    )
+    repository.append_assistant_message(
+        conversation_id=conversation.conversation_id,
+        message="Assistant message 1",
+        session_id="session-123",
+        status="complete",
+        stop_reason="end_turn",
+        message_id="message-123",
+        end_user_id="user-123",
+    )
+    repository.append_user_message(
+        conversation_id=conversation.conversation_id,
+        message="User message 2",
+        session_id="session-123",
+        end_user_id="user-123",
+    )
+
+    conversation, messages = repository.get_conversation_with_messages(
+        conversation_id=conversation.conversation_id,
+        end_user_id="user-123",
+    )
+
+    assert conversation.end_user_id == "user-123"
+    assert conversation.label == DEFAULT_CONVERSATION_LABEL
+
+    assert len(messages) == 3
+
+    message_1 = messages[0]
+    assert message_1.participant == "user"
+    assert message_1.payload.text == "User message 1"
+
+    message_2 = messages[1]
+    assert message_2.participant == "assistant"
+    assert message_2.payload.text == "Assistant message 1"
+
+    message_3 = messages[2]
+    assert message_3.participant == "user"
+    assert message_3.payload.text == "User message 2"
+
+
+def test_get_conversation_with_messages_and_message_count(dynamo_table, repository):
+    conversation = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="User message 1",
+        session_id="session-123",
+    )
+    repository.append_user_message(
+        conversation_id=conversation.conversation_id,
+        message="User message 2",
+        session_id="session-123",
+        end_user_id="user-123",
+    )
+    repository.append_user_message(
+        conversation_id=conversation.conversation_id,
+        message="User message 3",
+        session_id="session-123",
+        end_user_id="user-123",
+    )
+
+    conversation, messages = repository.get_conversation_with_messages(
+        conversation_id=conversation.conversation_id,
+        end_user_id="user-123",
+        message_count=2,
+    )
+
+    assert len(messages) == 2
+
+    message_1 = messages[0]
+    assert message_1.participant == "user"
+    assert message_1.payload.text == "User message 1"
+
+    message_2 = messages[1]
+    assert message_2.participant == "user"
+    assert message_2.payload.text == "User message 2"
+
+
+def test_get_conversation_with_messages_raises_exception_if_not_users_conversation(
+    repository,
+):
+    conversation = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="User message 1",
+        session_id="session-123",
+    )
+
+    with pytest.raises(ConversationNotFoundError):
+        conversation, messages = repository.get_conversation_with_messages(
+            conversation_id=conversation.conversation_id,
+            end_user_id="user-999",
+        )
