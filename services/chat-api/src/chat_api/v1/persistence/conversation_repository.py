@@ -58,6 +58,7 @@ class ConversationRepository:
     def append_user_message(
         self,
         conversation_id: str,
+        end_user_id: str,
         message: str,
         session_id: str | None = None,
     ) -> ConversationMessageItem:
@@ -65,6 +66,7 @@ class ConversationRepository:
             conversation_id=conversation_id,
             participant="user",
             text=message,
+            end_user_id=end_user_id,
             session_id=session_id,
         )
 
@@ -73,6 +75,7 @@ class ConversationRepository:
         conversation_id: str,
         message: str,
         session_id: str,
+        end_user_id: str,
         status: MessageStatus,
         stop_reason: str,
         message_id: str | None = None,
@@ -84,6 +87,7 @@ class ConversationRepository:
             participant="assistant",
             text=message,
             session_id=session_id,
+            end_user_id=end_user_id,
             status=status,
             stop_reason=stop_reason,
             message_id=message_id,
@@ -92,9 +96,9 @@ class ConversationRepository:
         )
 
     def update_conversation_label(
-        self, conversation_id: str, label: str
+        self, conversation_id: str, label: str, end_user_id: str
     ) -> ConversationMetadataItem:
-        conversation = self._get_conversation(conversation_id)
+        conversation = self._get_conversation(conversation_id, end_user_id)
         conversation.label = label
         conversation.save()
         return conversation
@@ -104,6 +108,7 @@ class ConversationRepository:
         conversation_id: str,
         participant: MessageParticipant,
         text: str,
+        end_user_id: str,
         session_id: str | None = None,
         status: MessageStatus | None = None,
         stop_reason: str | None = None,
@@ -112,7 +117,7 @@ class ConversationRepository:
         error_message: str | None = None,
     ) -> ConversationMessageItem:
         created_at = datetime.now(timezone.utc)
-        conversation = self._get_conversation(conversation_id)
+        conversation = self._get_conversation(conversation_id, end_user_id)
         branch = self._get_default_branch(conversation)
         sequence = int(branch.tip_sequence) + 1
 
@@ -141,11 +146,21 @@ class ConversationRepository:
 
         return message
 
-    def _get_conversation(self, conversation_id: str) -> ConversationMetadataItem:
+    def _get_conversation(
+        self, conversation_id: str, end_user_id: str
+    ) -> ConversationMetadataItem:
         try:
-            return ConversationMetadataItem.get(
-                ConversationTableItem.conversation_pk(conversation_id), "METADATA"
+            conversation = ConversationMetadataItem.get(
+                ConversationTableItem.conversation_pk(conversation_id),
+                "METADATA",
             )
+
+            if conversation.end_user_id != end_user_id:
+                raise ConversationNotFoundError(
+                    f"Conversation not found: {conversation_id}"
+                )
+
+            return conversation
         except DoesNotExist as e:
             raise ConversationNotFoundError(
                 f"Conversation not found: {conversation_id}"

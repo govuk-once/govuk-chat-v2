@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from chat_api.main import app
 from botocore.exceptions import ClientError
+from chat_api.v1.persistence.conversation_repository import ConversationNotFoundError
 
 
 @pytest.fixture
@@ -116,6 +117,23 @@ class TestCreateConversation:
         assert kwargs["session_id"] == valid_payload["session_id"]
         assert "conversation_id" in kwargs
         assert kwargs["background_tasks"] is not None
+
+    def test_create_conversation_200_name_conversation_background_tasks_called_with_correct_args(
+        self, client, valid_payload, mock_event_gen, mock_invoke, mock_name_conversation
+    ):
+        with patch("fastapi.BackgroundTasks.add_task") as mock_add_task:
+            client.post(
+                "/v1/conversations",
+                headers={"end-user-id": "user-123"},
+                json=valid_payload,
+            )
+
+            args, _kwargs = mock_add_task.call_args
+
+            assert args[0] == mock_name_conversation
+            assert args[1] == "conversation-123"  # conversation_id
+            assert args[2] == valid_payload["message"]
+            assert args[3] == "user-123"
 
     def test_create_conversation_422_invalid_json(self, client, valid_payload):
         valid_payload["message"] = "  "
@@ -235,6 +253,19 @@ class TestCreateMessage:
         _, kwargs = mock_event_gen.call_args
         assert kwargs["conversation_id"] == "conv-123"
         assert kwargs["agent_response"] == mock_invoke.return_value
+
+    def test_create_message_404_if_conversation_not_found(
+        self, client, valid_payload, mock_persist
+    ):
+        mock_persist.side_effect = ConversationNotFoundError("Conversation not found")
+        response = client.post(
+            "/v1/conversations/nonexistent-conv/messages",
+            headers={"end-user-id": "user-123"},
+            json=valid_payload,
+        )
+
+        assert response.status_code == 404
+        assert "Conversation not found" in response.text
 
     def test_create_message_422_invalid_json(self, client, valid_payload):
         valid_payload["message"] = "  "

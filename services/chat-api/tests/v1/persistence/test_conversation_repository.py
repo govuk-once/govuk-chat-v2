@@ -5,7 +5,10 @@ from boto3.dynamodb.conditions import Key
 import pytest
 from moto import mock_aws
 
-from chat_api.v1.persistence.conversation_repository import ConversationRepository
+from chat_api.v1.persistence.conversation_repository import (
+    ConversationRepository,
+    ConversationNotFoundError,
+)
 from chat_api.v1.persistence.data_models import (
     ConversationTableItem,
     DEFAULT_CONVERSATION_LABEL,
@@ -95,6 +98,7 @@ def test_append_user_message_updates_branch_tip(dynamo_table, repository):
         conversation_id=conversation.conversation_id,
         message="Follow-up question",
         session_id="session-456",
+        end_user_id="user-123",
     )
 
     items = items_for_conversation(dynamo_table, conversation.conversation_id)
@@ -120,6 +124,22 @@ def test_append_user_message_updates_branch_tip(dynamo_table, repository):
     assert appended_item["session_id"] == "session-456"
 
 
+def test_append_user_message_wont_append_if_not_users_conversation(repository):
+    conversation = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+        session_id="session-123",
+    )
+
+    with pytest.raises(ConversationNotFoundError):
+        repository.append_user_message(
+            conversation_id=conversation.conversation_id,
+            message="Follow-up question",
+            session_id="session-456",
+            end_user_id="user-456",
+        )
+
+
 def test_append_assistant_message_updates_branch_tip(dynamo_table, repository):
     conversation = repository.create_conversation_with_user_message(
         end_user_id="user-123",
@@ -134,6 +154,7 @@ def test_append_assistant_message_updates_branch_tip(dynamo_table, repository):
         status="complete",
         stop_reason="end_turn",
         message_id="message-123",
+        end_user_id="user-123",
     )
 
     items = items_for_conversation(dynamo_table, conversation.conversation_id)
@@ -174,6 +195,7 @@ def test_append_assistant_error_message_stores_error_metadata(dynamo_table, repo
         message_id="message-123",
         error_type="UnknownAgentEventTypeError",
         error_message="Received unknown event type",
+        end_user_id="user-123",
     )
 
     items = items_for_conversation(dynamo_table, conversation.conversation_id)
@@ -189,6 +211,27 @@ def test_append_assistant_error_message_stores_error_metadata(dynamo_table, repo
     assert assistant_item["error_message"] == "Received unknown event type"
 
 
+def test_append_assistant_message_wont_append_if_not_users_conversation(repository):
+    conversation = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+        session_id="session-123",
+    )
+
+    with pytest.raises(ConversationNotFoundError):
+        repository.append_assistant_message(
+            conversation_id=conversation.conversation_id,
+            message="Partial response",
+            session_id="session-123",
+            status="error",
+            stop_reason="error",
+            message_id="message-123",
+            error_type="UnknownAgentEventTypeError",
+            error_message="Received unknown event type",
+            end_user_id="user-456",
+        )
+
+
 def test_update_conversation_label(dynamo_table, repository):
     conversation = repository.create_conversation_with_user_message(
         end_user_id="user-123",
@@ -198,6 +241,7 @@ def test_update_conversation_label(dynamo_table, repository):
     updated_conversation = repository.update_conversation_label(
         conversation.conversation_id,
         "Generated title",
+        "user-123",
     )
 
     assert updated_conversation.label == "Generated title"
@@ -205,3 +249,17 @@ def test_update_conversation_label(dynamo_table, repository):
     items = items_for_conversation(dynamo_table, conversation.conversation_id)
     metadata_item = item_with_entity_type(items, "Conversation")
     assert metadata_item["label"] == "Generated title"
+
+
+def test_update_conversation_label_wont_update_if_not_users_conversation(repository):
+    conversation = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+
+    with pytest.raises(ConversationNotFoundError):
+        repository.update_conversation_label(
+            conversation.conversation_id,
+            "Generated title",
+            "user-456",
+        )

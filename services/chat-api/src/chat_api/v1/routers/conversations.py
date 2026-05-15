@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Header
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from sse_starlette.sse import EventSourceResponse
 
 from chat_api.v1.schemas.conversations import ConversationPostRequest
@@ -12,6 +12,8 @@ from chat_api.v1.services.persistence_service import (
 from chat_api.v1.services.stream_service import (
     event_generator,
 )
+from chat_api.v1.persistence.conversation_repository import ConversationNotFoundError
+
 
 router = APIRouter(prefix="/v1/conversations", tags=["conversations"])
 
@@ -95,6 +97,7 @@ async def create_conversation(
         name_conversation,
         conversation_id,
         request.message,
+        end_user_id,
     )
 
     return await _generate_and_stream_response(
@@ -126,7 +129,10 @@ async def create_message(
     """
     session_id = request.session_id or str(uuid.uuid4())
 
-    await _persist_user_message(request, end_user_id, session_id, conversation_id)
+    try:
+        await _persist_user_message(request, end_user_id, session_id, conversation_id)
+    except ConversationNotFoundError:
+        raise HTTPException(status_code=404, detail="Conversation not found")
 
     return await _generate_and_stream_response(
         message=request.message,

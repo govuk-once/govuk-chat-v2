@@ -49,6 +49,7 @@ async def persist_message(
             conversation_id=message.conversation_id,
             message=message.message,
             session_id=message.session_id,
+            end_user_id=message.end_user_id,
         )
         return message.conversation_id
 
@@ -57,6 +58,7 @@ async def persist_message(
         conversation_id=message.conversation_id,
         message=message.message,
         session_id=message.session_id,
+        end_user_id=message.end_user_id,
         status=cast(MessageStatus, message.status),
         stop_reason=message.stop_reason,
         message_id=message.message_id,
@@ -67,12 +69,15 @@ async def persist_message(
     return message.conversation_id
 
 
-async def name_conversation(conversation_id: str, message: str):
+async def name_conversation(
+    conversation_id: str, message: str, end_user_id: str
+) -> str:
     """
     Generates and stores a short title for a conversation.
 
     **conversation_id:** The conversation record to update.
     **message:** The user message text used to generate the title.
+    **end_user_id:** The ID of the end user who owns the conversation.
 
     Failures are contained so title generation cannot prevent later background
     persistence tasks from running.
@@ -86,6 +91,7 @@ async def name_conversation(conversation_id: str, message: str):
             repository.update_conversation_label,
             conversation_id=conversation_id,
             label=title,
+            end_user_id=end_user_id,
         )
 
         return f"Conversation {conversation_id} named: {title}"
