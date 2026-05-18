@@ -104,6 +104,17 @@ class ConversationRepository:
         conversation.save()
         return conversation
 
+    def get_conversations_for_user(
+        self, end_user_id: str, count: int | None = None
+    ) -> list[ConversationMetadataItem]:
+        return list(
+            ConversationTableItem.conversations_by_user.query(
+                ConversationTableItem.active_conversations_gsi_pk(end_user_id),
+                scan_index_forward=False,  # newest first
+                limit=count,
+            )
+        )
+
     def get_conversation_with_messages(
         self, conversation_id: str, end_user_id: str, message_count: int | None = None
     ) -> tuple[ConversationMetadataItem, list[ConversationMessageItem]]:

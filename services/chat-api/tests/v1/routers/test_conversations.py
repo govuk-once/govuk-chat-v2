@@ -240,6 +240,7 @@ class TestGetConversation:
 
         data = response.json()
 
+        assert data["id"] == conversation.conversation_id
         assert data["label"] == DEFAULT_CONVERSATION_LABEL
         assert data["end_user_id"] == "user-123"
         assert data["created_at"]
@@ -293,6 +294,81 @@ class TestGetConversation:
 
             data = response.json()
             assert len(data["messages"]) == 2
+
+
+class TestGetConversations:
+    def test_get_conversations_successful_response(self, client, repository):
+        conversation_1, _ = repository.create_conversation_with_user_message(
+            end_user_id="user-123",
+            message="Hello world",
+        )
+        conversation_2, _ = repository.create_conversation_with_user_message(
+            end_user_id="user-123",
+            message="Hello world",
+        )
+        conversation_3, _ = repository.create_conversation_with_user_message(
+            end_user_id="user-123",
+            message="Hello world",
+        )
+
+        response = client.get(
+            "/v1/conversations",
+            headers={"end-user-id": "user-123"},
+        )
+
+        assert response.status_code == 200
+
+        data = response.json()
+
+        assert (len(data)) == 3
+
+        assert data[0]["label"] == DEFAULT_CONVERSATION_LABEL
+        assert data[0]["end_user_id"] == "user-123"
+        assert data[0]["id"] == conversation_3.conversation_id
+        assert (
+            datetime.fromisoformat(data[0]["created_at"]) == conversation_3.created_at
+        )
+
+        assert data[1]["label"] == DEFAULT_CONVERSATION_LABEL
+        assert data[1]["end_user_id"] == "user-123"
+        assert data[1]["id"] == conversation_2.conversation_id
+        assert (
+            datetime.fromisoformat(data[1]["created_at"]) == conversation_2.created_at
+        )
+
+        assert data[2]["label"] == DEFAULT_CONVERSATION_LABEL
+        assert data[2]["end_user_id"] == "user-123"
+        assert data[2]["id"] == conversation_1.conversation_id
+        assert (
+            datetime.fromisoformat(data[2]["created_at"]) == conversation_1.created_at
+        )
+
+    def test_get_conversations_successful_response_conversation_count(
+        self, client, repository
+    ):
+        repository.create_conversation_with_user_message(
+            end_user_id="user-123",
+            message="Hello world",
+        )
+        repository.create_conversation_with_user_message(
+            end_user_id="user-123",
+            message="Hello world",
+        )
+        repository.create_conversation_with_user_message(
+            end_user_id="user-123",
+            message="Hello world",
+        )
+
+        with patch("chat_api.v1.routers.conversations.RECENT_CONVERSATION_COUNT", 2):
+            response = client.get(
+                "/v1/conversations/",
+                headers={"end-user-id": "user-123"},
+            )
+
+            assert response.status_code == 200
+
+            data = response.json()
+            assert len(data) == 2
 
 
 class TestCreateMessage:

@@ -27,6 +27,7 @@ from chat_api.v1.data_models.responses import (
 router = APIRouter(prefix="/v1/conversations", tags=["conversations"])
 
 RECENT_MESSAGE_COUNT = 50
+RECENT_CONVERSATION_COUNT = 20
 
 
 async def _persist_user_message(
@@ -120,6 +121,32 @@ async def create_conversation(
     )
 
 
+@router.get(
+    "", response_model=list[ConversationResponse], response_model_exclude_none=True
+)
+async def view_conversations(
+    end_user_id: str = Header(...),
+):
+    """
+    This endpoint is responsible for getting the recent conversations for the user.
+    """
+    repo = get_conversation_repository()
+
+    conversations = repo.get_conversations_for_user(
+        end_user_id, RECENT_CONVERSATION_COUNT
+    )
+
+    return [
+        ConversationResponse(
+            id=conversation.conversation_id,
+            label=conversation.label,
+            end_user_id=conversation.end_user_id,
+            created_at=conversation.created_at,
+        )
+        for conversation in conversations
+    ]
+
+
 @router.get("/{conversation_id}")
 async def view_conversation(
     conversation_id: str,
@@ -138,6 +165,7 @@ async def view_conversation(
         raise HTTPException(status_code=404, detail="Conversation not found")
 
     return ConversationResponse(
+        id=conversation.conversation_id,
         label=conversation.label,
         end_user_id=conversation.end_user_id,
         created_at=conversation.created_at,

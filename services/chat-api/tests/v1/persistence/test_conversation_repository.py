@@ -251,6 +251,59 @@ def test_update_conversation_label(dynamo_table, repository):
     assert metadata_item["label"] == "Generated title"
 
 
+def test_get_conversations_for_user(dynamo_table, repository):
+    conversation_1, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="User message",
+    )
+    conversation_2, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="User message",
+    )
+    conversation_3, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-999",
+        message="User message",
+    )
+    conversation_4, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="User message",
+    )
+
+    conversations = repository.get_conversations_for_user(
+        end_user_id="user-123",
+    )
+
+    assert len(conversations) == 3
+
+    assert conversations[0].conversation_id == conversation_4.conversation_id
+    assert conversations[1].conversation_id == conversation_2.conversation_id
+    assert conversations[2].conversation_id == conversation_1.conversation_id
+
+
+def test_get_conversations_for_user_with_count(dynamo_table, repository):
+    conversation_1, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="User message",
+    )
+    conversation_2, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="User message",
+    )
+    conversation_3, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="User message",
+    )
+
+    conversations = repository.get_conversations_for_user(
+        end_user_id="user-123",
+        count=1,
+    )
+
+    assert len(conversations) == 1
+
+    assert conversations[0].conversation_id == conversation_3.conversation_id
+
+
 def test_update_conversation_label_wont_update_if_not_users_conversation(repository):
     conversation, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
