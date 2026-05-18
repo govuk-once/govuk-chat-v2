@@ -12,6 +12,7 @@ from chat_api.v1.persistence.conversation_repository import (
 from chat_api.v1.persistence.data_models import (
     ConversationTableItem,
     DEFAULT_CONVERSATION_LABEL,
+    PYNAMODB_UTC_DATETIME_FORMAT,
 )
 
 
@@ -41,6 +42,14 @@ def item_with_entity_type(items: list[dict], entity_type: str) -> dict:
 
 def message_items(items: list[dict]) -> list[dict]:
     return [item for item in items if item["entityType"] == "Message"]
+
+
+def items_for_gsi_partition(dynamo_table, partition_key: str) -> list[dict]:
+    response = dynamo_table.query(
+        IndexName="GSI1",
+        KeyConditionExpression=Key("GSI1PK").eq(partition_key),
+    )
+    return response["Items"]
 
 
 def test_create_conversation_with_user_message(dynamo_table, repository):
@@ -316,6 +325,129 @@ def test_update_conversation_label_wont_update_if_not_users_conversation(reposit
             "Generated title",
             "user-456",
         )
+
+
+def test_delete_conversation_marks_conversation_as_deleted(dynamo_table, repository):
+    conversation, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+
+    deleted_conversation = repository.delete_conversation(
+        conversation.conversation_id,
+        "user-123",
+    )
+
+    assert deleted_conversation.deleted_at is not None
+
+    items = items_for_conversation(dynamo_table, conversation.conversation_id)
+    metadata_item = item_with_entity_type(items, "Conversation")
+
+    assert metadata_item["deleted_at"] == deleted_conversation.deleted_at.strftime(
+        PYNAMODB_UTC_DATETIME_FORMAT
+    )
+    assert metadata_item["GSI1PK"] == "USER#user-123#CONVERSATIONS#DELETED"
+    assert metadata_item["GSI1SK"].startswith("DELETED_AT#")
+    assert metadata_item["GSI1SK"].endswith(
+        f"#CONVERSATION#{conversation.conversation_id}"
+    )
+
+
+def test_delete_conversation_moves_conversation_out_of_active_index(
+    dynamo_table, repository
+):
+    conversation, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+
+    repository.delete_conversation(conversation.conversation_id, "user-123")
+
+    active_items = items_for_gsi_partition(
+        dynamo_table, "USER#user-123#CONVERSATIONS#ACTIVE"
+    )
+    deleted_items = items_for_gsi_partition(
+        dynamo_table, "USER#user-123#CONVERSATIONS#DELETED"
+    )
+
+    assert active_items == []
+    assert len(deleted_items) == 1
+    assert deleted_items[0]["PK"] == f"CONVERSATION#{conversation.conversation_id}"
+
+
+def test_delete_conversation_wont_delete_if_not_users_conversation(repository):
+    conversation, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+
+    with pytest.raises(ConversationNotFoundError):
+        repository.delete_conversation(conversation.conversation_id, "user-456")
+
+
+def test_deleted_conversation_cannot_be_returned(repository):
+    conversation, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+    repository.delete_conversation(conversation.conversation_id, "user-123")
+
+    with pytest.raises(ConversationNotFoundError):
+        repository.get_conversation_with_messages(
+            conversation_id=conversation.conversation_id,
+            end_user_id="user-123",
+        )
+
+
+def test_deleted_conversation_cannot_be_updated(repository):
+    conversation, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+    repository.delete_conversation(conversation.conversation_id, "user-123")
+
+    with pytest.raises(ConversationNotFoundError):
+        repository.update_conversation_label(
+            conversation.conversation_id,
+            "Generated title",
+            "user-123",
+        )
+
+
+def test_deleted_conversation_cannot_have_messages_appended(repository):
+    conversation, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+    repository.delete_conversation(conversation.conversation_id, "user-123")
+
+    with pytest.raises(ConversationNotFoundError):
+        repository.append_user_message(
+            conversation_id=conversation.conversation_id,
+            message="Follow-up question",
+            end_user_id="user-123",
+        )
+
+    with pytest.raises(ConversationNotFoundError):
+        repository.append_assistant_message(
+            conversation_id=conversation.conversation_id,
+            message="Assistant response",
+            session_id="session-123",
+            status="complete",
+            stop_reason="end_turn",
+            end_user_id="user-123",
+        )
+
+
+def test_deleted_conversation_cannot_be_deleted_again(repository):
+    conversation, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+    repository.delete_conversation(conversation.conversation_id, "user-123")
+
+    with pytest.raises(ConversationNotFoundError):
+        repository.delete_conversation(conversation.conversation_id, "user-123")
 
 
 def test_get_conversation_with_messages(dynamo_table, repository):

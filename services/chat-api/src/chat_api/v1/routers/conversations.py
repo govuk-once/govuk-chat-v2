@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Response
 from sse_starlette.sse import EventSourceResponse
 
 from chat_api.v1.schemas.conversations import (
@@ -208,6 +208,24 @@ async def update_conversation(
         end_user_id=conversation.end_user_id,
         updated_at=conversation.last_activity_at,
     )
+
+
+@router.delete("/{conversation_id}", status_code=204)
+async def delete_conversation(
+    conversation_id: str,
+    end_user_id: str = Header(...),
+):
+    """
+    This endpoint is responsible for deleting a specific conversation.
+    """
+    repo = get_conversation_repository()
+
+    try:
+        repo.delete_conversation(conversation_id, end_user_id)
+    except ConversationNotFoundError:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    return Response(status_code=204)
 
 
 @router.post("/{conversation_id}/messages")
