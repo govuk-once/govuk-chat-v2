@@ -3,6 +3,7 @@ import uuid
 from chat_api.v1.services.persistence_service import (
     persist_message,
     name_conversation,
+    rename_conversation,
 )
 from chat_api.v1.data_models.messages import (
     ConversationUserMessage,
@@ -128,9 +129,7 @@ async def test_name_conversation(mock_bedrock_client, mocker):
 
 
 @pytest.mark.asyncio
-async def test_name_conversation_does_not_raise_when_title_persistence_fails(
-    mock_bedrock_client, mocker
-):
+async def test_name_conversation_does_not_raise_when_title_persistence_fails(mocker):
     repository = mocker.Mock()
     repository.update_conversation_label.side_effect = RuntimeError("DynamoDB failed")
     mocker.patch(
@@ -143,3 +142,19 @@ async def test_name_conversation_does_not_raise_when_title_persistence_fails(
     )
 
     assert result == "Conversation conversation-123 could not be named: DynamoDB failed"
+
+
+@pytest.mark.asyncio
+async def test_rename_conversation(mocker):
+    repository = mocker.Mock()
+    mocker.patch(
+        "chat_api.v1.services.persistence_service.get_conversation_repository",
+        return_value=repository,
+    )
+
+    await rename_conversation("conversation-123", "Updated title", "user-123")
+    repository.update_conversation_label.assert_called_once_with(
+        conversation_id="conversation-123",
+        label="Updated title",
+        end_user_id="user-123",
+    )
