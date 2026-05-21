@@ -255,7 +255,7 @@ wheels = [
 
 [[package]]
 name = "bedrock-agentcore"
-version = "1.8.0"
+version = "1.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -267,9 +267,9 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e5/56/992ff28a1aaf674f525ea82c0f1e2d940bdf91c08322d8c258a2b1469dbd/bedrock_agentcore-1.8.0.tar.gz", hash = "sha256:99fb4fafed0e832bcfe0c588572ecc5cdf296692052f1f0607dc656510aa24d0", size = 579760, upload-time = "2026-04-30T23:28:02.315Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/08/ba/91b6ec49558755cccc5bfa5a64916995baed5490768bee33581b370a1e4e/bedrock_agentcore-1.9.1.tar.gz", hash = "sha256:f0e69b41c32c12e395d698299c96981d34035dafa90e0e79fcbd743574315c6a", size = 692593, upload-time = "2026-05-12T21:50:47.639Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/24/28/1a47ee1cf275a9a205cb646db12ff42d0c59869112ef636727773b87ce6b/bedrock_agentcore-1.8.0-py3-none-any.whl", hash = "sha256:0b0146cbc6a31dc5d17efafc62a5b87bec98b5bcd7cdf8ec26507eb6448de02e", size = 206118, upload-time = "2026-04-30T23:28:00.546Z" },
+    { url = "https://files.pythonhosted.org/packages/34/05/a5fbaa2320c34f8df196c105ca1938848845216cacc36850c73d116f28a9/bedrock_agentcore-1.9.1-py3-none-any.whl", hash = "sha256:f323c3d943dfe1defd52febd1409f8c4d04c0fc37848dd100ede692c2a6addd2", size = 262193, upload-time = "2026-05-12T21:50:45.506Z" },
 ]
 
 [[package]]
@@ -770,7 +770,7 @@ dev = [
 requires-dist = [
     { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
     { name = "aws-opentelemetry-distro", specifier = ">=0.16.0" },
-    { name = "bedrock-agentcore", specifier = ">=1.4.5" },
+    { name = "bedrock-agentcore", specifier = ">=1.9.1" },
     { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
     { name = "strands-agents", specifier = ">=1.30.0" },
 ]
