@@ -210,6 +210,44 @@ class ConversationMessageItem(ConversationTableItem, discriminator="Message"):
         )
 
 
+class ConversationStreamItem(ConversationTableItem, discriminator="ConversationStream"):
+    stream_id = UnicodeAttribute()
+    end_user_id = UnicodeAttribute()
+    message_id = UnicodeAttribute()
+    status = UnicodeAttribute()
+    created_at = UTCDateTimeAttribute()
+    cancelled_at = UTCDateTimeAttribute(null=True)
+
+    @classmethod
+    def stream_sk(cls, stream_id: str) -> str:
+        return f"STREAM#{stream_id}"
+
+    @classmethod
+    def new_stream(
+        cls,
+        stream_id: str,
+        conversation_id: str,
+        end_user_id: str,
+        message_id: str,
+        created_at: datetime | None = None,
+    ) -> "ConversationStreamItem":
+        created_at = created_at or datetime.now(timezone.utc)
+
+        return cls(
+            PK=cls.conversation_pk(conversation_id),
+            SK=cls.stream_sk(stream_id),
+            stream_id=stream_id,
+            end_user_id=end_user_id,
+            message_id=message_id,
+            status="active",
+            created_at=created_at,
+        )
+
+    def record_cancelled(self, cancelled_at: datetime | None = None) -> None:
+        self.status = "cancelled"
+        self.cancelled_at = cancelled_at or datetime.now(timezone.utc)
+
+
 def _make_branch_sk(branch_id: str) -> str:
     return f"BRANCH#{branch_id}"
 

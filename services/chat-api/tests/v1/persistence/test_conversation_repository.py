@@ -8,8 +8,10 @@ from moto import mock_aws
 from chat_api.v1.persistence.conversation_repository import (
     ConversationRepository,
     ConversationNotFoundError,
+    ConversationStreamNotFoundError,
 )
 from chat_api.v1.persistence.data_models import (
+    ConversationStreamItem,
     ConversationTableItem,
     DEFAULT_CONVERSATION_LABEL,
     PYNAMODB_UTC_DATETIME_FORMAT,
@@ -50,6 +52,30 @@ def items_for_gsi_partition(dynamo_table, partition_key: str) -> list[dict]:
         KeyConditionExpression=Key("GSI1PK").eq(partition_key),
     )
     return response["Items"]
+
+
+def item_for_stream(dynamo_table, conversation_id: str, stream_id: str) -> dict | None:
+    response = dynamo_table.get_item(
+        Key={
+            "PK": f"CONVERSATION#{conversation_id}",
+            "SK": f"STREAM#{stream_id}",
+        }
+    )
+    return response.get("Item")
+
+
+def conversation_with_stream(repository):
+    conversation, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+    stream = repository.create_conversation_stream(
+        conversation_id=conversation.conversation_id,
+        stream_id="stream-123",
+        end_user_id="user-123",
+        message_id="message-123",
+    )
+    return conversation, stream
 
 
 def test_create_conversation_with_user_message(dynamo_table, repository):
@@ -448,6 +474,134 @@ def test_deleted_conversation_cannot_be_deleted_again(repository):
 
     with pytest.raises(ConversationNotFoundError):
         repository.delete_conversation(conversation.conversation_id, "user-123")
+
+
+def test_create_conversation_stream(dynamo_table, repository):
+    conversation, _ = repository.create_conversation_with_user_message(
+        end_user_id="user-123",
+        message="Hello world",
+    )
+
+    stream = repository.create_conversation_stream(
+        conversation_id=conversation.conversation_id,
+        stream_id="stream-123",
+        end_user_id="user-123",
+        message_id="message-123",
+    )
+
+    assert isinstance(stream, ConversationStreamItem)
+    assert stream.stream_id == "stream-123"
+    assert stream.conversation_id == conversation.conversation_id
+    assert stream.end_user_id == "user-123"
+    assert stream.message_id == "message-123"
+    assert stream.status == "active"
+    assert stream.cancelled_at is None
+
+    stream_item = item_for_stream(
+        dynamo_table, conversation.conversation_id, "stream-123"
+    )
+    assert stream_item is not None
+    assert stream_item["PK"] == f"CONVERSATION#{conversation.conversation_id}"
+    assert stream_item["SK"] == "STREAM#stream-123"
+    assert stream_item["entityType"] == "ConversationStream"
+    assert stream_item["stream_id"] == "stream-123"
+    assert stream_item["end_user_id"] == "user-123"
+    assert stream_item["message_id"] == "message-123"
+    assert stream_item["status"] == "active"
+
+
+def test_cancel_conversation_stream_marks_stream_as_cancelled(dynamo_table, repository):
+    conversation, _ = conversation_with_stream(repository)
+
+    cancelled_stream = repository.cancel_conversation_stream(
+        conversation_id=conversation.conversation_id,
+        stream_id="stream-123",
+        end_user_id="user-123",
+    )
+
+    assert cancelled_stream.status == "cancelled"
+    assert cancelled_stream.cancelled_at is not None
+
+    stream_item = item_for_stream(
+        dynamo_table, conversation.conversation_id, "stream-123"
+    )
+    assert stream_item is not None
+    assert stream_item["status"] == "cancelled"
+    assert stream_item["cancelled_at"] == cancelled_stream.cancelled_at.strftime(
+        PYNAMODB_UTC_DATETIME_FORMAT
+    )
+
+
+def test_cancel_conversation_stream_wont_cancel_unknown_stream(repository):
+    with pytest.raises(ConversationStreamNotFoundError):
+        repository.cancel_conversation_stream(
+            conversation_id="conversation-123",
+            stream_id="stream-123",
+            end_user_id="user-123",
+        )
+
+
+def test_cancel_conversation_stream_wont_cancel_another_users_stream(repository):
+    conversation, _ = conversation_with_stream(repository)
+
+    with pytest.raises(ConversationStreamNotFoundError):
+        repository.cancel_conversation_stream(
+            conversation_id=conversation.conversation_id,
+            stream_id="stream-123",
+            end_user_id="user-456",
+        )
+
+
+def test_is_conversation_stream_cancelled(repository):
+    assert (
+        repository.is_conversation_stream_cancelled(
+            conversation_id="conversation-123",
+            stream_id="stream-123",
+            end_user_id="user-123",
+        )
+        is False
+    )
+
+    conversation, _ = conversation_with_stream(repository)
+
+    assert (
+        repository.is_conversation_stream_cancelled(
+            conversation_id=conversation.conversation_id,
+            stream_id="stream-123",
+            end_user_id="user-123",
+        )
+        is False
+    )
+
+    repository.cancel_conversation_stream(
+        conversation_id=conversation.conversation_id,
+        stream_id="stream-123",
+        end_user_id="user-123",
+    )
+
+    assert (
+        repository.is_conversation_stream_cancelled(
+            conversation_id=conversation.conversation_id,
+            stream_id="stream-123",
+            end_user_id="user-123",
+        )
+        is True
+    )
+
+
+def test_delete_conversation_stream(dynamo_table, repository):
+    conversation, _ = conversation_with_stream(repository)
+
+    repository.delete_conversation_stream(
+        conversation_id=conversation.conversation_id,
+        stream_id="stream-123",
+        end_user_id="user-123",
+    )
+
+    assert (
+        item_for_stream(dynamo_table, conversation.conversation_id, "stream-123")
+        is None
+    )
 
 
 def test_get_conversation_with_messages(dynamo_table, repository):

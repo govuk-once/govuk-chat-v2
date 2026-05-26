@@ -7,6 +7,7 @@ from chat_api.v1.persistence.data_models import (
     ConversationBranchItem,
     ConversationMessageItem,
     ConversationMetadataItem,
+    ConversationStreamItem,
     ConversationTableItem,
     DEFAULT_CONVERSATION_LABEL,
     MessageParticipant,
@@ -15,6 +16,10 @@ from chat_api.v1.persistence.data_models import (
 
 
 class ConversationNotFoundError(Exception):
+    pass
+
+
+class ConversationStreamNotFoundError(Exception):
     pass
 
 
@@ -123,6 +128,71 @@ class ConversationRepository:
         conversation.save()
         return conversation
 
+    def create_conversation_stream(
+        self,
+        conversation_id: str,
+        stream_id: str,
+        end_user_id: str,
+        message_id: str,
+    ) -> ConversationStreamItem:
+        self._get_conversation(conversation_id, end_user_id)
+        stream = ConversationStreamItem.new_stream(
+            stream_id=stream_id,
+            conversation_id=conversation_id,
+            end_user_id=end_user_id,
+            message_id=message_id,
+        )
+        stream.save()
+        return stream
+
+    def cancel_conversation_stream(
+        self,
+        conversation_id: str,
+        stream_id: str,
+        end_user_id: str,
+    ) -> ConversationStreamItem:
+        stream = self._get_conversation_stream(
+            conversation_id=conversation_id,
+            stream_id=stream_id,
+            end_user_id=end_user_id,
+        )
+
+        if stream.status != "cancelled":
+            stream.record_cancelled()
+            stream.save()
+
+        return stream
+
+    def is_conversation_stream_cancelled(
+        self,
+        conversation_id: str,
+        stream_id: str,
+        end_user_id: str,
+    ) -> bool:
+        try:
+            stream = self._get_conversation_stream(
+                conversation_id=conversation_id,
+                stream_id=stream_id,
+                end_user_id=end_user_id,
+            )
+        except ConversationStreamNotFoundError:
+            return False
+
+        return stream.status == "cancelled"
+
+    def delete_conversation_stream(
+        self,
+        conversation_id: str,
+        stream_id: str,
+        end_user_id: str,
+    ) -> None:
+        stream = self._get_conversation_stream(
+            conversation_id=conversation_id,
+            stream_id=stream_id,
+            end_user_id=end_user_id,
+        )
+        stream.delete()
+
     def get_conversation_with_messages(
         self, conversation_id: str, end_user_id: str, message_count: int | None = None
     ) -> tuple[ConversationMetadataItem, list[ConversationMessageItem]]:
@@ -196,6 +266,29 @@ class ConversationRepository:
         except DoesNotExist as e:
             raise ConversationNotFoundError(
                 f"Conversation not found: {conversation_id}"
+            ) from e
+
+    def _get_conversation_stream(
+        self,
+        conversation_id: str,
+        stream_id: str,
+        end_user_id: str,
+    ) -> ConversationStreamItem:
+        try:
+            stream = ConversationStreamItem.get(
+                ConversationTableItem.conversation_pk(conversation_id),
+                ConversationStreamItem.stream_sk(stream_id),
+            )
+
+            if stream.end_user_id != end_user_id:
+                raise ConversationStreamNotFoundError(
+                    f"Conversation stream not found: {stream_id}"
+                )
+
+            return stream
+        except DoesNotExist as e:
+            raise ConversationStreamNotFoundError(
+                f"Conversation stream not found: {stream_id}"
             ) from e
 
     def _get_messages_for_conversation(
