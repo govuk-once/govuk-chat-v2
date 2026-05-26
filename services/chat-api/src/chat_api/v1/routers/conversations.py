@@ -17,7 +17,10 @@ from chat_api.v1.services.persistence_service import (
 from chat_api.v1.services.stream_service import (
     event_generator,
 )
-from chat_api.v1.persistence.conversation_repository import ConversationNotFoundError
+from chat_api.v1.persistence.conversation_repository import (
+    ConversationNotFoundError,
+    ConversationStreamNotFoundError,
+)
 from chat_api.v1.data_models.responses import (
     ConversationResponse,
     MessageResponse,
@@ -224,6 +227,25 @@ async def delete_conversation(
         repo.delete_conversation(conversation_id, end_user_id)
     except ConversationNotFoundError:
         raise HTTPException(status_code=404, detail="Conversation not found")
+
+    return Response(status_code=204)
+
+
+@router.delete("/{conversation_id}/streams/{stream_id}", status_code=204)
+async def delete_conversation_stream(
+    conversation_id: str,
+    stream_id: str,
+    end_user_id: str = Header(...),
+):
+    """
+    This endpoint is responsible for cancelling a specific conversation stream.
+    """
+    repo = get_conversation_repository()
+
+    try:
+        repo.cancel_conversation_stream(conversation_id, stream_id, end_user_id)
+    except ConversationStreamNotFoundError:
+        raise HTTPException(status_code=404, detail="Conversation stream not found")
 
     return Response(status_code=204)
 

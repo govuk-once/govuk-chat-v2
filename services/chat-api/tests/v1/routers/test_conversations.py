@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 from chat_api.v1.persistence.conversation_repository import (
     ConversationNotFoundError,
     ConversationRepository,
+    ConversationStreamNotFoundError,
 )
 from moto import mock_aws
 from chat_api.v1.persistence.data_models import (
@@ -416,6 +417,55 @@ class TestDeleteConversation:
         assert response.status_code == 422
         assert "end-user-id" in response.text
         mock_repository.delete_conversation.assert_not_called()
+
+
+class TestDeleteConversationStream:
+    @pytest.fixture
+    def mock_repository(self):
+        with patch(
+            "chat_api.v1.routers.conversations.get_conversation_repository"
+        ) as mock:
+            yield mock.return_value
+
+    def test_delete_conversation_stream_204_calls_repository_with_correct_args(
+        self, client, mock_repository
+    ):
+        response = client.delete(
+            "/v1/conversations/conversation-123/streams/stream-123",
+            headers={"end-user-id": "user-123"},
+        )
+
+        assert response.status_code == 204
+        assert response.content == b""
+        mock_repository.cancel_conversation_stream.assert_called_once_with(
+            "conversation-123", "stream-123", "user-123"
+        )
+
+    def test_delete_conversation_stream_404_if_stream_not_found(
+        self, client, mock_repository
+    ):
+        mock_repository.cancel_conversation_stream.side_effect = (
+            ConversationStreamNotFoundError("Conversation stream not found")
+        )
+
+        response = client.delete(
+            "/v1/conversations/conversation-123/streams/stream-123",
+            headers={"end-user-id": "user-123"},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Conversation stream not found"
+
+    def test_delete_conversation_stream_422_no_end_user_id_in_headers(
+        self, client, mock_repository
+    ):
+        response = client.delete(
+            "/v1/conversations/conversation-123/streams/stream-123"
+        )
+
+        assert response.status_code == 422
+        assert "end-user-id" in response.text
+        mock_repository.cancel_conversation_stream.assert_not_called()
 
 
 class TestCreateMessage:
