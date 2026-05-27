@@ -46,9 +46,19 @@ def mock_stream_parser():
     return _patcher
 
 
+@pytest.fixture(autouse=True)
+def mock_repository():
+    with patch(
+        "chat_api.v1.services.stream_service.get_conversation_repository"
+    ) as mock:
+        repository = mock.return_value
+        repository.is_conversation_stream_cancelled.return_value = False
+        yield repository
+
+
 @pytest.mark.asyncio
 async def test_event_generator_complete_agent_response(
-    base_context, mock_bg_tasks, mock_stream_parser
+    base_context, mock_bg_tasks, mock_stream_parser, mock_repository
 ):
     chunks = [
         {"data": json.dumps({"type": "stream_start"})},
@@ -103,6 +113,24 @@ async def test_event_generator_complete_agent_response(
         assert "stream_ended_at" in stream_end_data
         assert stream_end_data["stream_id"] == stream_start_data["stream_id"]
 
+        mock_repository.create_conversation_stream.assert_called_once_with(
+            conversation_id=base_context["conversation_id"],
+            stream_id=stream_start_data["stream_id"],
+            end_user_id=base_context["end_user_id"],
+            message_id=stream_start_data["message_id"],
+        )
+        assert mock_repository.is_conversation_stream_cancelled.call_count == 1
+        mock_repository.is_conversation_stream_cancelled.assert_called_with(
+            conversation_id=base_context["conversation_id"],
+            stream_id=stream_start_data["stream_id"],
+            end_user_id=base_context["end_user_id"],
+        )
+        mock_repository.delete_conversation_stream.assert_called_once_with(
+            conversation_id=base_context["conversation_id"],
+            stream_id=stream_start_data["stream_id"],
+            end_user_id=base_context["end_user_id"],
+        )
+
         mock_bg_tasks.add_task.assert_any_call(
             persist_message,
             ConversationAssistantMessage(
@@ -111,6 +139,61 @@ async def test_event_generator_complete_agent_response(
                 message="Hello world!",
                 status="complete",
                 stop_reason="end_turn",
+            ),
+        )
+
+
+@pytest.mark.asyncio
+async def test_event_generator_cancelled_from_stream_state(
+    base_context, mock_bg_tasks, mock_stream_parser, mock_repository
+):
+    chunks = [
+        {"data": json.dumps({"type": "stream_start"})},
+        {"data": json.dumps({"type": "content_delta", "delta": "1"})},
+        {
+            "data": json.dumps(
+                {"type": "stream_end", "stop_reason": "end_turn", "complete": True}
+            )
+        },
+    ]
+    mock_repository.is_conversation_stream_cancelled.return_value = True
+
+    with mock_stream_parser(chunks):
+        generator = event_generator(
+            agent_response=MagicMock(), background_tasks=mock_bg_tasks, **base_context
+        )
+
+        events = [event async for event in generator]
+
+        stream_start_data = json.loads(events[0]["data"])
+        content_event = events[1]
+        stream_end_event = events[2]
+        stream_end_data = json.loads(stream_end_event["data"])
+
+        assert json.loads(content_event["data"])["content"] == "1"
+        assert stream_end_event["event"] == "stream_end"
+        assert stream_end_data["stop_reason"] == "cancelled_by_user"
+        assert stream_end_data["complete"] is False
+        assert stream_end_data["stream_id"] == stream_start_data["stream_id"]
+
+        mock_repository.is_conversation_stream_cancelled.assert_called_once_with(
+            conversation_id=base_context["conversation_id"],
+            stream_id=stream_start_data["stream_id"],
+            end_user_id=base_context["end_user_id"],
+        )
+        mock_repository.delete_conversation_stream.assert_called_once_with(
+            conversation_id=base_context["conversation_id"],
+            stream_id=stream_start_data["stream_id"],
+            end_user_id=base_context["end_user_id"],
+        )
+        mock_bg_tasks.add_task.assert_any_call(
+            persist_message,
+            ConversationAssistantMessage(
+                **base_context,
+                message_id=stream_end_data["message_id"],
+                message="1",
+                status="cancelled",
+                stop_reason="cancelled_by_user",
             ),
         )
 
@@ -167,7 +250,7 @@ async def test_event_generator_cancelled_by_user(
 
 @pytest.mark.asyncio
 async def test_event_generator_error_in_stream(
-    base_context, mock_bg_tasks, mock_stream_parser
+    base_context, mock_bg_tasks, mock_stream_parser, mock_repository
 ):
     chunks = [
         {"data": json.dumps({"type": "stream_start"})},
@@ -206,6 +289,11 @@ async def test_event_generator_error_in_stream(
             == "Error event received: context_length_exceeded - Too many tokens"
         )
         assert "stream_ended_at" in error_data
+        mock_repository.delete_conversation_stream.assert_called_once_with(
+            conversation_id=base_context["conversation_id"],
+            stream_id=error_data["stream_id"],
+            end_user_id=base_context["end_user_id"],
+        )
 
         mock_bg_tasks.add_task.assert_any_call(
             persist_message,
@@ -317,7 +405,7 @@ async def test_event_generator_any_other_error(
 
 @pytest.mark.asyncio
 async def test_event_generator_does_not_persist_assistant_message_when_error_occurs_before_stream_start(
-    base_context, mock_bg_tasks, mock_stream_parser
+    base_context, mock_bg_tasks, mock_stream_parser, mock_repository
 ):
     chunks = [
         {
@@ -341,3 +429,5 @@ async def test_event_generator_does_not_persist_assistant_message_when_error_occ
     assert len(events) == 1
     assert events[0]["event"] == "error"
     mock_bg_tasks.add_task.assert_not_called()
+    mock_repository.create_conversation_stream.assert_not_called()
+    mock_repository.delete_conversation_stream.assert_not_called()

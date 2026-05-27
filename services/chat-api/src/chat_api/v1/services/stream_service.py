@@ -10,10 +10,12 @@ from chat_api.v1.schemas.events import (
     StreamErrorEvent,
 )
 from chat_api.agent import parse_agent_response_stream
+import asyncio
 import uuid
 import datetime
 from typing import Any
 from chat_api.v1.services.persistence_service import (
+    get_conversation_repository,
     persist_message,
 )
 from chat_api.v1.errors import (
@@ -54,6 +56,8 @@ async def event_generator(
     stop_reason = ""
     error_type = None
     error_message = None
+    stream_created = False
+    repository = get_conversation_repository()
 
     event_common: CommonEventFields = {
         "end_user_id": end_user_id,
@@ -68,12 +72,37 @@ async def event_generator(
         "conversation_id": conversation_id,
         "message_id": message_id,
     }
+
+    async def is_stream_cancelled() -> bool:
+        return stream_created and await asyncio.to_thread(
+            repository.is_conversation_stream_cancelled,
+            conversation_id=conversation_id,
+            stream_id=stream_id,
+            end_user_id=end_user_id,
+        )
+
+    def make_stream_end_event(stop_reason: str, complete: bool) -> StreamEndEvent:
+        return StreamEndEvent(
+            **event_common,
+            stream_ended_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            stop_reason=stop_reason,
+            complete=complete,
+        )
+
     try:
         for chunk in parse_agent_response_stream(agent_response):
             data = json.loads(chunk["data"])
 
             match data["type"]:
                 case "stream_start":
+                    await asyncio.to_thread(
+                        repository.create_conversation_stream,
+                        conversation_id=conversation_id,
+                        stream_id=stream_id,
+                        end_user_id=end_user_id,
+                        message_id=message_id,
+                    )
+                    stream_created = True
                     event = StreamStartEvent(
                         **event_common,
                         stream_started_at=datetime.datetime.now(
@@ -89,18 +118,25 @@ async def event_generator(
                     yield {"event": event.event, "data": event.model_dump_json()}
 
                 case "stream_end":
+                    is_cancelled = await is_stream_cancelled()
                     stop_reason = data["stop_reason"] or "end_turn"
-                    event = StreamEndEvent(
-                        **event_common,
-                        stream_ended_at=datetime.datetime.now(
-                            datetime.timezone.utc
-                        ).isoformat(),
-                        stop_reason=stop_reason,
-                        complete=bool(data.get("complete", True)),
-                    )
+                    complete = bool(data.get("complete", True))
+                    if is_cancelled:
+                        stop_reason = "cancelled_by_user"
+                        complete = False
+
+                    event = make_stream_end_event(stop_reason, complete)
                     status = "complete" if event.complete else "cancelled"
                     yield {"event": event.event, "data": event.model_dump_json()}
+                    break
                 case "error":
+                    if await is_stream_cancelled():
+                        stop_reason = "cancelled_by_user"
+                        event = make_stream_end_event(stop_reason, False)
+                        status = "cancelled"
+                        yield {"event": event.event, "data": event.model_dump_json()}
+                        break
+
                     raise ErrorEventReceivedFromAgentError(
                         f"Error event received: {data['error_type']} - {data.get('error_message')}"
                     )
@@ -108,6 +144,16 @@ async def event_generator(
                     raise UnknownAgentEventTypeError(
                         f"Received unknown event type: '{data.get('type')}'"
                     )
+        else:
+            if await is_stream_cancelled():
+                stop_reason = "cancelled_by_user"
+                event = make_stream_end_event(stop_reason, False)
+                status = "cancelled"
+                yield {"event": event.event, "data": event.model_dump_json()}
+            else:
+                raise ErrorEventReceivedFromAgentError(
+                    "Agent response stream ended before stream_end"
+                )
 
         conversation_msg = ConversationAssistantMessage(
             **message_common,
@@ -139,3 +185,11 @@ async def event_generator(
                 error_message=error_message,
             )
             background_tasks.add_task(persist_message, conversation_msg)
+    finally:
+        if stream_created:
+            await asyncio.to_thread(
+                repository.delete_conversation_stream,
+                conversation_id=conversation_id,
+                stream_id=stream_id,
+                end_user_id=end_user_id,
+            )
