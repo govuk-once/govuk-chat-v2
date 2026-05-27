@@ -18,6 +18,7 @@ def assert_base_event_fields(
     assert data["end_user_id"] == expected_end_user_id
     assert data["session_id"] == expected_session_id
     assert uuid.UUID(data["message_id"])
+    assert uuid.UUID(data["stream_id"])
 
 
 @pytest.fixture
@@ -100,6 +101,7 @@ async def test_event_generator_complete_agent_response(
         assert stream_end_data["stop_reason"] == "end_turn"
         assert stream_end_data["complete"] is True
         assert "stream_ended_at" in stream_end_data
+        assert stream_end_data["stream_id"] == stream_start_data["stream_id"]
 
         mock_bg_tasks.add_task.assert_any_call(
             persist_message,

@@ -48,13 +48,21 @@ async def event_generator(
     """
 
     message_id = str(uuid.uuid4())
+    stream_id = str(uuid.uuid4())
     message = ""
     status = ""
     stop_reason = ""
     error_type = None
     error_message = None
 
-    common: CommonEventFields = {
+    event_common: CommonEventFields = {
+        "end_user_id": end_user_id,
+        "session_id": session_id,
+        "conversation_id": conversation_id,
+        "message_id": message_id,
+        "stream_id": stream_id,
+    }
+    message_common = {
         "end_user_id": end_user_id,
         "session_id": session_id,
         "conversation_id": conversation_id,
@@ -67,7 +75,7 @@ async def event_generator(
             match data["type"]:
                 case "stream_start":
                     event = StreamStartEvent(
-                        **common,
+                        **event_common,
                         stream_started_at=datetime.datetime.now(
                             datetime.timezone.utc
                         ).isoformat(),
@@ -83,7 +91,7 @@ async def event_generator(
                 case "stream_end":
                     stop_reason = data["stop_reason"] or "end_turn"
                     event = StreamEndEvent(
-                        **common,
+                        **event_common,
                         stream_ended_at=datetime.datetime.now(
                             datetime.timezone.utc
                         ).isoformat(),
@@ -102,7 +110,7 @@ async def event_generator(
                     )
 
         conversation_msg = ConversationAssistantMessage(
-            **common,
+            **message_common,
             message=message,
             status=status,
             stop_reason=stop_reason,
@@ -114,7 +122,7 @@ async def event_generator(
         error_type = e.__class__.__name__
         error_message = str(e)
         error_event = StreamErrorEvent(
-            **common,
+            **event_common,
             stream_ended_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
             error_type=error_type,
             error_message=error_message,
@@ -123,7 +131,7 @@ async def event_generator(
 
         if message != "":
             conversation_msg = ConversationAssistantMessage(
-                **common,
+                **message_common,
                 message=message,
                 status="error",
                 stop_reason="error",
