@@ -1,4 +1,3 @@
-from fastapi import BackgroundTasks
 from chat_api.v1.data_models.messages import (
     ConversationAssistantMessage,
 )
@@ -30,7 +29,6 @@ async def event_generator(
     conversation_id: str,
     end_user_id: str,
     session_id: str,
-    background_tasks: BackgroundTasks,
 ):
     """
     This function is responsible for generating the events that will be streamed back to the client.
@@ -45,17 +43,11 @@ async def event_generator(
     correct user in the returned metadata and database.
     **session_id:** The unique identifier for the session. This is used to associate the events with the
     correct session in the returned metadata and database.
-    **background_tasks:** The FastAPI BackgroundTasks instance, used to schedule the persist message and
-    name conversation background tasks.
     """
 
     message_id = str(uuid.uuid4())
     stream_id = str(uuid.uuid4())
     message = ""
-    status = ""
-    stop_reason = ""
-    error_type = None
-    error_message = None
     stream_created = False
     repository = get_conversation_repository()
 
@@ -72,6 +64,24 @@ async def event_generator(
         "conversation_id": conversation_id,
         "message_id": message_id,
     }
+    stream_end_event: StreamEndEvent | None = None
+
+    async def persist_assistant_message(
+        *,
+        status: str,
+        stop_reason: str,
+        error_type: str | None = None,
+        error_message: str | None = None,
+    ) -> None:
+        conversation_msg = ConversationAssistantMessage(
+            **message_common,
+            message=message,
+            status=status,
+            stop_reason=stop_reason,
+            error_type=error_type,
+            error_message=error_message,
+        )
+        await persist_message(conversation_msg)
 
     async def is_stream_cancelled() -> bool:
         return stream_created and await asyncio.to_thread(
@@ -120,22 +130,19 @@ async def event_generator(
 
                 case "stream_end":
                     is_cancelled = await is_stream_cancelled()
-                    stop_reason = data["stop_reason"] or "end_turn"
                     complete = bool(data.get("complete", True))
+                    stop_reason = data["stop_reason"] or "end_turn"
                     if is_cancelled:
                         stop_reason = "cancelled_by_user"
                         complete = False
 
-                    event = make_stream_end_event(stop_reason, complete)
-                    status = "complete" if event.complete else "cancelled"
-                    yield {"event": event.event, "data": event.model_dump_json()}
+                    stream_end_event = make_stream_end_event(stop_reason, complete)
                     break
                 case "error":
                     if await is_stream_cancelled():
-                        stop_reason = "cancelled_by_user"
-                        event = make_stream_end_event(stop_reason, False)
-                        status = "cancelled"
-                        yield {"event": event.event, "data": event.model_dump_json()}
+                        stream_end_event = make_stream_end_event(
+                            "cancelled_by_user", False
+                        )
                         break
 
                     raise ErrorEventReceivedFromAgentError(
@@ -147,24 +154,11 @@ async def event_generator(
                     )
         else:
             if await is_stream_cancelled():
-                stop_reason = "cancelled_by_user"
-                event = make_stream_end_event(stop_reason, False)
-                status = "cancelled"
-                yield {"event": event.event, "data": event.model_dump_json()}
+                stream_end_event = make_stream_end_event("cancelled_by_user", False)
             else:
                 raise ErrorEventReceivedFromAgentError(
                     "Agent response stream ended before stream_end"
                 )
-
-        conversation_msg = ConversationAssistantMessage(
-            **message_common,
-            message=message,
-            status=status,
-            stop_reason=stop_reason,
-            error_type=error_type,
-            error_message=error_message,
-        )
-        background_tasks.add_task(persist_message, conversation_msg)
     except Exception as e:
         error_type = e.__class__.__name__
         error_message = str(e)
@@ -174,18 +168,25 @@ async def event_generator(
             error_type=error_type,
             error_message=error_message,
         )
-        yield {"event": error_event.event, "data": error_event.model_dump_json()}
 
         if message != "":
-            conversation_msg = ConversationAssistantMessage(
-                **message_common,
-                message=message,
+            await persist_assistant_message(
                 status="error",
                 stop_reason="error",
                 error_type=error_type,
                 error_message=error_message,
             )
-            background_tasks.add_task(persist_message, conversation_msg)
+        yield {"event": error_event.event, "data": error_event.model_dump_json()}
+    else:
+        if stream_end_event is not None:
+            await persist_assistant_message(
+                status="complete" if stream_end_event.complete else "cancelled",
+                stop_reason=stream_end_event.stop_reason,
+            )
+            yield {
+                "event": stream_end_event.event,
+                "data": stream_end_event.model_dump_json(),
+            }
     finally:
         if stream_created:
             await asyncio.to_thread(

@@ -61,7 +61,6 @@ async def _generate_and_stream_response(
     end_user_id: str,
     session_id: str,
     conversation_id: str,
-    background_tasks: BackgroundTasks,
 ):
     """
     This function is responsible for invoking the agent runtime with the user's message
@@ -73,7 +72,6 @@ async def _generate_and_stream_response(
     **end_user_id:** The unique identifier for the end user.
     **session_id:** The unique identifier for the session.
     **conversation_id:** The unique identifier for the conversation.
-    **background_tasks:** The FastAPI BackgroundTasks instance, used to schedule background tasks.
     """
     response = invoke_agent_runtime(
         message, end_user_id=end_user_id, session_id=session_id
@@ -85,7 +83,6 @@ async def _generate_and_stream_response(
             conversation_id=conversation_id,
             end_user_id=end_user_id,
             session_id=session_id,
-            background_tasks=background_tasks,
         )
     )
 
@@ -120,7 +117,6 @@ async def create_conversation(
         end_user_id=end_user_id,
         session_id=session_id,
         conversation_id=conversation_id,
-        background_tasks=background_tasks,
     )
 
 
@@ -258,7 +254,6 @@ async def delete_conversation_stream(
 async def create_message(
     conversation_id: str,
     request: ConversationPostRequest,
-    background_tasks: BackgroundTasks,
     end_user_id: str = Header(...),
 ):
     """
@@ -270,7 +265,6 @@ async def create_message(
     **conversation_id:** The unique identifier for the conversation that the message will be added to.
     **request:** The ConversationPostRequest object containing the user's message and relevant metadata.
     **end_user_id:** The unique identifier for the end user, passed in the request header.
-    **background_tasks:** The FastAPI BackgroundTasks instance, used to schedule background tasks.
     """
     session_id = request.session_id or str(uuid.uuid4())
 
@@ -284,5 +278,4 @@ async def create_message(
         end_user_id=end_user_id,
         session_id=session_id,
         conversation_id=conversation_id,
-        background_tasks=background_tasks,
     )

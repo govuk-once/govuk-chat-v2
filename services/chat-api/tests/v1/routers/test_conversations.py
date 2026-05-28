@@ -143,7 +143,7 @@ class TestCreateConversation:
         assert kwargs["end_user_id"] == "user-123"
         assert kwargs["session_id"] == valid_payload["session_id"]
         assert "conversation_id" in kwargs
-        assert kwargs["background_tasks"] is not None
+        assert "background_tasks" not in kwargs
 
     def test_create_conversation_200_name_conversation_background_tasks_called_with_correct_args(
         self, client, valid_payload, mock_event_gen, mock_invoke, mock_name_conversation
