@@ -110,6 +110,37 @@ describe('ChatApiStack', () => {
         Roles: Match.arrayWith([Match.objectLike({ Ref: roleId })]),
       });
     });
+
+    it('applies a policy to allow invoking and stopping AgentCore runtime sessions', () => {
+      const template = stackTemplate();
+
+      const resources = template.findResources('AWS::Lambda::Function', {
+        Properties: {
+          FunctionName: Match.stringLikeRegexp('api-function'),
+        },
+      });
+
+      const roleId =
+        Object.values(resources)[0].Properties.Role['Fn::GetAtt'][0];
+
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: [
+                'bedrock-agentcore:InvokeAgentRuntime',
+                'bedrock-agentcore:StopRuntimeSession',
+              ],
+              Resource: [
+                baseProps.agentRuntimeArn,
+                `${baseProps.agentRuntimeArn}/*`,
+              ],
+            }),
+          ]),
+        },
+        Roles: Match.arrayWith([Match.objectLike({ Ref: roleId })]),
+      });
+    });
   });
 
   describe('API gateway', () => {

@@ -90,7 +90,10 @@ export class ChatApiStack extends cdk.Stack {
     apiLambda.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: ['bedrock-agentcore:InvokeAgentRuntime'],
+        actions: [
+          'bedrock-agentcore:InvokeAgentRuntime',
+          'bedrock-agentcore:StopRuntimeSession',
+        ],
         resources: [
           // AgentCore requires both the base runtime ARN and a wildcard for sub-paths
           // (e.g. /runtime-endpoint/DEFAULT).
