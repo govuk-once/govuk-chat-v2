@@ -134,6 +134,7 @@ class ConversationRepository:
         stream_id: str,
         end_user_id: str,
         message_id: str,
+        runtime_session_id: str,
     ) -> ConversationStreamItem:
         self._get_conversation(conversation_id, end_user_id)
         stream = ConversationStreamItem.new_stream(
@@ -141,6 +142,7 @@ class ConversationRepository:
             conversation_id=conversation_id,
             end_user_id=end_user_id,
             message_id=message_id,
+            runtime_session_id=runtime_session_id,
         )
         stream.save()
         return stream

@@ -101,6 +101,7 @@ async def event_generator(
                         stream_id=stream_id,
                         end_user_id=end_user_id,
                         message_id=message_id,
+                        runtime_session_id=session_id,
                     )
                     stream_created = True
                     event = StreamStartEvent(

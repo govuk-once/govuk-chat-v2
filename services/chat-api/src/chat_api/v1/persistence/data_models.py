@@ -214,6 +214,7 @@ class ConversationStreamItem(ConversationTableItem, discriminator="ConversationS
     stream_id = UnicodeAttribute()
     end_user_id = UnicodeAttribute()
     message_id = UnicodeAttribute()
+    runtime_session_id = UnicodeAttribute()
     status = UnicodeAttribute()
     created_at = UTCDateTimeAttribute()
     cancelled_at = UTCDateTimeAttribute(null=True)
@@ -229,6 +230,7 @@ class ConversationStreamItem(ConversationTableItem, discriminator="ConversationS
         conversation_id: str,
         end_user_id: str,
         message_id: str,
+        runtime_session_id: str,
         created_at: datetime | None = None,
     ) -> "ConversationStreamItem":
         created_at = created_at or datetime.now(timezone.utc)
@@ -239,6 +241,7 @@ class ConversationStreamItem(ConversationTableItem, discriminator="ConversationS
             stream_id=stream_id,
             end_user_id=end_user_id,
             message_id=message_id,
+            runtime_session_id=runtime_session_id,
             status="active",
             created_at=created_at,
         )

@@ -74,6 +74,7 @@ def conversation_with_stream(repository):
         stream_id="stream-123",
         end_user_id="user-123",
         message_id="message-123",
+        runtime_session_id="session-123",
     )
     return conversation, stream
 
@@ -487,6 +488,7 @@ def test_create_conversation_stream(dynamo_table, repository):
         stream_id="stream-123",
         end_user_id="user-123",
         message_id="message-123",
+        runtime_session_id="session-123",
     )
 
     assert isinstance(stream, ConversationStreamItem)
@@ -494,6 +496,7 @@ def test_create_conversation_stream(dynamo_table, repository):
     assert stream.conversation_id == conversation.conversation_id
     assert stream.end_user_id == "user-123"
     assert stream.message_id == "message-123"
+    assert stream.runtime_session_id == "session-123"
     assert stream.status == "active"
     assert stream.cancelled_at is None
 
@@ -507,6 +510,7 @@ def test_create_conversation_stream(dynamo_table, repository):
     assert stream_item["stream_id"] == "stream-123"
     assert stream_item["end_user_id"] == "user-123"
     assert stream_item["message_id"] == "message-123"
+    assert stream_item["runtime_session_id"] == "session-123"
     assert stream_item["status"] == "active"
 
 
@@ -520,6 +524,7 @@ def test_cancel_conversation_stream_marks_stream_as_cancelled(dynamo_table, repo
     )
 
     assert cancelled_stream.status == "cancelled"
+    assert cancelled_stream.runtime_session_id == "session-123"
     assert cancelled_stream.cancelled_at is not None
 
     stream_item = item_for_stream(

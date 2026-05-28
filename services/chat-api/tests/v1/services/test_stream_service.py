@@ -118,6 +118,7 @@ async def test_event_generator_complete_agent_response(
             stream_id=stream_start_data["stream_id"],
             end_user_id=base_context["end_user_id"],
             message_id=stream_start_data["message_id"],
+            runtime_session_id=base_context["session_id"],
         )
         assert mock_repository.is_conversation_stream_cancelled.call_count == 1
         mock_repository.is_conversation_stream_cancelled.assert_called_with(
