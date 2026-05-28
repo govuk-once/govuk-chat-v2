@@ -6,7 +6,7 @@ from chat_api.v1.schemas.conversations import (
     ConversationPatchRequest,
 )
 from chat_api.v1.data_models.messages import ConversationUserMessage
-from chat_api.agent import invoke_agent_runtime
+from chat_api.agent import invoke_agent_runtime, stop_agent_runtime_session
 import uuid
 from chat_api.v1.services.persistence_service import (
     persist_message,
@@ -243,9 +243,13 @@ async def delete_conversation_stream(
     repo = get_conversation_repository()
 
     try:
-        repo.cancel_conversation_stream(conversation_id, stream_id, end_user_id)
+        stream = repo.cancel_conversation_stream(
+            conversation_id, stream_id, end_user_id
+        )
     except ConversationStreamNotFoundError:
         raise HTTPException(status_code=404, detail="Conversation stream not found")
+
+    stop_agent_runtime_session(stream.runtime_session_id)
 
     return Response(status_code=204)
 
