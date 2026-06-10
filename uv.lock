@@ -182,7 +182,7 @@ wheels = [
 
 [[package]]
 name = "aws-opentelemetry-distro"
-version = "0.17.0"
+version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools" },
@@ -247,10 +247,11 @@ dependencies = [
     { name = "opentelemetry-sdk-extension-aws" },
     { name = "protobuf" },
     { name = "pyyaml" },
+    { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cf/3c/66a219362127d5edb83c9e230b92a25272ac9cc65a5e937211dea2226892/aws_opentelemetry_distro-0.17.0.tar.gz", hash = "sha256:c7e71b78573bca94437937608383332d911124b12a1f0de2134617759bc6f624", size = 323843, upload-time = "2026-04-09T22:22:41.403Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2a/5e/baff7c21cf0c7d9a2c34f0f4efeaa2d79effb17b45944c8b6144b8f3dde9/aws_opentelemetry_distro-0.17.1.tar.gz", hash = "sha256:245b382178779e0b5c1fbf70a6586e77f1c217c00d6ed938694fe73f6dd9f4a3", size = 324490, upload-time = "2026-05-26T17:19:08.826Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/dc/8d8637d447883da357a603236c066da58f5793f0ad6313c579aaac361820/aws_opentelemetry_distro-0.17.0-py3-none-any.whl", hash = "sha256:6abc38c8923192b609f4233050472e6dc7841a763640e50cf048c545ac1dcdae", size = 211721, upload-time = "2026-04-09T22:22:40.033Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/66/3b71d9a07d789b841489f6ec5b65c86256f39915aee22e6afccfde74dbd9/aws_opentelemetry_distro-0.17.1-py3-none-any.whl", hash = "sha256:055851a5cfe570392412eb4e37c34d1492524954a2badf0fc50a923e05b41ac2", size = 211965, upload-time = "2026-05-26T17:19:07.337Z" },
 ]
 
 [[package]]
@@ -769,8 +770,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
-    { name = "aws-opentelemetry-distro", specifier = ">=0.16.0" },
-    { name = "bedrock-agentcore", specifier = ">=1.11.0" },
+    { name = "aws-opentelemetry-distro", specifier = ">=0.17.1" },
+    { name = "bedrock-agentcore", specifier = ">=1.4.5" },
     { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
     { name = "strands-agents", specifier = ">=1.30.0" },
 ]
@@ -3513,11 +3514,11 @@ wheels = [
 
 [[package]]
 name = "urllib3"
-version = "2.6.3"
+version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c7/24/5f1b3bdffd70275f6661c76461e25f024d5a38a46f04aaca912426a2b1d3/urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed", size = 435556, upload-time = "2026-01-07T16:24:43.925Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/0c/06f8b233b8fd13b9e5ee11424ef85419ba0d8ba0b3138bf360be2ff56953/urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c", size = 433602, upload-time = "2026-05-07T16:13:18.596Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4", size = 131584, upload-time = "2026-01-07T16:24:42.685Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897", size = 131087, upload-time = "2026-05-07T16:13:17.151Z" },
 ]
 
 [[package]]
