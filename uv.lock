@@ -546,7 +546,7 @@ requires-dist = [
     { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
     { name = "boto3", specifier = ">=1.42.66" },
     { name = "chat-assistants", editable = "libs/python/chat-assistants" },
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.118.0" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.136.3" },
     { name = "pynamodb", specifier = ">=6.1.0" },
     { name = "sse-starlette", specifier = ">=3.0.3" },
 ]
