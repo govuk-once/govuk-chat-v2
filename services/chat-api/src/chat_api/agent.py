@@ -26,6 +26,15 @@ def invoke_agent_runtime(
     )
 
 
+def stop_agent_runtime_session(runtime_session_id: str) -> dict:
+    client = boto3.client("bedrock-agentcore")
+    return client.stop_runtime_session(
+        agentRuntimeArn=os.environ["AGENT_RUNTIME_ARN"],
+        runtimeSessionId=runtime_session_id,
+        qualifier="DEFAULT",
+    )
+
+
 def parse_agent_response_stream(response: dict):
     # Using a small chunk_size here because the LLM returns quite small chunks
     # of text. iter_lines will wait until the chunk has been filled before

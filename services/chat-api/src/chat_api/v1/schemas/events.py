@@ -10,6 +10,7 @@ class CommonEventFields(TypedDict):
 
     conversation_id: str
     message_id: str
+    stream_id: str
     session_id: str
     end_user_id: str
 
@@ -22,6 +23,7 @@ class BaseConversationEvent(BaseModel):
 
     conversation_id: str
     message_id: str
+    stream_id: str
     session_id: str
     end_user_id: str
 

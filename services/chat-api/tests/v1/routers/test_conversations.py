@@ -1,11 +1,14 @@
-import pytest
+from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 from chat_api.main import app
 from botocore.exceptions import ClientError
 from chat_api.v1.persistence.conversation_repository import (
     ConversationNotFoundError,
     ConversationRepository,
+    ConversationStreamNotFoundError,
 )
 from moto import mock_aws
 from chat_api.v1.persistence.data_models import (
@@ -140,7 +143,7 @@ class TestCreateConversation:
         assert kwargs["end_user_id"] == "user-123"
         assert kwargs["session_id"] == valid_payload["session_id"]
         assert "conversation_id" in kwargs
-        assert kwargs["background_tasks"] is not None
+        assert "background_tasks" not in kwargs
 
     def test_create_conversation_200_name_conversation_background_tasks_called_with_correct_args(
         self, client, valid_payload, mock_event_gen, mock_invoke, mock_name_conversation
@@ -416,6 +419,69 @@ class TestDeleteConversation:
         assert response.status_code == 422
         assert "end-user-id" in response.text
         mock_repository.delete_conversation.assert_not_called()
+
+
+class TestDeleteConversationStream:
+    @pytest.fixture
+    def mock_repository(self):
+        with patch(
+            "chat_api.v1.routers.conversations.get_conversation_repository"
+        ) as mock:
+            yield mock.return_value
+
+    @pytest.fixture
+    def mock_stop_agent_runtime_session(self):
+        with patch(
+            "chat_api.v1.routers.conversations.stop_agent_runtime_session"
+        ) as mock:
+            yield mock
+
+    def test_delete_conversation_stream_204_cancels_stream_and_stops_agentcore_session(
+        self, client, mock_repository, mock_stop_agent_runtime_session
+    ):
+        mock_repository.cancel_conversation_stream.return_value = SimpleNamespace(
+            runtime_session_id="runtime-session-123"
+        )
+
+        response = client.delete(
+            "/v1/conversations/conversation-123/streams/stream-123",
+            headers={"end-user-id": "user-123"},
+        )
+
+        assert response.status_code == 204
+        assert response.content == b""
+        mock_repository.cancel_conversation_stream.assert_called_once_with(
+            "conversation-123", "stream-123", "user-123"
+        )
+        mock_stop_agent_runtime_session.assert_called_once_with("runtime-session-123")
+
+    def test_delete_conversation_stream_404_if_stream_not_found(
+        self, client, mock_repository, mock_stop_agent_runtime_session
+    ):
+        mock_repository.cancel_conversation_stream.side_effect = (
+            ConversationStreamNotFoundError("Conversation stream not found")
+        )
+
+        response = client.delete(
+            "/v1/conversations/conversation-123/streams/stream-123",
+            headers={"end-user-id": "user-123"},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Conversation stream not found"
+        mock_stop_agent_runtime_session.assert_not_called()
+
+    def test_delete_conversation_stream_422_no_end_user_id_in_headers(
+        self, client, mock_repository, mock_stop_agent_runtime_session
+    ):
+        response = client.delete(
+            "/v1/conversations/conversation-123/streams/stream-123"
+        )
+
+        assert response.status_code == 422
+        assert "end-user-id" in response.text
+        mock_repository.cancel_conversation_stream.assert_not_called()
+        mock_stop_agent_runtime_session.assert_not_called()
 
 
 class TestCreateMessage:

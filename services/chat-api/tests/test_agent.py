@@ -1,5 +1,9 @@
 from unittest.mock import MagicMock
-from chat_api.agent import invoke_agent_runtime, parse_agent_response_stream
+from chat_api.agent import (
+    invoke_agent_runtime,
+    parse_agent_response_stream,
+    stop_agent_runtime_session,
+)
 import json
 
 
@@ -32,6 +36,21 @@ def test_invoke_agent_uses_default_session_and_user_id(mocker):
         agentRuntimeArn="test-arn",
         runtimeSessionId="mock-uuid",
         payload=b'{"prompt": "test prompt", "end_user_id": null}',
+        qualifier="DEFAULT",
+    )
+
+
+def test_stop_agent_runtime_session(mocker):
+    mock_client = mocker.Mock()
+    mock_client.stop_runtime_session.return_value = {}
+    mocker.patch("chat_api.agent.boto3.client", return_value=mock_client)
+    mocker.patch.dict("os.environ", {"AGENT_RUNTIME_ARN": "test-arn"})
+
+    stop_agent_runtime_session("session_123")
+
+    mock_client.stop_runtime_session.assert_called_once_with(
+        agentRuntimeArn="test-arn",
+        runtimeSessionId="session_123",
         qualifier="DEFAULT",
     )
 

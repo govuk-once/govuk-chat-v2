@@ -6,7 +6,7 @@ from chat_api.v1.schemas.conversations import (
     ConversationPatchRequest,
 )
 from chat_api.v1.data_models.messages import ConversationUserMessage
-from chat_api.agent import invoke_agent_runtime
+from chat_api.agent import invoke_agent_runtime, stop_agent_runtime_session
 import uuid
 from chat_api.v1.services.persistence_service import (
     persist_message,
@@ -17,7 +17,10 @@ from chat_api.v1.services.persistence_service import (
 from chat_api.v1.services.stream_service import (
     event_generator,
 )
-from chat_api.v1.persistence.conversation_repository import ConversationNotFoundError
+from chat_api.v1.persistence.conversation_repository import (
+    ConversationNotFoundError,
+    ConversationStreamNotFoundError,
+)
 from chat_api.v1.data_models.responses import (
     ConversationResponse,
     MessageResponse,
@@ -58,7 +61,6 @@ async def _generate_and_stream_response(
     end_user_id: str,
     session_id: str,
     conversation_id: str,
-    background_tasks: BackgroundTasks,
 ):
     """
     This function is responsible for invoking the agent runtime with the user's message
@@ -70,7 +72,6 @@ async def _generate_and_stream_response(
     **end_user_id:** The unique identifier for the end user.
     **session_id:** The unique identifier for the session.
     **conversation_id:** The unique identifier for the conversation.
-    **background_tasks:** The FastAPI BackgroundTasks instance, used to schedule background tasks.
     """
     response = invoke_agent_runtime(
         message, end_user_id=end_user_id, session_id=session_id
@@ -82,7 +83,6 @@ async def _generate_and_stream_response(
             conversation_id=conversation_id,
             end_user_id=end_user_id,
             session_id=session_id,
-            background_tasks=background_tasks,
         )
     )
 
@@ -117,7 +117,6 @@ async def create_conversation(
         end_user_id=end_user_id,
         session_id=session_id,
         conversation_id=conversation_id,
-        background_tasks=background_tasks,
     )
 
 
@@ -228,11 +227,33 @@ async def delete_conversation(
     return Response(status_code=204)
 
 
+@router.delete("/{conversation_id}/streams/{stream_id}", status_code=204)
+async def delete_conversation_stream(
+    conversation_id: str,
+    stream_id: str,
+    end_user_id: str = Header(...),
+):
+    """
+    This endpoint is responsible for cancelling a specific conversation stream.
+    """
+    repo = get_conversation_repository()
+
+    try:
+        stream = repo.cancel_conversation_stream(
+            conversation_id, stream_id, end_user_id
+        )
+    except ConversationStreamNotFoundError:
+        raise HTTPException(status_code=404, detail="Conversation stream not found")
+
+    stop_agent_runtime_session(stream.runtime_session_id)
+
+    return Response(status_code=204)
+
+
 @router.post("/{conversation_id}/messages")
 async def create_message(
     conversation_id: str,
     request: ConversationPostRequest,
-    background_tasks: BackgroundTasks,
     end_user_id: str = Header(...),
 ):
     """
@@ -244,7 +265,6 @@ async def create_message(
     **conversation_id:** The unique identifier for the conversation that the message will be added to.
     **request:** The ConversationPostRequest object containing the user's message and relevant metadata.
     **end_user_id:** The unique identifier for the end user, passed in the request header.
-    **background_tasks:** The FastAPI BackgroundTasks instance, used to schedule background tasks.
     """
     session_id = request.session_id or str(uuid.uuid4())
 
@@ -258,5 +278,4 @@ async def create_message(
         end_user_id=end_user_id,
         session_id=session_id,
         conversation_id=conversation_id,
-        background_tasks=background_tasks,
     )
