@@ -1,1 +1,1 @@
-../../../common/scripts/fetch-cdk-output.sh
+../../../scripts/shared/fetch-cdk-output.sh

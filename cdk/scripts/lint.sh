@@ -1,1 +1,1 @@
-../../common/scripts/pnpm-eslint.sh
+../../scripts/shared/pnpm-eslint.sh

@@ -1,1 +1,1 @@
-../../../common/scripts/uv-pytest.sh
+../../../scripts/shared/uv-pytest.sh

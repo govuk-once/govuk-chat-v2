@@ -1,1 +1,1 @@
-../../../common/scripts/aws-curl.sh
+../../../scripts/shared/aws-curl.sh

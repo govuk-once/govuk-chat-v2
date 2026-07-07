@@ -1,1 +1,1 @@
-../../common/scripts/tsc-no-emit.sh
+../../scripts/shared/tsc-no-emit.sh

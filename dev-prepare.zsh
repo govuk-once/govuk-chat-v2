@@ -80,7 +80,7 @@ else
     return 1
 fi
 
-if ! ./common/scripts/check-dev-aws-credentials.sh --no-suggestion; then
+if ! ./scripts/shared/check-dev-aws-credentials.sh --no-suggestion; then
     source ./refresh-dev-aws-credentials.zsh
 fi
 
