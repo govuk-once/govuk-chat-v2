@@ -8,13 +8,13 @@ if [[ "${ZSH_EVAL_CONTEXT}" == "toplevel" ]]; then
     exit 1
 fi
 
-# Get script directory in zsh
-SCRIPT_DIR="${${(%):-%x}:A:h}"
+# Find project root directory with cryptic ZSH parameter expansion
+ROOT_DIR="${${(%):-%x}:A:h:h}"
 CURRENT_DIR="$(pwd)"
 
-if test "$CURRENT_DIR" != "$SCRIPT_DIR"; then
-    echo "== Changing directory to ${SCRIPT_DIR}"
-    cd $SCRIPT_DIR
+if test "$CURRENT_DIR" != "$ROOT_DIR"; then
+    echo "== Changing directory to ${ROOT_DIR}"
+    cd $ROOT_DIR
 fi
 
 echo "== Checking GitHub Authentication =="
@@ -80,11 +80,11 @@ else
     return 1
 fi
 
-if ! ./scripts/shared/check-dev-aws-credentials.sh --no-suggestion; then
-    source ./refresh-dev-aws-credentials.zsh
+if ! ${ROOT_DIR}/scripts/check-dev-aws-credentials.sh --no-suggestion; then
+    source ${ROOT_DIR}/scripts/refresh-dev-aws-credentials.zsh
 fi
 
-if test "$CURRENT_DIR" != "$SCRIPT_DIR"; then
+if test "$CURRENT_DIR" != "$ROOT_DIR"; then
     echo "== Changing back to ${CURRENT_DIR}"
     cd $CURRENT_DIR
 fi

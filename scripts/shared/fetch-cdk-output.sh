@@ -24,7 +24,7 @@ OUTPUT_NAME="${POSITIONAL[1]}"
 PROJECT_DIR="$(dirname "${BASH_SOURCE[0]}")/.."
 
 if [ "$CHECK_CREDENTIALS" = true ];  then
-  $PROJECT_DIR/../../scripts/shared/check-dev-aws-credentials.sh --quiet
+  $PROJECT_DIR/../../scripts/check-dev-aws-credentials.sh --quiet
 fi
 
 cd "$PROJECT_DIR/../../cdk"
