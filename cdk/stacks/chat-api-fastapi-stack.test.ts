@@ -3,7 +3,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import baseContext from '../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
 import { vi, describe, it } from 'vitest';
-import { ChatApiStack } from './chat-api-stack.ts';
+import { ChatApiFastapiStack } from './chat-api-fastapi-stack.ts';
 
 const context = {
   ...baseContext,
@@ -11,7 +11,7 @@ const context = {
   'aws:cdk:bundling-stacks': [],
 };
 
-describe('ChatApiStack', () => {
+describe('ChatApiFastapiStack', () => {
   const baseProps = {
     serviceName: 'chat-api',
     teamName: 'chat',
@@ -23,14 +23,14 @@ describe('ChatApiStack', () => {
 
   function stackTemplate() {
     const app = new cdk.App({ context });
-    const stack = new ChatApiStack(app, 'TestStack', baseProps);
+    const stack = new ChatApiFastapiStack(app, 'TestStack', baseProps);
     return Template.fromStack(stack);
   }
 
   describe('Stack tags', () => {
     function stackTags() {
       const app = new cdk.App({ context });
-      const stack = new ChatApiStack(app, 'TestStack', baseProps);
+      const stack = new ChatApiFastapiStack(app, 'TestStack', baseProps);
       return Tags.fromStack(stack);
     }
 

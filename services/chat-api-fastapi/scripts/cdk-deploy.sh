@@ -8,4 +8,4 @@ ${PROJECT_DIR}/../../scripts/check-dev-aws-credentials.sh
 
 cd "$PROJECT_DIR/../../cdk"
 
-cdk deploy ChatApiStack "$@"
+cdk deploy ChatApiFastapiStack "$@"

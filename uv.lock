@@ -13,7 +13,7 @@ resolution-markers = [
 [manifest]
 members = [
     "agent-runtime-types",
-    "chat-api",
+    "chat-api-fastapi",
     "chat-assistants",
     "chat-prototyping",
     "example-agent",
@@ -556,9 +556,9 @@ wheels = [
 ]
 
 [[package]]
-name = "chat-api"
+name = "chat-api-fastapi"
 version = "0.1.0"
-source = { editable = "services/chat-api" }
+source = { editable = "services/chat-api-fastapi" }
 dependencies = [
     { name = "agent-runtime-types" },
     { name = "boto3" },
