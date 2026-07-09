@@ -14,7 +14,7 @@ GOV.UK Chat V2 is likely to be:
 
 ## Directory structure
 
-- common: files common to multiple distinct sub-projects
+- scripts: script files for working with this repo
 - libs: shared libraries such as assitants or analysis
 - utilities: standalone tools, such as evaluation suite
 - services: microservices that form the suite of applications (e.g api, admin, frontends)
@@ -31,9 +31,9 @@ For NodeJS, install [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#insta
 
 You'll need to authenticate with AWS, this uses the [GDS CLI](https://github.com/alphagov/gds-cli).
 
-To set-up your environment with ZSH then run `source dev-prepare.zsh`
+To set-up your environment with ZSH then run `source scripts/dev-prepare.zsh`
 
-If you don't use ZSH check the [dev-prepare.zsh](dev-prepare.zsh) script to check which commands to run.
+If you don't use ZSH check the [scripts/dev-prepare.zsh](scripts/dev-prepare.zsh) script to check which commands to run.
 
 ## Decisions
 

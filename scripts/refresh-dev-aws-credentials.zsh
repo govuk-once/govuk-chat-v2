@@ -23,4 +23,4 @@ fi
 eval $env_vars
 
 echo "== Checking AWS credentials work =="
-aws sts get-caller-identity --no-cli-pager
+aws sts get-caller-identity --no-cli-pager || return 1

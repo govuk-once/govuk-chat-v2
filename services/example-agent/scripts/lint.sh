@@ -1,1 +1,1 @@
-../../../common/scripts/uv-ruff-check.sh
+../../../scripts/shared/uv-ruff-check.sh

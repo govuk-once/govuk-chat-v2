@@ -1,1 +1,1 @@
-../../common/scripts/pnpm-vitest.sh
+../../scripts/shared/pnpm-vitest.sh

@@ -24,7 +24,7 @@ echo_if_verbose() {
 exit_with_optional_suggestion() {
     if $suggestion; then
         ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." &>/dev/null && pwd)"
-        SCRIPT_PATH="${ROOT_DIR}/refresh-dev-aws-credentials.zsh"
+        SCRIPT_PATH="${ROOT_DIR}/scripts/refresh-dev-aws-credentials.zsh"
         RELATIVE_PATH="$(uv run python -c "import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))" "$SCRIPT_PATH" $(pwd))"
 
         # we show a relative path to users as that is nicer visually, this

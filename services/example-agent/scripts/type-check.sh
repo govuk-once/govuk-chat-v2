@@ -1,1 +1,1 @@
-../../../common/scripts/uv-pyright.sh
+../../../scripts/shared/uv-pyright.sh

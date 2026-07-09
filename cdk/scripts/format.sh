@@ -1,1 +1,1 @@
-../../common/scripts/pnpm-prettier.sh
+../../scripts/shared/pnpm-prettier.sh
