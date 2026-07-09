@@ -585,7 +585,7 @@ requires-dist = [
     { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
     { name = "boto3", specifier = ">=1.42.66" },
     { name = "chat-assistants", editable = "libs/python/chat-assistants" },
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.137.1" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.118.0" },
     { name = "pynamodb", specifier = ">=6.1.0" },
     { name = "sse-starlette", specifier = ">=3.0.3" },
 ]
@@ -655,7 +655,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "chat-assistants", editable = "libs/python/chat-assistants" },
-    { name = "gradio", specifier = ">=6.0.1" },
+    { name = "gradio", specifier = ">=6.19.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "httpx-sse", specifier = ">=0.4.3" },
 ]
@@ -994,7 +994,7 @@ dependencies = [
 
 [[package]]
 name = "gradio"
-version = "6.16.0"
+version = "6.19.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -1026,9 +1026,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a3/26/44044687cdd16d0d9d9137c8f9d445eb68391b14583c82a6c2d528da952c/gradio-6.16.0.tar.gz", hash = "sha256:a48d03ffb436644265e4386388ad8a50ec183c8e1fdd3bae0548f7f229c474da", size = 36441812, upload-time = "2026-06-03T19:07:12.973Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/c4/07ebe72aea259e9e49b660d8890679a459dc76081e659570bba8662677c4/gradio-6.19.0.tar.gz", hash = "sha256:04d0ad1450b3e34683dee76934b47d93b7b655bb506e1e9e9b7b7ab4c9eb8090", size = 47125070, upload-time = "2026-06-17T19:30:22.042Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/12/ac98683fa45d84c2c96c14acdb040aa746209089ea045c766f380549ecec/gradio-6.16.0-py3-none-any.whl", hash = "sha256:a5de01bf17336bf421d52af4b5dbd9fdbd530762c485067748456ccb797700bb", size = 20097732, upload-time = "2026-06-03T19:07:09.904Z" },
+    { url = "https://files.pythonhosted.org/packages/81/c5/eaafbf58bffbd28ce940af11a173aacba888ddc4f7b022de2b85bace2842/gradio-6.19.0-py3-none-any.whl", hash = "sha256:da6c947afca06392f31068c9077e74763a4eb2b81097879dd88b2a1bf28b518e", size = 31278296, upload-time = "2026-06-17T19:30:18.321Z" },
 ]
 
 [[package]]
