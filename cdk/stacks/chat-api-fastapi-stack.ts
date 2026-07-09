@@ -12,7 +12,7 @@ import {
   repoRoot,
 } from '../constants/environment.ts';
 
-export interface ChatApiStackProps extends cdk.StackProps {
+export interface ChatApiFastapiStackProps extends cdk.StackProps {
   serviceName: string;
   teamName: string;
   repositoryUrl: string;
@@ -20,8 +20,8 @@ export interface ChatApiStackProps extends cdk.StackProps {
   agentRuntimeArn: string;
 }
 
-export class ChatApiStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: ChatApiStackProps) {
+export class ChatApiFastapiStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: ChatApiFastapiStackProps) {
     super(scope, id, props);
 
     cdk.Tags.of(this).add('ServiceName', props.serviceName);
@@ -113,7 +113,7 @@ export class ChatApiStack extends cdk.Stack {
   }
 
   apiGateway(
-    props: ChatApiStackProps,
+    props: ChatApiFastapiStackProps,
     handler: lambda.Alias,
   ): apigateway.LambdaRestApi {
     return new apigateway.LambdaRestApi(
@@ -138,7 +138,7 @@ export class ChatApiStack extends cdk.Stack {
 
   conversationTable(): dynamodb.Table {
     const table = new dynamodb.Table(this, `ConversationTable`, {
-      tableName: `${getResourceNamePrefix()}-chat-api-conversation-table`,
+      tableName: `${getResourceNamePrefix()}-chat-api-fastapi-conversation-table`,
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -156,13 +156,13 @@ export class ChatApiStack extends cdk.Stack {
 
   lambdaCode(): lambda.AssetCode {
     const assetHash = hashGlobs(
-      path.resolve(repoRoot(), 'services/chat-api/src/**/*.py'),
+      path.resolve(repoRoot(), 'services/chat-api-fastapi/src/**/*.py'),
       path.resolve(repoRoot(), 'libs/python/**/src/**/*.py'),
       path.resolve(repoRoot(), 'uv.lock'),
     );
 
     return lambda.Code.fromAsset(
-      path.resolve(repoRoot(), 'services/chat-api'),
+      path.resolve(repoRoot(), 'services/chat-api-fastapi'),
       {
         bundling: {
           image: lambda.Runtime.PYTHON_3_13.bundlingImage,
@@ -181,7 +181,7 @@ export class ChatApiStack extends cdk.Stack {
               containerPath: '/pip-cache/packages',
               hostPath: path.resolve(
                 repoRoot(),
-                'cdk/cache/pip/chat-api-packages',
+                'cdk/cache/pip/chat-api-fastapi-packages',
               ),
             },
           ],
@@ -204,7 +204,7 @@ export class ChatApiStack extends cdk.Stack {
                     --no-editable \
                     --no-dev \
                     --no-emit-project \
-                    --package chat-api \
+                    --package chat-api-fastapi \
                     --prune botocore \
                     --prune boto3 \
                     -o /asset-output/requirements.txt &&
