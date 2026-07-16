@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 if [ -n "$CI" ]; then
-    pnpm exec eslint . --max-warnings 0 
+    pnpm exec eslint . --max-warnings 0
 else
-    pnpm exec eslint . --fix 
+    pnpm exec eslint . --fix
 fi
