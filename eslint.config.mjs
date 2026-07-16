@@ -26,5 +26,12 @@ export default defineConfig(
       ],
     },
   },
+  {
+    files: ["**/*.test.ts"],
+    rules: {
+      // Tests can be heavy on the nested calls when using functions as a DSL
+      "unicorn/max-nested-calls": "off",
+    },
+  },
   includeIgnoreFile(gitignorePath, { name: "Imported .gitignore patterns" })
 );
