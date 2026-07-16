@@ -141,7 +141,9 @@ export class ChatApiFastapiStack extends cdk.Stack {
       tableName: `${getResourceNamePrefix()}-chat-api-fastapi-conversation-table`,
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: isEphemeralEnvironment()
+        ? cdk.RemovalPolicy.DESTROY
+        : cdk.RemovalPolicy.RETAIN,
     });
 
     table.addGlobalSecondaryIndex({
