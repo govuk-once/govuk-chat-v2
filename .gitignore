@@ -11,7 +11,7 @@ node_modules
 
 # CDK files
 cdk.out
-/cdk/cache
+/cdk/cache/*
 !/cdk/cache/.keep
 
 # Bedrock Agentcore
