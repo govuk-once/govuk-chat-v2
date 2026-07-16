@@ -57,9 +57,9 @@ describe('ChatApiFastapiStack', () => {
     it('turns on snapstart for non-ephemeral environments', () => {
       vi.stubEnv('ENVIRONMENT', 'prod');
 
-      const prodTemplate = stackTemplate();
+      const productionTemplate = stackTemplate();
 
-      prodTemplate.hasResourceProperties('AWS::Lambda::Function', {
+      productionTemplate.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: Match.stringLikeRegexp('api-function'),
         SnapStart: {
           ApplyOn: 'PublishedVersions',
