@@ -1,7 +1,7 @@
 import { globSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import * as path from 'node:path';
+import path from 'node:path';
 
 export const GovUkOnceEnvironments = {
   Dev: 'dev',

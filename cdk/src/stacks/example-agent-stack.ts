@@ -2,7 +2,7 @@ import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as path from 'node:path';
+import path from 'node:path';
 import { Construct } from 'constructs';
 import {
   getResourceNamePrefix,
