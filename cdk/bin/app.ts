@@ -4,9 +4,9 @@ import {
   getEnvironment,
   getResourceNamePrefix,
   serviceMetadata,
-} from '../constants/environment.ts';
-import { ChatApiFastapiStack } from '../stacks/chat-api-fastapi-stack.ts';
-import { ExampleAgentStack } from '../stacks/example-agent-stack.ts';
+} from '../src/constants/environment.ts';
+import { ChatApiFastapiStack } from '../src/stacks/chat-api-fastapi-stack.ts';
+import { ExampleAgentStack } from '../src/stacks/example-agent-stack.ts';
 
 const app = new cdk.App();
 const githubToken = process.env.GITHUB_TOKEN;

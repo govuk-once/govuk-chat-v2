@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import baseContext from '../cdk.json' with { type: 'json' };
+import baseContext from '../../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
 import { vi, describe, it } from 'vitest';
 import { ChatApiFastapiStack } from './chat-api-fastapi-stack.ts';

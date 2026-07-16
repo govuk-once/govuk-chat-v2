@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import baseContext from '../cdk.json' with { type: 'json' };
+import baseContext from '../../cdk.json' with { type: 'json' };
 import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { Tags, Template } from 'aws-cdk-lib/assertions';
 import { describe, it, expect, vi } from 'vitest';
