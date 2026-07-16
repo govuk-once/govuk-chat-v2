@@ -27,13 +27,13 @@ describe('ChatApiFastapiStack', () => {
     return Template.fromStack(stack);
   }
 
-  describe('Stack tags', () => {
-    function stackTags() {
-      const app = new cdk.App({ context });
-      const stack = new ChatApiFastapiStack(app, 'TestStack', baseProps);
-      return Tags.fromStack(stack);
-    }
+  function stackTags() {
+    const app = new cdk.App({ context });
+    const stack = new ChatApiFastapiStack(app, 'TestStack', baseProps);
+    return Tags.fromStack(stack);
+  }
 
+  describe('Stack tags', () => {
     it('sets common tags ', () => {
       stackTags().hasValues({
         ServiceName: baseProps.serviceName,

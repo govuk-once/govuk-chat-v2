@@ -26,6 +26,12 @@ describe('ExampleAgentStack', () => {
     return Template.fromStack(stack);
   }
 
+  function stackTags() {
+    const app = new cdk.App({ context });
+    const stack = new ExampleAgentStack(app, 'TestStack', baseProps);
+    return Tags.fromStack(stack);
+  }
+
   it('passes the token all the way to AgentRuntimeArtifact.fromCodeAsset', () => {
     const fromAssetSpy = vi.spyOn(
       agentcore.AgentRuntimeArtifact,
@@ -53,12 +59,6 @@ describe('ExampleAgentStack', () => {
   });
 
   describe('Stack tags', () => {
-    function stackTags() {
-      const app = new cdk.App({ context });
-      const stack = new ExampleAgentStack(app, 'TestStack', baseProps);
-      return Tags.fromStack(stack);
-    }
-
     it('sets common tags ', () => {
       stackTags().hasValues({
         ServiceName: baseProps.serviceName,
