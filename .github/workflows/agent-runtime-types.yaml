@@ -1,0 +1,58 @@
+name: Agent Runtime Types CI
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/actions/setup-python-uv-env/*"
+      - ".github/workflows/agent-runtime-types-ci.yaml"
+      - "uv.lock"
+      - "libs/python/agent-runtime-types/**"
+  pull_request:
+    paths:
+      - ".github/actions/setup-python-uv-env/*"
+      - ".github/workflows/agent-runtime-types-ci.yaml"
+      - "uv.lock"
+      - "libs/python/agent-runtime-types/**"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+
+      - name: Run linter
+        run: libs/python/agent-runtime-types/scripts/lint.sh
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+
+      - name: Run formatter
+        run: libs/python/agent-runtime-types/scripts/format.sh
+
+  typing:
+    name: Type checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+
+      - name: Run type checks
+        run: libs/python/agent-runtime-types/scripts/type-check.sh
