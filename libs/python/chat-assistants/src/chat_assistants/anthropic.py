@@ -1,4 +1,4 @@
-from anthropic import AsyncAnthropicBedrock
+from anthropic.lib.bedrock import AsyncAnthropicBedrock
 from dataclasses import dataclass, field
 from typing import AsyncGenerator
 
