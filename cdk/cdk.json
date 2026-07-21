@@ -1,3 +1,6 @@
 {
-  "app": "GITHUB_TOKEN=${GITHUB_TOKEN:-$(gh auth token)} pnpm bin/app.ts"
+  "app": "GITHUB_TOKEN=${GITHUB_TOKEN:-$(gh auth token)} pnpm bin/app.ts",
+  "context": {
+    "@aws-cdk/core:defaultCrossStackReferences": "weak"
+  }
 }

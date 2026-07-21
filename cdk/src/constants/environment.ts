@@ -68,5 +68,5 @@ export const repoRoot = () => {
   const filename = fileURLToPath(import.meta.url);
 
   // relative to the path of this current file
-  return path.resolve(filename, '../../../');
+  return path.resolve(filename, '../../../../');
 };
