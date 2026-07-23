@@ -812,7 +812,7 @@ requires-dist = [
     { name = "aws-opentelemetry-distro", specifier = ">=0.18.0" },
     { name = "bedrock-agentcore", specifier = ">=1.4.5" },
     { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
-    { name = "strands-agents", specifier = ">=1.30.0" },
+    { name = "strands-agents", specifier = ">=1.47.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -3407,7 +3407,7 @@ wheels = [
 
 [[package]]
 name = "strands-agents"
-version = "1.42.0"
+version = "1.47.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -3423,9 +3423,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/da/9e/8d577e0ff9ad0a15b368f43c61b7034f918b1c1b51ef17465d1a39a00403/strands_agents-1.42.0.tar.gz", hash = "sha256:39113d67d2fc3e5686f58c63ab71b68e458d578f9e6e0105e03b8a3960b97595", size = 872195, upload-time = "2026-06-01T18:38:22.243Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2e/05/5eb8431ff340739b1c21b0da7d19ec9604b9c4953a1c4638df915321573c/strands_agents-1.47.0.tar.gz", hash = "sha256:97770cb6beb6e5fd1a58849f41201eb7edb43fd67ad3de6544ada2f342c2bcf0", size = 1157139, upload-time = "2026-07-10T14:45:05.809Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/16/426f1f8c7d2678230b68755fcb3c0b8f59bc3a5591efe48343566b8e73c5/strands_agents-1.42.0-py3-none-any.whl", hash = "sha256:6cc04a32fc23a443a651d0e40198d946afc809888ae6fbc1fd07b2d5b6e354b3", size = 440999, upload-time = "2026-06-01T18:38:20.231Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/cb/ceae892c5823bea9254160efc02a4553f2ced9d183676110c03c3a9ff0f3/strands_agents-1.47.0-py3-none-any.whl", hash = "sha256:1f6ce17404ff02079244ad7a4a180a2a7150546275e4b91187d71472ba8fe3f2", size = 600611, upload-time = "2026-07-10T14:45:03.942Z" },
 ]
 
 [[package]]
