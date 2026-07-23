@@ -3,7 +3,9 @@ name = "agent-runtime-types"
 version = "0.1.0"
 description = "Shared type definitions for the agent runtime streaming protocol"
 readme = "README.md"
-dependencies = []
+dependencies = [
+    "pydantic>=2.12.5",
+]
 
 [dependency-groups]
 dev = [
@@ -11,8 +13,9 @@ dev = [
     "ruff>=0.15.20",
 ]
 
-[tool.pytest.ini_options]
-pythonpath = [
-  ".",
-  "src"
-]
+[build-system]
+requires = ["setuptools>=82.0.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

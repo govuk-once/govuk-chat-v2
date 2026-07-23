@@ -179,5 +179,23 @@ describe('ChatApiFastapiStack', () => {
 
       template.hasResourceProperties('AWS::DynamoDB::Table', {});
     });
+
+    it('retains the table for non-ephemeral environments', () => {
+      vi.stubEnv('ENVIRONMENT', 'prod');
+
+      const prodTemplate = stackTemplate();
+
+      prodTemplate.hasResource('AWS::DynamoDB::Table', {
+        DeletionPolicy: 'Retain',
+      });
+
+      vi.unstubAllEnvs();
+
+      const template = stackTemplate();
+
+      template.hasResource('AWS::DynamoDB::Table', {
+        DeletionPolicy: 'Delete',
+      });
+    });
   });
 });
