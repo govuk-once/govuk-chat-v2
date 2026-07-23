@@ -2,7 +2,7 @@ import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as path from 'path';
+import path from 'node:path';
 import { Construct } from 'constructs';
 import {
   getResourceNamePrefix,
@@ -54,7 +54,7 @@ export class ExampleAgentStack extends cdk.Stack {
 
     return new agentcore.Memory(this, name, {
       // name cannot have dash characters
-      memoryName: name.replace(/-/g, '_'),
+      memoryName: name.replaceAll('-', '_'),
       expirationDuration: cdk.Duration.days(90),
     });
   }
@@ -67,7 +67,7 @@ export class ExampleAgentStack extends cdk.Stack {
 
     const agentcoreRuntime = new agentcore.Runtime(this, name, {
       // runtime name cannot have dash characters
-      runtimeName: name.replace(/-/g, '_'),
+      runtimeName: name.replaceAll('-', '_'),
       agentRuntimeArtifact: this.agentCode(githubToken),
       environmentVariables: {
         BEDROCK_AGENTCORE_MEMORY_ID: shortTermMemoryId,

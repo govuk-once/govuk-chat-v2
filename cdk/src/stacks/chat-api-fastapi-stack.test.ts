@@ -27,13 +27,13 @@ describe('ChatApiFastapiStack', () => {
     return Template.fromStack(stack);
   }
 
-  describe('Stack tags', () => {
-    function stackTags() {
-      const app = new cdk.App({ context });
-      const stack = new ChatApiFastapiStack(app, 'TestStack', baseProps);
-      return Tags.fromStack(stack);
-    }
+  function stackTags() {
+    const app = new cdk.App({ context });
+    const stack = new ChatApiFastapiStack(app, 'TestStack', baseProps);
+    return Tags.fromStack(stack);
+  }
 
+  describe('Stack tags', () => {
     it('sets common tags ', () => {
       stackTags().hasValues({
         ServiceName: baseProps.serviceName,
@@ -57,9 +57,9 @@ describe('ChatApiFastapiStack', () => {
     it('turns on snapstart for non-ephemeral environments', () => {
       vi.stubEnv('ENVIRONMENT', 'prod');
 
-      const prodTemplate = stackTemplate();
+      const productionTemplate = stackTemplate();
 
-      prodTemplate.hasResourceProperties('AWS::Lambda::Function', {
+      productionTemplate.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: Match.stringLikeRegexp('api-function'),
         SnapStart: {
           ApplyOn: 'PublishedVersions',
