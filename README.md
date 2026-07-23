@@ -48,3 +48,7 @@ script to check which commands to run.
 ## Decisions
 
 There is a [decision log](decisions.md).
+
+## Licence
+
+[MIT License](LICENCE)
