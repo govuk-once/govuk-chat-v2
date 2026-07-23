@@ -183,9 +183,9 @@ describe('ChatApiFastapiStack', () => {
     it('retains the table for non-ephemeral environments', () => {
       vi.stubEnv('ENVIRONMENT', 'prod');
 
-      const prodTemplate = stackTemplate();
+      const productionTemplate = stackTemplate();
 
-      prodTemplate.hasResource('AWS::DynamoDB::Table', {
+      productionTemplate.hasResource('AWS::DynamoDB::Table', {
         DeletionPolicy: 'Retain',
       });
 
