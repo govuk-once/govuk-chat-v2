@@ -40,16 +40,16 @@ importers:
     dependencies:
       '@aws-cdk/aws-bedrock-agentcore-alpha':
         specifier: 2.243.0-alpha.0
-        version: 2.243.0-alpha.0(@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.261.0(constructs@10.6.0))(constructs@10.6.0))(aws-cdk-lib@2.261.0(constructs@10.6.0))(constructs@10.6.0)
+        version: 2.243.0-alpha.0(@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.261.0(constructs@10.7.0))(constructs@10.7.0))(aws-cdk-lib@2.261.0(constructs@10.7.0))(constructs@10.7.0)
       aws-cdk:
         specifier: ^2.1129.0
         version: 2.1129.0
       aws-cdk-lib:
         specifier: ^2.261.0
-        version: 2.261.0(constructs@10.6.0)
+        version: 2.261.0(constructs@10.7.0)
       constructs:
-        specifier: ^10.6.0
-        version: 10.6.0
+        specifier: ^10.7.0
+        version: 10.7.0
 
 packages:
 
@@ -616,8 +616,8 @@ packages:
     resolution: {integrity: sha512-77PSwercCZU2Fc4sX94eF8k8Pxte6JAwL4/ICZLFjJLqegs7kCuAsqqj/70NQF6TvDpgFjkubQB2FW2ZZddvQg==}
     engines: {node: '>=8'}
 
-  constructs@10.6.0:
-    resolution: {integrity: sha512-TxHOnBO5zMo/G76ykzGF/wMpEHu257TbWiIxP9K0Yv/+t70UzgBQiTqjkAsWOPC6jW91DzJI0+ehQV6xDRNBuQ==}
+  constructs@10.7.0:
+    resolution: {integrity: sha512-Vzwc30bMywc7DCzX8XOyuZbsBmfXTCrn6HHmhhELZK1J5dnUWwJ5uL7hBXGGq7xFPVOOO6cs9FwaxOshAxgcWQ==}
 
   convert-hrtime@5.0.0:
     resolution: {integrity: sha512-lOETlkIeYSJWcbbcvjRKGxVMXJR+8+OQb/mTPbA4ObPMytYIsUbuOE0Jzy60hjARYszq1id0j8KgVhC+WGZVTg==}
@@ -926,8 +926,8 @@ packages:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
 
-  postcss@8.5.19:
-    resolution: {integrity: sha512-Mz8SaolMd8nB+G13WkORcxQKHZ/NE4xXevtkJHVuG+guo9/wYKlIMTKAqGdEmYOXR2ijPjTYNHssizdaVSUNdQ==}
+  postcss@8.5.22:
+    resolution: {integrity: sha512-KBDEIpLrvpv16pp3K0Fw+UCoZfopFjjgeB+0tA/aaThfEE74kKDLrgg603YvOWJyg3+WYtyq3xYsQWsIyZlPqQ==}
     engines: {node: ^10 || ^12 || >=14}
 
   prelude-ls@1.2.1:
@@ -1164,16 +1164,16 @@ snapshots:
 
   '@aws-cdk/asset-node-proxy-agent-v6@2.1.2': {}
 
-  '@aws-cdk/aws-bedrock-agentcore-alpha@2.243.0-alpha.0(@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.261.0(constructs@10.6.0))(constructs@10.6.0))(aws-cdk-lib@2.261.0(constructs@10.6.0))(constructs@10.6.0)':
+  '@aws-cdk/aws-bedrock-agentcore-alpha@2.243.0-alpha.0(@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.261.0(constructs@10.7.0))(constructs@10.7.0))(aws-cdk-lib@2.261.0(constructs@10.7.0))(constructs@10.7.0)':
     dependencies:
-      '@aws-cdk/aws-bedrock-alpha': 2.243.0-alpha.0(aws-cdk-lib@2.261.0(constructs@10.6.0))(constructs@10.6.0)
-      aws-cdk-lib: 2.261.0(constructs@10.6.0)
-      constructs: 10.6.0
+      '@aws-cdk/aws-bedrock-alpha': 2.243.0-alpha.0(aws-cdk-lib@2.261.0(constructs@10.7.0))(constructs@10.7.0)
+      aws-cdk-lib: 2.261.0(constructs@10.7.0)
+      constructs: 10.7.0
 
-  '@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.261.0(constructs@10.6.0))(constructs@10.6.0)':
+  '@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.261.0(constructs@10.7.0))(constructs@10.7.0)':
     dependencies:
-      aws-cdk-lib: 2.261.0(constructs@10.6.0)
-      constructs: 10.6.0
+      aws-cdk-lib: 2.261.0(constructs@10.7.0)
+      constructs: 10.7.0
 
   '@aws-cdk/cloud-assembly-schema@54.11.0': {}
 
@@ -1555,12 +1555,12 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
-  aws-cdk-lib@2.261.0(constructs@10.6.0):
+  aws-cdk-lib@2.261.0(constructs@10.7.0):
     dependencies:
       '@aws-cdk/asset-awscli-v1': 2.2.282
       '@aws-cdk/asset-node-proxy-agent-v6': 2.1.2
       '@aws-cdk/cloud-assembly-schema': 54.11.0
-      constructs: 10.6.0
+      constructs: 10.7.0
 
   aws-cdk@2.1129.0: {}
 
@@ -1590,7 +1590,7 @@ snapshots:
 
   ci-info@4.4.0: {}
 
-  constructs@10.6.0: {}
+  constructs@10.7.0: {}
 
   convert-hrtime@5.0.0: {}
 
@@ -1901,7 +1901,7 @@ snapshots:
 
   pluralize@8.0.0: {}
 
-  postcss@8.5.19:
+  postcss@8.5.22:
     dependencies:
       nanoid: 3.3.16
       picocolors: 1.1.1
@@ -2031,7 +2031,7 @@ snapshots:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.5)
       picomatch: 4.0.5
-      postcss: 8.5.19
+      postcss: 8.5.22
       rollup: 4.62.2
       tinyglobby: 0.2.17
     optionalDependencies:
