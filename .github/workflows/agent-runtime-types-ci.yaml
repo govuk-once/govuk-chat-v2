@@ -7,14 +7,18 @@ on:
       - main
     paths:
       - ".github/actions/setup-python-uv-env/*"
+      - ".github/actions/setup-node-pnpm-env/*"
       - ".github/workflows/agent-runtime-types-ci.yaml"
       - "uv.lock"
+      - "pnpm-lock.yaml"
       - "libs/python/agent-runtime-types/**"
   pull_request:
     paths:
       - ".github/actions/setup-python-uv-env/*"
+      - ".github/actions/setup-node-pnpm-env/*"
       - ".github/workflows/agent-runtime-types-ci.yaml"
       - "uv.lock"
+      - "pnpm-lock.yaml"
       - "libs/python/agent-runtime-types/**"
 
 jobs:
@@ -31,8 +35,8 @@ jobs:
       - name: Run linter
         run: libs/python/agent-runtime-types/scripts/lint.sh
 
-  format:
-    name: Format
+  ruff_format:
+    name: Ruff formatter
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,7 +46,18 @@ jobs:
           dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
 
       - name: Run formatter
-        run: libs/python/agent-runtime-types/scripts/format.sh
+        run: libs/python/agent-runtime-types/scripts/format-ruff.sh
+
+  prettier_format:
+    name: Prettier formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run Prettier
+        run: libs/python/agent-runtime-types/scripts/format-prettier.sh
 
   typing:
     name: Type checks

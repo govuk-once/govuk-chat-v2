@@ -192,6 +192,7 @@ For code itself, prefer making it self-documenting over describing it:
 - `pyright` for type checking, `ruff` for formatting and linting — see the
   [Formatting](#formatting) guidance. Both run on default config; don't add
   per-package tool overrides.
+- We use `prettier` for non-Python file formatting in Python services.
 - All Python code should be typed. Write proper type hints and prefer
   restrictive signatures (see [Documentation](#documentation)).
 - Share code via `libs/python`. When Python needs to be reused across packages,

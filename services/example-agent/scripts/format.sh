@@ -1,1 +1,1 @@
-../../../scripts/shared/uv-ruff-format.sh
+../../../scripts/shared/ruff-prettier-format.sh

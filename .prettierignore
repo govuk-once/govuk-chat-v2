@@ -1,3 +1,8 @@
 cdk.out
 cdk.context.json
 node_modules
+
+# Generated lockfiles and tool caches
+pnpm-lock.yaml
+.pytest_cache
+.ruff_cache
