@@ -6,20 +6,20 @@ on:
     branches:
       - main
     paths:
-      - ".github/actions/setup-python-uv-env/*"
-      - ".github/actions/setup-node-pnpm-env/*"
-      - ".github/workflows/chat-api-fastapi-ci.yaml"
-      - "uv.lock"
-      - "pnpm-lock.yaml"
-      - "services/chat-api-fastapi/**"
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/chat-api-fastapi-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'services/chat-api-fastapi/**'
   pull_request:
     paths:
-      - ".github/actions/setup-python-uv-env/*"
-      - ".github/actions/setup-node-pnpm-env/*"
-      - ".github/workflows/chat-api-fastapi-ci.yaml"
-      - "uv.lock"
-      - "pnpm-lock.yaml"
-      - "services/chat-api-fastapi/**"
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/chat-api-fastapi-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'services/chat-api-fastapi/**'
 
 jobs:
   test:

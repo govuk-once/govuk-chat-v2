@@ -6,20 +6,20 @@ on:
     branches:
       - main
     paths:
-      - ".github/actions/setup-python-uv-env/*"
-      - ".github/actions/setup-node-pnpm-env/*"
-      - ".github/workflows/example-agent-ci.yaml"
-      - "uv.lock"
-      - "pnpm-lock.yaml"
-      - "services/example-agent/**"
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/example-agent-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'services/example-agent/**'
   pull_request:
     paths:
-      - ".github/actions/setup-python-uv-env/*"
-      - ".github/actions/setup-node-pnpm-env/*"
-      - ".github/workflows/example-agent-ci.yaml"
-      - "uv.lock"
-      - "pnpm-lock.yaml"
-      - "services/example-agent/**"
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/example-agent-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'services/example-agent/**'
 
 jobs:
   test:

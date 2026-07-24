@@ -22,8 +22,6 @@ Additionally, it differs from the GOV.UK Chat V1 by being:
   GOV.UK Chat V2 is built with TypeScript and Python to reflect the technology
   conventions of the App & AI part of GDS
 
-
-
 ## Working with this repository
 
 There's an [AGENTS.md](AGENTS.md) that is just as useful for humans as agents.

@@ -4,9 +4,9 @@ import eslint from '@eslint/js';
 import { defineConfig, includeIgnoreFile } from 'eslint/config';
 import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
-import path from "node:path";
+import path from 'node:path';
 
-const gitignorePath = path.join(import.meta.dirname, ".gitignore");
+const gitignorePath = path.join(import.meta.dirname, '.gitignore');
 
 export default defineConfig(
   eslint.configs.recommended,
@@ -14,31 +14,31 @@ export default defineConfig(
   eslintPluginUnicorn.configs.recommended,
   {
     rules: {
-      "unicorn/name-replacements": [
-        "error",
+      'unicorn/name-replacements': [
+        'error',
         {
           // `props` and `env` are terminology in AWS CDK's own naming.
           replacements: {
             props: false,
-            env: false
+            env: false,
           },
         },
       ],
-      "@typescript-eslint/no-unused-vars": [
-        "error",
+      '@typescript-eslint/no-unused-vars': [
+        'error',
         {
           // it's common to have unused args in Lambda functions
-          "argsIgnorePattern": "^_"
-        }
-      ]
+          argsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {
-    files: ["**/*.test.ts"],
+    files: ['**/*.test.ts'],
     rules: {
       // Tests can be heavy on the nested calls when using functions as a DSL
-      "unicorn/max-nested-calls": "off",
+      'unicorn/max-nested-calls': 'off',
     },
   },
-  includeIgnoreFile(gitignorePath, { name: "Imported .gitignore patterns" })
+  includeIgnoreFile(gitignorePath, { name: 'Imported .gitignore patterns' }),
 );

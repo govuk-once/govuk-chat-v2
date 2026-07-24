@@ -1,7 +1,7 @@
-name: "Set up a Node PNPM environment"
-description: "Install PNPM, Node and dependencies"
+name: 'Set up a Node PNPM environment'
+description: 'Install PNPM, Node and dependencies'
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Get PNPM Version
       id: pnpm-version
@@ -15,8 +15,8 @@ runs:
     - name: Install Node
       uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
       with:
-        cache: "pnpm"
-        node-version-file: ".nvmrc"
+        cache: 'pnpm'
+        node-version-file: '.nvmrc'
 
     - name: Install PNPM dependencies
       shell: bash

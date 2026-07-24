@@ -6,20 +6,20 @@ on:
     branches:
       - main
     paths:
-      - ".github/actions/setup-python-uv-env/*"
-      - ".github/actions/setup-node-pnpm-env/*"
-      - ".github/workflows/agent-runtime-types-ci.yaml"
-      - "uv.lock"
-      - "pnpm-lock.yaml"
-      - "libs/python/agent-runtime-types/**"
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/agent-runtime-types-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'libs/python/agent-runtime-types/**'
   pull_request:
     paths:
-      - ".github/actions/setup-python-uv-env/*"
-      - ".github/actions/setup-node-pnpm-env/*"
-      - ".github/workflows/agent-runtime-types-ci.yaml"
-      - "uv.lock"
-      - "pnpm-lock.yaml"
-      - "libs/python/agent-runtime-types/**"
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/agent-runtime-types-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'libs/python/agent-runtime-types/**'
 
 jobs:
   lint:
