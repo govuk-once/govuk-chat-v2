@@ -5,6 +5,7 @@ import {
   getResourceNamePrefix,
   serviceMetadata,
 } from '../src/constants/environment.ts';
+import { ChatApiTsStack } from '../src/stacks/chat-api-ts-stack.ts';
 import { ChatApiFastapiStack } from '../src/stacks/chat-api-fastapi-stack.ts';
 import { ExampleAgentStack } from '../src/stacks/example-agent-stack.ts';
 
@@ -26,6 +27,13 @@ const exampleAgentStack = new ExampleAgentStack(app, 'ExampleAgentStack', {
   environment: getEnvironment(),
   githubToken: githubToken,
   stackName: `${getResourceNamePrefix()}-ExampleAgentStack`,
+  ...serviceMetadata,
+});
+
+new ChatApiTsStack(app, 'ChatApiTsStack', {
+  env: env,
+  environment: getEnvironment(),
+  stackName: `${getResourceNamePrefix()}-ChatApiTsStack`,
   ...serviceMetadata,
 });
 
