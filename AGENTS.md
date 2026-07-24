@@ -99,6 +99,9 @@ stay consistent across the project:
   - follow existing naming conventions
 - avoid project-specific dotfiles; use global ones, and only add a local one
   where a global one causes a conflict
+- each one should have a GitHub action named after the tool with a ci suffix, for
+  example a `chat-api` file should have a `chat-api-ci.yaml` GitHub
+  action workflow
 
 After changing code in a package, run its `scripts/dev-checks.sh` (format, lint,
 type-check, test) before committing — this is what CI runs per package.
