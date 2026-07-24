@@ -24,6 +24,13 @@ export default defineConfig(
           },
         },
       ],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          // it's common to have unused args in Lambda functions
+          "argsIgnorePattern": "^_"
+        }
+      ]
     },
   },
   {
