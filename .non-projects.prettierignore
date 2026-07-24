@@ -1,0 +1,7 @@
+# These are project directories that are expected to already be covered
+# by prettier formatters
+
+/cdk
+/libs
+/services
+/utilities

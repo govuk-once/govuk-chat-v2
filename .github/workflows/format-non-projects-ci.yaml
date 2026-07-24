@@ -1,0 +1,30 @@
+name: Format Non-Projects CI
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'services/**'
+      - 'libs/**'
+      - 'utilities/**'
+      - 'cdk/**'
+  pull_request:
+    paths-ignore:
+      - 'services/**'
+      - 'libs/**'
+      - 'utilities/**'
+      - 'cdk/**'
+
+jobs:
+  prettier_format:
+    name: Prettier formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run Prettier
+        run: scripts/format-non-projects.sh
