@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -e
+
+PROJECT_DIR="$(dirname "${BASH_SOURCE[0]}")/.."
+
+${PROJECT_DIR}/../../scripts/check-dev-aws-credentials.sh
+
+cd "$PROJECT_DIR/../../cdk"
+
+pnpm exec cdk deploy ChatApiTsStack "$@"

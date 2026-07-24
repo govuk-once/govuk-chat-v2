@@ -1,0 +1,15 @@
+{
+  "name": "@govuk-chat-v2-prototype/chat-api-ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev-checks": "scripts/dev-checks.sh",
+    "format": "scripts/format.sh",
+    "lint": "scripts/lint.sh",
+    "test": "scripts/test.sh",
+    "type-check": "scripts/type-check.sh"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.162"
+  }
+}
