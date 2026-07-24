@@ -51,6 +51,12 @@ importers:
         specifier: ^10.7.0
         version: 10.7.0
 
+  services/chat-api-ts:
+    devDependencies:
+      '@types/aws-lambda':
+        specifier: ^8.10.162
+        version: 8.10.162
+
 packages:
 
   '@aws-cdk/asset-awscli-v1@2.2.282':
@@ -439,6 +445,9 @@ packages:
 
   '@tsconfig/node24@24.0.4':
     resolution: {integrity: sha512-2A933l5P5oCbv6qSxHs7ckKwobs8BDAe9SJ/Xr2Hy+nDlwmLE1GhFh/g/vXGRZWgxBg9nX/5piDtHR9Dkw/XuA==}
+
+  '@types/aws-lambda@8.10.162':
+    resolution: {integrity: sha512-Fn658grtLOci1oxi1391vvDWJRKNGWRSqfxRkmN/Iy3c0tQH1USMKEXcPYHLvope+ZgTFocx9FRQJx1muBL6qw==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -1401,6 +1410,8 @@ snapshots:
   '@standard-schema/spec@1.1.0': {}
 
   '@tsconfig/node24@24.0.4': {}
+
+  '@types/aws-lambda@8.10.162': {}
 
   '@types/chai@5.2.3':
     dependencies:

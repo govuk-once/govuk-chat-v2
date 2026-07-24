@@ -1,0 +1,65 @@
+name: Chat API TS CI
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/actions/setup-node-pnpm-env/*"
+      - ".github/workflows/chat-api-ts-ci.yaml"
+      - "pnpm-lock.yaml"
+      - "tsconfig.json"
+      - "services/chat-api-ts/**"
+  pull_request:
+    paths:
+      - ".github/actions/setup-node-pnpm-env/*"
+      - ".github/workflows/chat-api-ts-ci.yaml"
+      - "pnpm-lock.yaml"
+      - "tsconfig.json"
+      - "services/chat-api-ts/**"
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run tests
+        run: services/chat-api-ts/scripts/test.sh
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run linter
+        run: services/chat-api-ts/scripts/lint.sh
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run formatter
+        run: services/chat-api-ts/scripts/format.sh
+
+  typing:
+    name: Type checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run type checks
+        run: services/chat-api-ts/scripts/type-check.sh
