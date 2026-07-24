@@ -31,7 +31,7 @@ cd "$PROJECT_DIR/../../cdk"
 
 # Convert CDK stack name to the actual Cloudformation namespaced stack name
 # e.g. ExampleAgentStack -> alicesmith-govuk-chat-ExampleAgentStack
-FULL_STACK_NAME=$(cdk ls -l --json | jq -r --arg stack "$STACK_NAME" '.[] | select(.name | endswith($stack)) | .name')
+FULL_STACK_NAME=$(pnpm exec cdk ls -l --json | jq -r --arg stack "$STACK_NAME" '.[] | select(.name | endswith($stack)) | .name')
 
 if [ -z "$FULL_STACK_NAME" ]; then
   echo "'$STACK_NAME' stack not found" >&2
