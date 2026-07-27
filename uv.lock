@@ -211,7 +211,7 @@ wheels = [
 
 [[package]]
 name = "bedrock-agentcore"
-version = "1.14.0"
+version = "1.18.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -223,9 +223,9 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/40/12/ce582c748c9d476856dd5fc96a3a4ba009bfc3889fc2af6ae3b6501f55fe/bedrock_agentcore-1.14.0.tar.gz", hash = "sha256:d7169463bd352d56d842cac037b351897337e6cda6985e26eff3cd7b5a5a7486", size = 913679, upload-time = "2026-06-05T23:08:28.462Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/88/e8/8149bb168ef3825884685eb98ef868f5bb5f796e4ea58eb98e8df3248937/bedrock_agentcore-1.18.1.tar.gz", hash = "sha256:ed4aa8822e39aa5846b9d68d1461afee19f2f795c1f6d71a61bc650ecc00ee31", size = 1030729, upload-time = "2026-07-17T19:55:21.354Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a6/0d/be8dc495c066f7962e180665036bf3c6bfd80589f8ae4f35505d2470ff3e/bedrock_agentcore-1.14.0-py3-none-any.whl", hash = "sha256:af367db6c3f30b55313ef999e28252c2fcd2128734abc8fa8dcf8a091ef0ac2b", size = 425369, upload-time = "2026-06-05T23:08:26.853Z" },
+    { url = "https://files.pythonhosted.org/packages/45/fe/26cc0a66920035d2740c062bd46df252b15708b7723e13ccae0ab7b334db/bedrock_agentcore-1.18.1-py3-none-any.whl", hash = "sha256:6d8001f09cdfca0a20650ea691426149f521037d8d56917057fc191c00801086", size = 450684, upload-time = "2026-07-17T19:55:19.334Z" },
 ]
 
 [[package]]
@@ -624,7 +624,7 @@ dev = [
 requires-dist = [
     { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
     { name = "aws-opentelemetry-distro", specifier = ">=0.18.0" },
-    { name = "bedrock-agentcore", specifier = ">=1.4.5" },
+    { name = "bedrock-agentcore", specifier = ">=1.18.1" },
     { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
     { name = "strands-agents", specifier = ">=1.47.0" },
 ]
