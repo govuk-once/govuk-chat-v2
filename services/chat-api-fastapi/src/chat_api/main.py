@@ -6,7 +6,6 @@ from pydantic import BaseModel, field_validator, ValidationInfo
 from sse_starlette.sse import EventSourceResponse
 from chat_api.agent import invoke_agent_runtime, parse_agent_response_stream
 
-import chat_assistants.anthropic as anthropic_assistant
 from chat_api.conversation_api.routes import router as conversation_router
 
 from chat_api.v1.routers.conversations import router as v1_conversations_router
@@ -76,18 +75,3 @@ def invoke_agent(user_input: ConversationInput):
         return JSONResponse(status_code=500, content={"error": str(e)})
 
     return EventSourceResponse(parse_agent_response_stream(response))
-
-
-@app.post("/sonnet-streaming/assistant-response")
-async def sonnet_streaming_assistant_response(user_input: UserInput):
-    async def assistant_response_generator(user_input: UserInput):
-        normalised_input = anthropic_assistant.UserInput(user_input.message)
-        async for event in anthropic_assistant.sonnet_streaming_assistant(
-            normalised_input
-        ):
-            match event:
-                case anthropic_assistant.AssistantResponseDelta(delta=delta):
-                    content = {"type": "delta", "content": delta}
-                    yield {"event": content["type"], "data": json.dumps(content)}
-
-    return EventSourceResponse(assistant_response_generator(user_input))
