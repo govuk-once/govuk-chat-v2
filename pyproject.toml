@@ -10,7 +10,6 @@ dependencies = []
 members = [
     "services/chat-api-fastapi",
     "services/example-agent",
-    "utilities/chat-prototyping",
     "libs/python/*",
 ]
 

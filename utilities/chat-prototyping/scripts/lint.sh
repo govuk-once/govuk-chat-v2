@@ -1,1 +1,0 @@
-../../../scripts/shared/uv-ruff-check.sh
