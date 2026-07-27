@@ -566,7 +566,6 @@ source = { editable = "services/chat-api-fastapi" }
 dependencies = [
     { name = "agent-runtime-types" },
     { name = "boto3" },
-    { name = "chat-assistants" },
     { name = "fastapi", extra = ["standard"] },
     { name = "pynamodb" },
     { name = "sse-starlette" },
@@ -588,7 +587,6 @@ dev = [
 requires-dist = [
     { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
     { name = "boto3", specifier = ">=1.43.39" },
-    { name = "chat-assistants", editable = "libs/python/chat-assistants" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.139.0" },
     { name = "pynamodb", specifier = ">=6.1.0" },
     { name = "sse-starlette", specifier = ">=3.4.5" },

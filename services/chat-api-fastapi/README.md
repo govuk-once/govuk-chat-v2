@@ -26,7 +26,7 @@ To invoke:
 ```
 GATEWAY_URL=$(scripts/fetch-cdk-output.sh ChatApiFastapiStack GatewayUrl)
 ./scripts/aws-curl.sh "${GATEWAY_URL%/}/stream"
-./scripts/aws-curl.sh -H 'Content-type: application/json' -d '{ "message": "Is this working?" }' "${GATEWAY_URL%/}/sonnet-streaming/assistant-response"
+./scripts/aws-curl.sh -H 'Content-type: application/json' -d '{ "message": "Is this working?", "session_id": "session-123", "end_user_id": "user-123" }' "${GATEWAY_URL%/}/invoke-agent"
 ```
 
 #### DynamoDB endpoints
