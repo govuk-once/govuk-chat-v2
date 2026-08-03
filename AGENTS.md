@@ -99,6 +99,9 @@ stay consistent across the project:
   - follow existing naming conventions
 - avoid project-specific dotfiles; use global ones, and only add a local one
   where a global one causes a conflict
+- each one should have a GitHub action named after the tool with a ci suffix, for
+  example a `chat-api` file should have a `chat-api-ci.yaml` GitHub
+  action workflow
 
 After changing code in a package, run its `scripts/dev-checks.sh` (format, lint,
 type-check, test) before committing — this is what CI runs per package.
@@ -124,7 +127,7 @@ markdown makes it meaningful).
 Documentation is valuable but it easily goes stale, so we keep it lean and put
 the effort where it stays accurate. In order of what we rely on most:
 
-- Git history is our primary documentation. Each commit should record the *why*
+- Git history is our primary documentation. Each commit should record the _why_
   of that change — the reasoning, trade-offs and context that the diff alone
   can't convey. Write commit messages accordingly and keep changes focused so
   the history stays readable.
@@ -189,6 +192,7 @@ For code itself, prefer making it self-documenting over describing it:
 - `pyright` for type checking, `ruff` for formatting and linting — see the
   [Formatting](#formatting) guidance. Both run on default config; don't add
   per-package tool overrides.
+- We use `prettier` for non-Python file formatting in Python services.
 - All Python code should be typed. Write proper type hints and prefer
   restrictive signatures (see [Documentation](#documentation)).
 - Share code via `libs/python`. When Python needs to be reused across packages,
@@ -230,7 +234,7 @@ that explains that change.
   commit messages: a capitalised, imperative-mood subject of roughly 50
   characters ("Rename common/scripts to scripts/shared"), a blank line, then a
   body wrapped at ~72 characters.
-- Explain the *why*, not the *what*. The diff already shows what changed; the
+- Explain the _why_, not the _what_. The diff already shows what changed; the
   message should capture the reasoning and context. If you're an agent and don't
   know why a change is being made, ask the human rather than guessing.
 - Record rejected alternatives, especially where the code as written could

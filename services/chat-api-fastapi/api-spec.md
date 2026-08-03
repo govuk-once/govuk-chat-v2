@@ -58,7 +58,7 @@ Would return a [streamed message response](#streamed-message-response) with some
 
 Data would not be persisted to the database until the messages are finished streaming, at which point the conversation entity will be created as well as the messages (ideally in a transaction).
 
-In order to create the conversation entity there would need to be an additional process (presumably via an LLM) which 
+In order to create the conversation entity there would need to be an additional process (presumably via an LLM) which
 uses the user message to generate a name for the conversation.
 
 **Expected functionality enabled by this:**
@@ -71,7 +71,7 @@ Would modify a [conversation](#conversation), at the time of writing the only en
 
 Would validate the input for validity.
 
-_TODO:_ Should this return any data (conversation object) or just a success (204) status code  
+_TODO:_ Should this return any data (conversation object) or just a success (204) status code
 
 _TODO:_ Establish if we'd keep any past records of names (states) the conversation has had.
 
@@ -226,6 +226,6 @@ A message would have properties such as:
 
 _TODO:_ With streaming timestamp becomes an ambiguous concept, do we associate the assistant message timestamp with the time the streamed started or when the stream finished?
 
-_TODO:_ There's probably many types of data structures messages could have in the future, how do we model for future flexibility?  
+_TODO:_ There's probably many types of data structures messages could have in the future, how do we model for future flexibility?
 
 _TODO:_ In many future concepts there are concepts of messages that can have degrees of interactivity (choices for a user for example), there's a consideration of whether a message is immutable or mutable, and - should it be mutable - what state information needs long term persistence.

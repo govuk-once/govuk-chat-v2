@@ -6,16 +6,20 @@ on:
     branches:
       - main
     paths:
-      - ".github/actions/setup-python-uv-env/*"
-      - ".github/workflows/chat-api-fastapi-ci.yaml"
-      - "uv.lock"
-      - "services/chat-api-fastapi/**"
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/chat-api-fastapi-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'services/chat-api-fastapi/**'
   pull_request:
     paths:
-      - ".github/actions/setup-python-uv-env/*"
-      - ".github/workflows/chat-api-fastapi-ci.yaml"
-      - "uv.lock"
-      - "services/chat-api-fastapi/**"
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/chat-api-fastapi-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'services/chat-api-fastapi/**'
 
 jobs:
   test:
@@ -44,8 +48,8 @@ jobs:
       - name: Run linter
         run: services/chat-api-fastapi/scripts/lint.sh
 
-  format:
-    name: Format
+  ruff_format:
+    name: Ruff formatter
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,7 +59,18 @@ jobs:
           dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
 
       - name: Run formatter
-        run: services/chat-api-fastapi/scripts/format.sh
+        run: services/chat-api-fastapi/scripts/format-ruff.sh
+
+  prettier_format:
+    name: Prettier formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run Prettier
+        run: services/chat-api-fastapi/scripts/format-prettier.sh
 
   typing:
     name: Type checks
