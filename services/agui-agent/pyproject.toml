@@ -1,0 +1,41 @@
+[project]
+name = "agui-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13.7"
+dependencies = [
+    "ag-ui-strands >= 0.1.7",
+    "ag-ui-protocol >= 0.1.10",
+    "aws-opentelemetry-distro >= 0.19.0",
+    "bedrock-agentcore >= 1.20.0",
+    "govuk-chat-v2-prototype-private",
+    "strands-agents >= 1.15.0",
+    "strands-agents-tools >= 0.2.14",
+]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.411",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-mock>=3.15.1",
+    "pyyaml>=6.0.3",
+    "ruff>=0.15.20",
+]
+
+[build-system]
+requires = ["setuptools>=83.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".",
+  "src"
+]
+
+[tool.uv.sources]
+govuk-chat-v2-prototype-private = { git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" }
