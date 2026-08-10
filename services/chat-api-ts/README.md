@@ -15,5 +15,14 @@ To invoke:
 
 ```
 GATEWAY_URL=$(scripts/fetch-cdk-output.sh ChatApiTsStack GatewayUrl)
-./scripts/aws-curl.sh "${GATEWAY_URL%/}/v1/hello-world"
+./aws-curl.sh -X POST "${GATEWAY_URL%/}/v1/threads/invoke" \
+  -H "Content-Type: application/json" \
+  -H "end-user-id: "'"$(uuidgen)"'" \
+  -d '{
+    "threadId": "'"$(uuidgen)"'",
+    "runId": "'"$(uuidgen)"'",
+    "messages": [
+      { "id": "'"$(uuidgen)"'", "role": "user", "content": "Tell me about Statutory Sick Pay" }
+    ]
+  }'
 ```
