@@ -37,6 +37,7 @@ def get_cdk_output(stack_name: str, output_name: str) -> str:
         text=True,
         cwd=project_dir,
         capture_output=True,
+        check=False,
     )
 
     if result.returncode != 0:
