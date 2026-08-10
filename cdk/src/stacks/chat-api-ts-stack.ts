@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import path from 'node:path';
 import { Construct } from 'constructs';
@@ -9,6 +10,7 @@ import { getResourceNamePrefix, repoRoot } from '../constants/environment.ts';
 export interface ChatApiTsStackProps extends cdk.StackProps {
   serviceName: string;
   teamName: string;
+  agentRuntimeArn: string;
   repositoryUrl: string;
   environment: string;
 }
@@ -48,14 +50,46 @@ export class ChatApiTsStack extends cdk.Stack {
       this.lambdaHandler('hello-world.ts'),
     );
 
+    const agentStreamFunction = this.lambdaHandler('threads/invoke.ts', {
+      AGENT_RUNTIME_ARN: props.agentRuntimeArn,
+    });
+
+    agentStreamFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['bedrock-agentcore:InvokeAgentRuntime'],
+        resources: [
+          // AgentCore requires both the base runtime ARN and a wildcard for sub-paths
+          // (e.g. /runtime-endpoint/DEFAULT).
+          props.agentRuntimeArn,
+          `${props.agentRuntimeArn}/*`,
+        ],
+      }),
+    );
+
+    const agentStreamLambda = new apigateway.LambdaIntegration(
+      agentStreamFunction,
+      {
+        responseTransferMode: apigateway.ResponseTransferMode.STREAM,
+      },
+    );
+
+    const v1 = api.root.addResource('v1');
+
     // GET /v1/hello-world
-    const helloWorld = api.root.addResource('v1').addResource('hello-world');
+    const helloWorld = v1.addResource('hello-world');
     helloWorld.addMethod('GET', helloWorldLambda);
+
+    // POST /v1/threads/invoke
+    const agentStream = v1.addResource('threads').addResource('invoke');
+    agentStream.addMethod('POST', agentStreamLambda);
 
     return api;
   }
 
-  lambdaHandler(handlerPath: string): NodejsFunction {
+  lambdaHandler(
+    handlerPath: string,
+    environment?: { [key: string]: string },
+  ): NodejsFunction {
     const nameSuffix = handlerPath.replaceAll(/[^a-zA-Z0-9-]/g, '-');
     const functionName = `${getResourceNamePrefix()}-chat-api-ts-${nameSuffix}`;
 
@@ -64,6 +98,7 @@ export class ChatApiTsStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_24_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(30),
+      environment: environment,
       entry: path.resolve(
         repoRoot(),
         `services/chat-api-ts/src/handlers/${handlerPath}`,

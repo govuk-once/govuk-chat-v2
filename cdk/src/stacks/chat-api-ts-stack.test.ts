@@ -16,6 +16,8 @@ describe('ChatApiTsStack', () => {
     teamName: 'chat',
     repositoryUrl: 'https://example.com/repo',
     environment: 'testing',
+    agentRuntimeArn:
+      'arn:aws:bedrock-agentcore:eu-west-1:123456789012:runtime/test',
   };
 
   function stackTemplate() {
@@ -31,7 +33,7 @@ describe('ChatApiTsStack', () => {
   }
 
   describe('Stack tags', () => {
-    it('sets common tags ', () => {
+    it('sets common tags', () => {
       stackTags().hasValues({
         ServiceName: baseProps.serviceName,
         TeamName: baseProps.teamName,
@@ -47,6 +49,19 @@ describe('ChatApiTsStack', () => {
 
       template.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: Match.stringLikeRegexp('chat-api-ts-hello-world-ts'),
+      });
+    });
+
+    it('creates the agent-stream lambda with AGENT_RUNTIME_ARN configured', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: Match.stringLikeRegexp('chat-api-ts-threads-invoke-ts'),
+        Environment: {
+          Variables: Match.objectLike({
+            AGENT_RUNTIME_ARN: baseProps.agentRuntimeArn,
+          }),
+        },
       });
     });
   });
@@ -69,11 +84,34 @@ describe('ChatApiTsStack', () => {
       });
     });
 
-    it('requires IAM auth', () => {
+    it('exposes a /v1/threads/invoke resource path', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::Resource', {
+        PathPart: 'v1',
+      });
+      template.hasResourceProperties('AWS::ApiGateway::Resource', {
+        PathPart: 'threads',
+      });
+      template.hasResourceProperties('AWS::ApiGateway::Resource', {
+        PathPart: 'invoke',
+      });
+    });
+
+    it('requires IAM auth on GET requests', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::ApiGateway::Method', {
         HttpMethod: 'GET',
+        AuthorizationType: 'AWS_IAM',
+      });
+    });
+
+    it('requires IAM auth on POST requests', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::Method', {
+        HttpMethod: 'POST',
         AuthorizationType: 'AWS_IAM',
       });
     });
