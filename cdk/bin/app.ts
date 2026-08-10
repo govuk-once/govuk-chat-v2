@@ -23,7 +23,7 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION || 'eu-west-1',
 };
 
-new AguiAgentStack(app, 'AguiAgentStack', {
+const aguiAgentStack = new AguiAgentStack(app, 'AguiAgentStack', {
   env: env,
   environment: getEnvironment(),
   githubToken: githubToken,
@@ -42,6 +42,7 @@ const exampleAgentStack = new ExampleAgentStack(app, 'ExampleAgentStack', {
 new ChatApiTsStack(app, 'ChatApiTsStack', {
   env: env,
   environment: getEnvironment(),
+  agentRuntimeArn: aguiAgentStack.agentRuntimeArn,
   stackName: `${getResourceNamePrefix()}-ChatApiTsStack`,
   ...serviceMetadata,
 });
