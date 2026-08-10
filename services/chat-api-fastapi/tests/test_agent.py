@@ -101,3 +101,14 @@ def test_parse_agent_response_stream_ignores_non_data_prefixed_lines():
 
     result = list(parse_agent_response_stream({"response": MockStreamingBody()}))
     assert result == [{"data": '{"type":"content_delta","delta":"hello"}'}]
+
+
+def test_parse_agent_response_stream_yields_an_error_for_unparsable_data():
+    class MockStreamingBody:
+        def iter_lines(self, chunk_size=None):
+            yield b"data: not json"
+            yield b"data: " + json.dumps({"type": "who_knows"}).encode()
+
+    result = list(parse_agent_response_stream({"response": MockStreamingBody()}))
+    error = '{"type":"error","error_type":"agent_error","error_message":null}'
+    assert result == [{"data": error}, {"data": error}]

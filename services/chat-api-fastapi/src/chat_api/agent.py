@@ -11,6 +11,7 @@ from agent_runtime_types import (
     StreamEndEvent,
     StreamStartEvent,
 )
+from pydantic import ValidationError
 
 
 def invoke_agent_runtime(
@@ -55,7 +56,7 @@ def parse_agent_response_stream(response: dict):
                         yield {"data": data.model_dump_json()}
                     case _ as unreachable:
                         assert_never(unreachable)
-            except Exception:
+            except ValidationError:
                 # TODO: Log the error in Sentry
                 error = ErrorEvent(type="error", error_type="agent_error")
                 yield {"data": error.model_dump_json()}
