@@ -1,7 +1,7 @@
 import os
 import uuid
 from datetime import UTC, datetime
-from typing import Literal, TypeAlias
+from typing import Literal
 
 from pynamodb.attributes import (
     DiscriminatorAttribute,
@@ -16,9 +16,9 @@ from pynamodb.models import Model
 PYNAMODB_UTC_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
 DEFAULT_CONVERSATION_LABEL = "New conversation"
 
-MessageParticipant: TypeAlias = Literal["user", "assistant"]
-TextMessageType: TypeAlias = Literal["UserMessageText", "AssistantMessageText"]
-MessageStatus: TypeAlias = Literal["complete", "cancelled", "error"]
+type MessageParticipant = Literal["user", "assistant"]
+type TextMessageType = Literal["UserMessageText", "AssistantMessageText"]
+type MessageStatus = Literal["complete", "cancelled", "error"]
 
 
 class ConversationsByUserIndex(GlobalSecondaryIndex):

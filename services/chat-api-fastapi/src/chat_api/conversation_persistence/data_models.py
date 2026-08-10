@@ -1,7 +1,7 @@
 import os
 import uuid
 from datetime import UTC, datetime
-from typing import Literal, TypeAlias
+from typing import Literal
 
 from pynamodb.attributes import (
     DiscriminatorAttribute,
@@ -12,7 +12,7 @@ from pynamodb.indexes import AllProjection, GlobalSecondaryIndex
 from pynamodb.models import Model
 
 PYNAMODB_UTC_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
-MessageRole: TypeAlias = Literal["user", "assistant"]
+type MessageRole = Literal["user", "assistant"]
 
 
 class ConversationsByUserIndex(GlobalSecondaryIndex):
