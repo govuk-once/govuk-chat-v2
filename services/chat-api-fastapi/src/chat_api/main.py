@@ -71,7 +71,9 @@ def invoke_agent(user_input: ConversationInput):
         response = invoke_agent_runtime(
             user_input.message, user_input.session_id, user_input.end_user_id
         )
-    except Exception as e:
+    # Return an arbitrary exception into a 500 response
+    # TODO: Check if this can be narrower
+    except Exception as e:  # noqa: BLE001
         return JSONResponse(status_code=500, content={"error": str(e)})
 
     return EventSourceResponse(parse_agent_response_stream(response))

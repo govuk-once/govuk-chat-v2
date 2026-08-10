@@ -160,7 +160,8 @@ async def event_generator(
                 raise ErrorEventReceivedFromAgentError(
                     "Agent response stream ended before stream_end"
                 )
-    except Exception as e:
+    # Catch any errors that occur so the stream can be stopped gracefully
+    except Exception as e:  # noqa: BLE001
         error_type = e.__class__.__name__
         error_message = str(e)
         error_event = StreamErrorEvent(

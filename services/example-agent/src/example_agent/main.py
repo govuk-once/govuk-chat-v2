@@ -68,7 +68,9 @@ async def invoke(payload, context) -> AsyncGenerator[AgentStreamEvent]:
                 if (processed := process_event(event)) is not None:
                     yield processed
 
-        except Exception as e:
+        # Catch any errors during stream so a graceful response can be triggered
+        # TODO: Check should this re-raise the exception after yielding?
+        except Exception as e:  # noqa: BLE001
             # TODO: Log the exception in Sentry
             yield ErrorEvent(
                 error_type="agent_error",

@@ -95,7 +95,7 @@ async def name_conversation(
         )
 
         return f"Conversation {conversation_id} named: {title}"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"Conversation {conversation_id} could not be named: {e}"
 
 
