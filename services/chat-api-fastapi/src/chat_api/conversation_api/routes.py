@@ -12,7 +12,6 @@ from chat_api.conversation_persistence.conversation_repository import (
     ConversationRepository,
 )
 
-
 router = APIRouter()
 
 

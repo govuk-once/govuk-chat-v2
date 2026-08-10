@@ -1,27 +1,28 @@
+import asyncio
+import datetime
+import json
+import uuid
+from typing import Any
+
+from chat_api.agent import parse_agent_response_stream
 from chat_api.v1.data_models.messages import (
     ConversationAssistantMessage,
 )
+from chat_api.v1.errors import (
+    ErrorEventReceivedFromAgentError,
+    UnknownAgentEventTypeError,
+)
 from chat_api.v1.schemas.events import (
     CommonEventFields,
-    StreamStartEvent,
     ContentDeltaEvent,
     StreamEndEvent,
     StreamErrorEvent,
+    StreamStartEvent,
 )
-from chat_api.agent import parse_agent_response_stream
-import asyncio
-import uuid
-import datetime
-from typing import Any
 from chat_api.v1.services.persistence_service import (
     get_conversation_repository,
     persist_message,
 )
-from chat_api.v1.errors import (
-    UnknownAgentEventTypeError,
-    ErrorEventReceivedFromAgentError,
-)
-import json
 
 
 async def event_generator(
@@ -94,7 +95,7 @@ async def event_generator(
     def make_stream_end_event(stop_reason: str, complete: bool) -> StreamEndEvent:
         return StreamEndEvent(
             **event_common,
-            stream_ended_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            stream_ended_at=datetime.datetime.now(datetime.UTC).isoformat(),
             stop_reason=stop_reason,
             complete=complete,
         )
@@ -117,7 +118,7 @@ async def event_generator(
                     event = StreamStartEvent(
                         **event_common,
                         stream_started_at=datetime.datetime.now(
-                            datetime.timezone.utc
+                            datetime.UTC
                         ).isoformat(),
                     )
                     yield {"event": event.event, "data": event.model_dump_json()}
@@ -164,7 +165,7 @@ async def event_generator(
         error_message = str(e)
         error_event = StreamErrorEvent(
             **event_common,
-            stream_ended_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            stream_ended_at=datetime.datetime.now(datetime.UTC).isoformat(),
             error_type=error_type,
             error_message=error_message,
         )

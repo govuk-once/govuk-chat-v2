@@ -1,20 +1,21 @@
-from bedrock_agentcore.runtime import BedrockAgentCoreApp
+import os
+from collections.abc import AsyncGenerator
+
+from agent_runtime_types import (
+    AgentStreamEvent,
+    ContentDeltaEvent,
+    ErrorEvent,
+    StreamEndEvent,
+    StreamStartEvent,
+)
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
 from bedrock_agentcore.memory.integrations.strands.session_manager import (
     AgentCoreMemorySessionManager,
 )
+from bedrock_agentcore.runtime import BedrockAgentCoreApp
+from govuk_chat_v2_prototype_private import load_prompts
 from strands import Agent
 from strands.models import BedrockModel
-from agent_runtime_types import (
-    AgentStreamEvent,
-    StreamStartEvent,
-    StreamEndEvent,
-    ContentDeltaEvent,
-    ErrorEvent,
-)
-from typing import AsyncGenerator
-import os
-from govuk_chat_v2_prototype_private import load_prompts
 
 app = BedrockAgentCoreApp()
 
@@ -36,7 +37,7 @@ def process_event(event) -> AgentStreamEvent | None:
 
 
 @app.entrypoint
-async def invoke(payload, context) -> AsyncGenerator[AgentStreamEvent, None]:
+async def invoke(payload, context) -> AsyncGenerator[AgentStreamEvent]:
     session_id = getattr(context, "session_id", "default-session")
     user_id = payload.get("end_user_id") or session_id
 

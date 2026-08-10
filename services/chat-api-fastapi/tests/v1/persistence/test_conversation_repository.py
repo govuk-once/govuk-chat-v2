@@ -1,20 +1,20 @@
 from decimal import Decimal
 
 import boto3
-from boto3.dynamodb.conditions import Key
 import pytest
+from boto3.dynamodb.conditions import Key
 from moto import mock_aws
 
 from chat_api.v1.persistence.conversation_repository import (
-    ConversationRepository,
     ConversationNotFoundError,
+    ConversationRepository,
     ConversationStreamNotFoundError,
 )
 from chat_api.v1.persistence.data_models import (
-    ConversationStreamItem,
-    ConversationTableItem,
     DEFAULT_CONVERSATION_LABEL,
     PYNAMODB_UTC_DATETIME_FORMAT,
+    ConversationStreamItem,
+    ConversationTableItem,
 )
 
 

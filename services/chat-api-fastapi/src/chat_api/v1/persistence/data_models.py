@@ -1,14 +1,14 @@
-from datetime import datetime, timezone
 import os
-from typing import Literal, TypeAlias
 import uuid
+from datetime import UTC, datetime
+from typing import Literal, TypeAlias
 
 from pynamodb.attributes import (
     DiscriminatorAttribute,
     DynamicMapAttribute,
     NumberAttribute,
-    UTCDateTimeAttribute,
     UnicodeAttribute,
+    UTCDateTimeAttribute,
 )
 from pynamodb.indexes import AllProjection, GlobalSecondaryIndex
 from pynamodb.models import Model
@@ -87,7 +87,7 @@ class ConversationMetadataItem(ConversationTableItem, discriminator="Conversatio
     ) -> "ConversationMetadataItem":
         conversation_id = conversation_id or str(uuid.uuid4())
         default_branch_id = default_branch_id or str(uuid.uuid4())
-        created_at = created_at or datetime.now(timezone.utc)
+        created_at = created_at or datetime.now(UTC)
         last_activity_at = last_activity_at or created_at
 
         return cls(
@@ -109,7 +109,7 @@ class ConversationMetadataItem(ConversationTableItem, discriminator="Conversatio
         )
 
     def record_deleted(self, deleted_at: datetime | None = None) -> None:
-        deleted_at = deleted_at or datetime.now(timezone.utc)
+        deleted_at = deleted_at or datetime.now(UTC)
         self.deleted_at = deleted_at
         self.GSI1PK = ConversationTableItem.deleted_conversations_gsi_pk(
             self.end_user_id
@@ -140,7 +140,7 @@ class ConversationBranchItem(ConversationTableItem, discriminator="Branch"):
         branch_id: str,
         created_at: datetime | None = None,
     ) -> "ConversationBranchItem":
-        created_at = created_at or datetime.now(timezone.utc)
+        created_at = created_at or datetime.now(UTC)
         return cls(
             PK=cls.conversation_pk(conversation_id),
             SK=_make_branch_sk(branch_id),
@@ -189,7 +189,7 @@ class ConversationMessageItem(ConversationTableItem, discriminator="Message"):
         error_message: str | None = None,
     ) -> "ConversationMessageItem":
         message_id = message_id or str(uuid.uuid4())
-        created_at = created_at or datetime.now(timezone.utc)
+        created_at = created_at or datetime.now(UTC)
         message_type = _text_message_type_for_participant(participant)
 
         return cls(
@@ -233,7 +233,7 @@ class ConversationStreamItem(ConversationTableItem, discriminator="ConversationS
         runtime_session_id: str,
         created_at: datetime | None = None,
     ) -> "ConversationStreamItem":
-        created_at = created_at or datetime.now(timezone.utc)
+        created_at = created_at or datetime.now(UTC)
 
         return cls(
             PK=cls.conversation_pk(conversation_id),
@@ -248,7 +248,7 @@ class ConversationStreamItem(ConversationTableItem, discriminator="ConversationS
 
     def record_cancelled(self, cancelled_at: datetime | None = None) -> None:
         self.status = "cancelled"
-        self.cancelled_at = cancelled_at or datetime.now(timezone.utc)
+        self.cancelled_at = cancelled_at or datetime.now(UTC)
 
 
 def _make_branch_sk(branch_id: str) -> str:
@@ -284,4 +284,4 @@ def _text_message_type_for_participant(
 
 
 def _serialise_timestamp(timestamp: datetime) -> str:
-    return timestamp.astimezone(timezone.utc).strftime(PYNAMODB_UTC_DATETIME_FORMAT)
+    return timestamp.astimezone(UTC).strftime(PYNAMODB_UTC_DATETIME_FORMAT)

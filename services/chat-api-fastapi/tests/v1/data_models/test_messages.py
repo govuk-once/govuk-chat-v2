@@ -1,8 +1,9 @@
 import pytest
 from pydantic import ValidationError
+
 from chat_api.v1.data_models.messages import (
-    ConversationUserMessage,
     ConversationAssistantMessage,
+    ConversationUserMessage,
 )
 
 

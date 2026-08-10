@@ -1,15 +1,15 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.transactions import TransactWrite
 
 from chat_api.v1.persistence.data_models import (
+    DEFAULT_CONVERSATION_LABEL,
     ConversationBranchItem,
     ConversationMessageItem,
     ConversationMetadataItem,
     ConversationStreamItem,
     ConversationTableItem,
-    DEFAULT_CONVERSATION_LABEL,
     MessageParticipant,
     MessageStatus,
 )
@@ -30,7 +30,7 @@ class ConversationRepository:
         message: str,
         session_id: str | None = None,
     ) -> tuple[ConversationMetadataItem, ConversationMessageItem]:
-        created_at = datetime.now(timezone.utc)
+        created_at = datetime.now(UTC)
         conversation = ConversationMetadataItem.new_conversation(
             end_user_id=end_user_id,
             label=DEFAULT_CONVERSATION_LABEL,
@@ -105,7 +105,7 @@ class ConversationRepository:
     ) -> ConversationMetadataItem:
         conversation = self._get_conversation(conversation_id, end_user_id)
         conversation.label = label
-        conversation.record_activity(datetime.now(timezone.utc))
+        conversation.record_activity(datetime.now(UTC))
         conversation.save()
         return conversation
 
@@ -215,7 +215,7 @@ class ConversationRepository:
         error_type: str | None = None,
         error_message: str | None = None,
     ) -> ConversationMessageItem:
-        created_at = datetime.now(timezone.utc)
+        created_at = datetime.now(UTC)
         conversation = self._get_conversation(conversation_id, end_user_id)
         branch = self._get_default_branch(conversation)
         sequence = int(branch.tip_sequence) + 1

@@ -1,15 +1,15 @@
-import json
 import asyncio
+import json
+
+from botocore.exceptions import ClientError
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, field_validator, ValidationInfo
+from pydantic import BaseModel, ValidationInfo, field_validator
 from sse_starlette.sse import EventSourceResponse
+
 from chat_api.agent import invoke_agent_runtime, parse_agent_response_stream
-
 from chat_api.conversation_api.routes import router as conversation_router
-
 from chat_api.v1.routers.conversations import router as v1_conversations_router
-from botocore.exceptions import ClientError
 
 app = FastAPI()
 app.include_router(conversation_router)
@@ -56,7 +56,7 @@ async def read_root():
 @app.get("/stream")
 async def stream():
     async def streamer():
-        message = "This is an SSE stream".split(" ")
+        message = ["This", "is", "an", "SSE", "stream"]
         for word in message:
             content = {"type": "delta", "content": word}
             yield {"event": content["type"], "data": json.dumps(content)}

@@ -1,30 +1,31 @@
+import uuid
+
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Response
 from sse_starlette.sse import EventSourceResponse
 
-from chat_api.v1.schemas.conversations import (
-    ConversationPostRequest,
-    ConversationPatchRequest,
-)
-from chat_api.v1.data_models.messages import ConversationUserMessage
 from chat_api.agent import invoke_agent_runtime, stop_agent_runtime_session
-import uuid
-from chat_api.v1.services.persistence_service import (
-    persist_message,
-    get_conversation_repository,
-    name_conversation,
-    rename_conversation,
-)
-from chat_api.v1.services.stream_service import (
-    event_generator,
+from chat_api.v1.data_models.messages import ConversationUserMessage
+from chat_api.v1.data_models.responses import (
+    ConversationPatchResponse,
+    ConversationResponse,
+    MessageResponse,
 )
 from chat_api.v1.persistence.conversation_repository import (
     ConversationNotFoundError,
     ConversationStreamNotFoundError,
 )
-from chat_api.v1.data_models.responses import (
-    ConversationResponse,
-    MessageResponse,
-    ConversationPatchResponse,
+from chat_api.v1.schemas.conversations import (
+    ConversationPatchRequest,
+    ConversationPostRequest,
+)
+from chat_api.v1.services.persistence_service import (
+    get_conversation_repository,
+    name_conversation,
+    persist_message,
+    rename_conversation,
+)
+from chat_api.v1.services.stream_service import (
+    event_generator,
 )
 
 router = APIRouter(prefix="/v1/conversations", tags=["conversations"])

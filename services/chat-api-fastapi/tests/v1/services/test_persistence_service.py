@@ -1,15 +1,17 @@
-import pytest
+import json
 import uuid
+
+import pytest
+
+from chat_api.v1.data_models.messages import (
+    ConversationAssistantMessage,
+    ConversationUserMessage,
+)
 from chat_api.v1.services.persistence_service import (
-    persist_message,
     name_conversation,
+    persist_message,
     rename_conversation,
 )
-from chat_api.v1.data_models.messages import (
-    ConversationUserMessage,
-    ConversationAssistantMessage,
-)
-import json
 
 
 @pytest.mark.asyncio

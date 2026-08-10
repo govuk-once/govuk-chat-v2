@@ -1,8 +1,9 @@
 import pytest
 from pydantic import ValidationError
+
 from chat_api.v1.schemas.conversations import (
-    ConversationPostRequest,
     ConversationPatchRequest,
+    ConversationPostRequest,
 )
 
 

@@ -1,16 +1,17 @@
-import pytest
-
-from example_agent.main import app, invoke
 from types import SimpleNamespace
-from govuk_chat_v2_prototype_private import load_prompts
-from strands.agent import AgentResult
 from unittest.mock import MagicMock
+
+import pytest
 from agent_runtime_types import (
-    StreamStartEvent,
-    StreamEndEvent,
     ContentDeltaEvent,
     ErrorEvent,
+    StreamEndEvent,
+    StreamStartEvent,
 )
+from govuk_chat_v2_prototype_private import load_prompts
+from strands.agent import AgentResult
+
+from example_agent.main import app, invoke
 
 
 async def fake_agent_stream():

@@ -1,16 +1,16 @@
 import json
 import os
 import uuid
+from typing import assert_never
 
 import boto3
 from agent_runtime_types import (
     AgentStreamEventModel,
-    StreamStartEvent,
     ContentDeltaEvent,
-    StreamEndEvent,
     ErrorEvent,
+    StreamEndEvent,
+    StreamStartEvent,
 )
-from typing import assert_never
 
 
 def invoke_agent_runtime(
