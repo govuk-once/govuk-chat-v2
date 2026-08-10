@@ -266,7 +266,7 @@ class TestGetConversation:
     def test_get_conversation_successful_response_message_count(
         self, client, dynamo_table, repository
     ):
-        conversation, message_1 = repository.create_conversation_with_user_message(
+        conversation, _ = repository.create_conversation_with_user_message(
             end_user_id="user-123",
             message="Hello 1",
             session_id="session-123",
