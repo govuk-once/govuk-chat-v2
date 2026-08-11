@@ -1,26 +1,26 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
+from agent_runtime_types import ContentDeltaEvent, StreamEndEvent, StreamStartEvent
 from fastapi.testclient import TestClient
 
 from chat_api.conversation_persistence.conversation_repository import (
     ConversationRepository,
 )
-from chat_api.main import app
 from chat_api.conversation_persistence.data_models import (
     ConversationMessageItem,
     ConversationMetadataItem,
     MessageRole,
 )
-from agent_runtime_types import StreamStartEvent, ContentDeltaEvent, StreamEndEvent
+from chat_api.main import app
 
 client = TestClient(app)
 
 
 def utc_time(second: int) -> datetime:
-    return datetime(2026, 1, 1, 12, 0, second, tzinfo=timezone.utc)
+    return datetime(2026, 1, 1, 12, 0, second, tzinfo=UTC)
 
 
 def make_conversation(
@@ -66,7 +66,7 @@ def test_read_root():
 
 
 def test_stream(mocker):
-    tokens = "This is an SSE stream".split(" ")
+    tokens = ["This", "is", "an", "SSE", "stream"]
     sleep_mock = mocker.patch("asyncio.sleep", new_callable=AsyncMock)
 
     response = client.get("/stream")
@@ -95,9 +95,7 @@ def test_invoke_agent(mocker):
     class MockStreamingBody:
         def iter_lines(self, chunk_size=None):
             for content in agent_responses:
-                yield f"data: {content.model_dump_json()}".encode(
-                    "utf-8"
-                )  # iter_lines returns bytes
+                yield f"data: {content.model_dump_json()}".encode()  # iter_lines returns bytes
 
     mock_client = mocker.Mock()
     mock_client.invoke_agent_runtime.return_value = {
@@ -128,7 +126,7 @@ def test_invoke_agent(mocker):
 def test_invoke_agent_handles_invalid_json(mocker):
     class MockStreamingBody:
         def iter_lines(self, chunk_size=None):
-            yield "data: invalid_json".encode("utf-8")
+            yield b"data: invalid_json"
 
     mock_client = mocker.Mock()
     mock_client.invoke_agent_runtime.return_value = {

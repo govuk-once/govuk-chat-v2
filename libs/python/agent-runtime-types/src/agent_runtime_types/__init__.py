@@ -1,4 +1,5 @@
-from typing import Literal, Union, Annotated
+from typing import Annotated, Literal
+
 from pydantic import BaseModel, Field, RootModel
 
 
@@ -23,9 +24,7 @@ class ErrorEvent(BaseModel):
     error_message: str | None = None
 
 
-AgentStreamEvent = Union[
-    StreamStartEvent, ContentDeltaEvent, StreamEndEvent, ErrorEvent
-]
+AgentStreamEvent = StreamStartEvent | ContentDeltaEvent | StreamEndEvent | ErrorEvent
 
 
 class AgentStreamEventModel(RootModel):

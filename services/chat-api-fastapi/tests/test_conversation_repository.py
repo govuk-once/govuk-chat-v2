@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import boto3
-from boto3.dynamodb.conditions import Key
 import pytest
+from boto3.dynamodb.conditions import Key
 from moto import mock_aws
 
 from chat_api.conversation_persistence.conversation_repository import (
@@ -78,7 +78,7 @@ def test_get_conversation_with_messages(repository):
         conversation_id="conversation-123",
         user_id="user-123",
         title="Prototype chat",
-        created_at=datetime(2026, 1, 1, 11, 59, 0, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, 11, 59, 0, tzinfo=UTC),
     )
     conversation.save()
 
@@ -86,7 +86,7 @@ def test_get_conversation_with_messages(repository):
         conversation_id=conversation.conversation_id,
         role="user",
         content="Hello",
-        timestamp=datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC),
     )
     first_message.save()
 
@@ -94,7 +94,7 @@ def test_get_conversation_with_messages(repository):
         conversation_id=conversation.conversation_id,
         role="assistant",
         content="Hi there",
-        timestamp=datetime(2026, 1, 1, 12, 0, 1, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 1, 1, 12, 0, 1, tzinfo=UTC),
     )
     second_message.save()
 
@@ -106,9 +106,7 @@ def test_get_conversation_with_messages(repository):
     assert metadata_item.conversation_id == "conversation-123"
     assert metadata_item.user_id == "user-123"
     assert metadata_item.title == "Prototype chat"
-    assert metadata_item.created_at == datetime(
-        2026, 1, 1, 11, 59, 0, tzinfo=timezone.utc
-    )
+    assert metadata_item.created_at == datetime(2026, 1, 1, 11, 59, 0, tzinfo=UTC)
     assert [
         (item.conversation_id, item.role, item.content, item.timestamp)
         for item in message_items
@@ -117,13 +115,13 @@ def test_get_conversation_with_messages(repository):
             "conversation-123",
             "user",
             "Hello",
-            datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC),
         ),
         (
             "conversation-123",
             "assistant",
             "Hi there",
-            datetime(2026, 1, 1, 12, 0, 1, tzinfo=timezone.utc),
+            datetime(2026, 1, 1, 12, 0, 1, tzinfo=UTC),
         ),
     ]
 
@@ -133,7 +131,7 @@ def test_list_conversations_for_user(repository):
         conversation_id="conversation-1",
         user_id="user-123",
         title="First conversation",
-        created_at=datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC),
     )
     oldest_conversation.save()
 
@@ -141,7 +139,7 @@ def test_list_conversations_for_user(repository):
         conversation_id="conversation-2",
         user_id="user-123",
         title="Second conversation",
-        created_at=datetime(2026, 1, 1, 12, 0, 5, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, 12, 0, 5, tzinfo=UTC),
     )
     newest_conversation.save()
 
@@ -149,7 +147,7 @@ def test_list_conversations_for_user(repository):
         conversation_id="conversation-3",
         user_id="user-999",
         title="Someone else's conversation",
-        created_at=datetime(2026, 1, 1, 12, 0, 10, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, 12, 0, 10, tzinfo=UTC),
     )
     other_users_conversation.save()
 
@@ -157,7 +155,7 @@ def test_list_conversations_for_user(repository):
         conversation_id=newest_conversation.conversation_id,
         role="user",
         content="Hello again",
-        timestamp=datetime(2026, 1, 1, 12, 0, 6, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 1, 1, 12, 0, 6, tzinfo=UTC),
     )
     message.save()
 
@@ -171,12 +169,12 @@ def test_list_conversations_for_user(repository):
             "conversation-2",
             "user-123",
             "Second conversation",
-            datetime(2026, 1, 1, 12, 0, 5, tzinfo=timezone.utc),
+            datetime(2026, 1, 1, 12, 0, 5, tzinfo=UTC),
         ),
         (
             "conversation-1",
             "user-123",
             "First conversation",
-            datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC),
         ),
     ]

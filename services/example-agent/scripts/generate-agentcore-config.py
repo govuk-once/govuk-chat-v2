@@ -1,17 +1,18 @@
 #!/usr/bin/env -S uv run --script
 
-from pathlib import Path
-from botocore.exceptions import (
-    NoCredentialsError,
-    PartialCredentialsError,
-)
-import boto3
 import os
 import re
 import subprocess
 import sys
 import uuid
+from pathlib import Path
+
+import boto3
 import yaml
+from botocore.exceptions import (
+    NoCredentialsError,
+    PartialCredentialsError,
+)
 
 project_dir = Path(__file__).resolve().parent.parent
 
@@ -36,6 +37,7 @@ def get_cdk_output(stack_name: str, output_name: str) -> str:
         text=True,
         cwd=project_dir,
         capture_output=True,
+        check=False,
     )
 
     if result.returncode != 0:

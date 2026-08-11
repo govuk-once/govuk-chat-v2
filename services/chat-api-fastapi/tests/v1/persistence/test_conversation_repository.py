@@ -1,20 +1,20 @@
 from decimal import Decimal
 
 import boto3
-from boto3.dynamodb.conditions import Key
 import pytest
+from boto3.dynamodb.conditions import Key
 from moto import mock_aws
 
 from chat_api.v1.persistence.conversation_repository import (
-    ConversationRepository,
     ConversationNotFoundError,
+    ConversationRepository,
     ConversationStreamNotFoundError,
 )
 from chat_api.v1.persistence.data_models import (
-    ConversationStreamItem,
-    ConversationTableItem,
     DEFAULT_CONVERSATION_LABEL,
     PYNAMODB_UTC_DATETIME_FORMAT,
+    ConversationStreamItem,
+    ConversationTableItem,
 )
 
 
@@ -296,7 +296,7 @@ def test_get_conversations_for_user(dynamo_table, repository):
         end_user_id="user-123",
         message="User message",
     )
-    conversation_3, _ = repository.create_conversation_with_user_message(
+    _conversation_3, _ = repository.create_conversation_with_user_message(
         end_user_id="user-999",
         message="User message",
     )
@@ -317,11 +317,11 @@ def test_get_conversations_for_user(dynamo_table, repository):
 
 
 def test_get_conversations_for_user_with_count(dynamo_table, repository):
-    conversation_1, _ = repository.create_conversation_with_user_message(
+    _conversation_1, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="User message",
     )
-    conversation_2, _ = repository.create_conversation_with_user_message(
+    _conversation_2, _ = repository.create_conversation_with_user_message(
         end_user_id="user-123",
         message="User message",
     )
@@ -700,7 +700,7 @@ def test_get_conversation_with_messages_raises_exception_if_not_users_conversati
     )
 
     with pytest.raises(ConversationNotFoundError):
-        conversation, messages = repository.get_conversation_with_messages(
+        repository.get_conversation_with_messages(
             conversation_id=conversation.conversation_id,
             end_user_id="user-999",
         )

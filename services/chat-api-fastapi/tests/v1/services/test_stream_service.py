@@ -1,11 +1,12 @@
-import pytest
 import json
 import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from chat_api.v1.services.stream_service import event_generator
+import pytest
+
 from chat_api.v1.data_models.messages import ConversationAssistantMessage
+from chat_api.v1.services.stream_service import event_generator
 
 
 def assert_base_event_fields(

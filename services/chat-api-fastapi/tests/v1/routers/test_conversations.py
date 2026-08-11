@@ -1,23 +1,23 @@
+from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import boto3
 import pytest
-from fastapi.testclient import TestClient
-from chat_api.main import app
 from botocore.exceptions import ClientError
+from fastapi.testclient import TestClient
+from moto import mock_aws
+
+from chat_api.main import app
 from chat_api.v1.persistence.conversation_repository import (
     ConversationNotFoundError,
     ConversationRepository,
     ConversationStreamNotFoundError,
 )
-from moto import mock_aws
 from chat_api.v1.persistence.data_models import (
-    ConversationTableItem,
     DEFAULT_CONVERSATION_LABEL,
+    ConversationTableItem,
 )
-from datetime import datetime
-
-import boto3
 
 
 @pytest.fixture
@@ -266,7 +266,7 @@ class TestGetConversation:
     def test_get_conversation_successful_response_message_count(
         self, client, dynamo_table, repository
     ):
-        conversation, message_1 = repository.create_conversation_with_user_message(
+        conversation, _ = repository.create_conversation_with_user_message(
             end_user_id="user-123",
             message="Hello 1",
             session_id="session-123",

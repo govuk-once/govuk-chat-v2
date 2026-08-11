@@ -1,8 +1,8 @@
-import json
-from botocore.exceptions import ClientError
-import boto3
 import asyncio
+import json
 
+import boto3
+from botocore.exceptions import ClientError
 
 client = None
 
@@ -49,4 +49,4 @@ async def invoke_model(
     except ClientError as e:
         # We will probably just want sentry to fire here, but for now we can return
         # the error message so we can assert on it in tests.
-        return f"Error: {str(e)}"
+        return f"Error: {e!s}"

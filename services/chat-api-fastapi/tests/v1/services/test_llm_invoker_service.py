@@ -1,7 +1,8 @@
-import pytest
 import json
 
+import pytest
 from botocore.exceptions import ClientError
+
 from chat_api.v1.services.llm_invoker_service import invoke_model
 
 

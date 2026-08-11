@@ -1,18 +1,18 @@
-from datetime import datetime, timezone
 import os
-from typing import Literal, TypeAlias
 import uuid
+from datetime import UTC, datetime
+from typing import Literal
 
 from pynamodb.attributes import (
     DiscriminatorAttribute,
-    UTCDateTimeAttribute,
     UnicodeAttribute,
+    UTCDateTimeAttribute,
 )
 from pynamodb.indexes import AllProjection, GlobalSecondaryIndex
 from pynamodb.models import Model
 
 PYNAMODB_UTC_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
-MessageRole: TypeAlias = Literal["user", "assistant"]
+type MessageRole = Literal["user", "assistant"]
 
 
 class ConversationsByUserIndex(GlobalSecondaryIndex):
@@ -64,7 +64,7 @@ class ConversationMetadataItem(ConversationTableItem, discriminator="METADATA"):
         created_at: datetime | None = None,
         conversation_id: str | None = None,
     ) -> "ConversationMetadataItem":
-        created_at = created_at or datetime.now(timezone.utc)
+        created_at = created_at or datetime.now(UTC)
         conversation_id = conversation_id or uuid.uuid4().hex
         return cls(
             PK=f"CONVERSATION#{conversation_id}",
@@ -99,7 +99,7 @@ class ConversationMessageItem(ConversationTableItem, discriminator="MESSAGE"):
         content: str,
         timestamp: datetime | None = None,
     ) -> "ConversationMessageItem":
-        timestamp = timestamp or datetime.now(timezone.utc)
+        timestamp = timestamp or datetime.now(UTC)
         return cls(
             PK=f"CONVERSATION#{conversation_id}",
             SK=_make_message_sk(timestamp),
@@ -120,4 +120,4 @@ def _make_conversation_gsi_sk(created_at: datetime, conversation_id: str) -> str
 
 
 def _serialise_timestamp(timestamp: datetime) -> str:
-    return timestamp.astimezone(timezone.utc).strftime(PYNAMODB_UTC_DATETIME_FORMAT)
+    return timestamp.astimezone(UTC).strftime(PYNAMODB_UTC_DATETIME_FORMAT)

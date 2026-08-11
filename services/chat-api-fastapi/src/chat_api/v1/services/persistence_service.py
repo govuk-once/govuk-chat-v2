@@ -2,11 +2,11 @@ import asyncio
 from typing import cast
 
 from chat_api.v1.data_models.messages import (
-    ConversationUserMessage,
     ConversationAssistantMessage,
+    ConversationUserMessage,
 )
 from chat_api.v1.persistence.conversation_repository import ConversationRepository
-from chat_api.v1.persistence.data_models import MessageStatus, ConversationMetadataItem
+from chat_api.v1.persistence.data_models import ConversationMetadataItem, MessageStatus
 from chat_api.v1.services.llm_invoker_service import (
     invoke_model,
 )
@@ -95,7 +95,7 @@ async def name_conversation(
         )
 
         return f"Conversation {conversation_id} named: {title}"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"Conversation {conversation_id} could not be named: {e}"
 
 
