@@ -9,7 +9,12 @@ import {
 } from 'vitest';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
 import { InvokeAgentRuntimeCommand } from '@aws-sdk/client-bedrock-agentcore';
-import { EventType, type BaseEvent, type RunErrorEvent } from '@ag-ui/core';
+import {
+  EventType,
+  type BaseEvent,
+  type RunErrorEvent,
+  type RunStartedEvent,
+} from '@ag-ui/core';
 import { EventEncoder } from '@ag-ui/encoder';
 
 const send = vi.fn();
@@ -272,43 +277,100 @@ describe('handler', () => {
   });
 
   describe('agent runtime failures', () => {
-    it('emits a RunErrorEvent and ends the stream when InvokeAgentRuntimeCommand rejects', async () => {
-      const responseStream = createResponseStream();
-      send.mockResolvedValueOnce({ response: undefined });
-
-      await testEnv.handler(
-        makeEvent({ threadId: VALID_THREAD_ID, messages: VALID_MESSAGES }),
-        responseStream,
-        {},
-      );
-
-      const expectedErrorEvent: RunErrorEvent = {
-        type: EventType.RUN_ERROR,
-        message: 'No response body from agent runtime',
-      };
-      expect(writtenText(responseStream)).toEqual(
-        encoder.encode(expectedErrorEvent),
-      );
-      expect(responseStream.end).toHaveBeenCalledOnce();
-    });
-
-    it('emits a RunErrorEvent and ends the stream when the runtime returns no response body', async () => {
+    it('emits synthetic RUN_STARTED followed by RUN_ERROR when runtime fails before RUN_STARTED', async () => {
       const responseStream = createResponseStream();
       const errorMessage = 'Invocation error';
       send.mockRejectedValueOnce(new Error(errorMessage));
 
       await testEnv.handler(
-        makeEvent({ threadId: VALID_THREAD_ID, messages: VALID_MESSAGES }),
+        makeEvent({
+          threadId: VALID_THREAD_ID,
+          runId: VALID_RUN_ID,
+          messages: VALID_MESSAGES,
+        }),
+        responseStream,
+        {},
+      );
+
+      const expectedStartEvent: RunStartedEvent = {
+        type: EventType.RUN_STARTED,
+        threadId: VALID_THREAD_ID,
+        runId: VALID_RUN_ID,
+      };
+      const expectedErrorEvent: RunErrorEvent = {
+        type: EventType.RUN_ERROR,
+        message: errorMessage,
+      };
+
+      expect(writtenText(responseStream)).toBe(
+        encoder.encode(expectedStartEvent) + encoder.encode(expectedErrorEvent),
+      );
+      expect(responseStream.end).toHaveBeenCalledOnce();
+    });
+
+    it('emits synthetic RUN_STARTED followed by RUN_ERROR when no response body is returned', async () => {
+      const responseStream = createResponseStream();
+      send.mockResolvedValueOnce({ response: undefined });
+
+      await testEnv.handler(
+        makeEvent({
+          threadId: VALID_THREAD_ID,
+          runId: VALID_RUN_ID,
+          messages: VALID_MESSAGES,
+        }),
+        responseStream,
+        {},
+      );
+
+      const expectedStartEvent: RunStartedEvent = {
+        type: EventType.RUN_STARTED,
+        threadId: VALID_THREAD_ID,
+        runId: VALID_RUN_ID,
+      };
+      const expectedErrorEvent: RunErrorEvent = {
+        type: EventType.RUN_ERROR,
+        message: 'No response body from agent runtime',
+      };
+
+      expect(writtenText(responseStream)).toBe(
+        encoder.encode(expectedStartEvent) + encoder.encode(expectedErrorEvent),
+      );
+      expect(responseStream.end).toHaveBeenCalledOnce();
+    });
+
+    it('does not duplicate RUN_STARTED if stream fails after RUN_STARTED was already sent', async () => {
+      const responseStream = createResponseStream();
+
+      const runStartedEvent: RunStartedEvent = {
+        type: EventType.RUN_STARTED,
+        threadId: VALID_THREAD_ID,
+        runId: VALID_RUN_ID,
+      };
+
+      async function* failingStream() {
+        yield Buffer.from(encoder.encode(runStartedEvent));
+        throw new Error('Stream connection dropped');
+      }
+
+      send.mockResolvedValueOnce({ response: failingStream() });
+
+      await testEnv.handler(
+        makeEvent({
+          threadId: VALID_THREAD_ID,
+          runId: VALID_RUN_ID,
+          messages: VALID_MESSAGES,
+        }),
         responseStream,
         {},
       );
 
       const expectedErrorEvent: RunErrorEvent = {
         type: EventType.RUN_ERROR,
-        message: errorMessage,
+        message: 'Stream connection dropped',
       };
-      expect(writtenText(responseStream)).toEqual(
-        encoder.encode(expectedErrorEvent),
+
+      expect(writtenText(responseStream)).toBe(
+        encoder.encode(runStartedEvent) + encoder.encode(expectedErrorEvent),
       );
       expect(responseStream.end).toHaveBeenCalledOnce();
     });

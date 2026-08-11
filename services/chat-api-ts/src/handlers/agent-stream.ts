@@ -14,6 +14,7 @@ import { RunAgentInputSchema } from './schemas.ts';
 
 const client = new BedrockAgentCoreClient({});
 const encoder = new EventEncoder();
+const textDecoder = new TextDecoder('utf-8');
 
 export const handler = awslambda.streamifyResponse(
   async (
@@ -84,6 +85,8 @@ export const handler = awslambda.streamifyResponse(
       },
     });
 
+    let isRunStarted = false;
+
     try {
       const command = new InvokeAgentRuntimeCommand({
         agentRuntimeArn,
@@ -101,7 +104,28 @@ export const handler = awslambda.streamifyResponse(
       }
 
       for await (const chunk of response.response as AsyncIterable<Uint8Array>) {
-        sseStream.write(chunk);
+        const sseChunk = textDecoder.decode(chunk, { stream: true });
+
+        if (!sseChunk.trim()) continue;
+
+        if (!isRunStarted) {
+          const dataLine = sseChunk
+            .split('\n')
+            .find((line) => line.trimStart().startsWith('data:'));
+
+          if (dataLine) {
+            try {
+              const parsed = JSON.parse(dataLine.replace(/^data:\s*/, ''));
+              if (parsed.type === EventType.RUN_STARTED) {
+                isRunStarted = true;
+              }
+            } catch {
+              // Ignore JSON parsing errors
+            }
+          }
+        }
+
+        sseStream.write(sseChunk);
       }
     } catch (error) {
       const errorEvent: RunErrorEvent = {
@@ -111,7 +135,17 @@ export const handler = awslambda.streamifyResponse(
             ? error.message
             : 'Failed to invoke agent runtime',
       };
-      sseStream.write(encoder.encode(errorEvent));
+
+      if (!isRunStarted) {
+        const startEvent: RunStartedEvent = {
+          type: EventType.RUN_STARTED,
+          threadId: body.threadId,
+          runId,
+        };
+        sseStream.write(encoder.encodeSSE(startEvent));
+      }
+
+      sseStream.write(encoder.encodeSSE(errorEvent));
     } finally {
       sseStream.end();
     }
