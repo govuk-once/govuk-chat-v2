@@ -29,6 +29,8 @@ export default defineConfig(
         {
           // it's common to have unused args in Lambda functions
           argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
         },
       ],
     },
