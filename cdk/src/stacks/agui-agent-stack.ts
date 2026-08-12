@@ -139,6 +139,9 @@ export class AgUiAgentStack extends cdk.Stack {
         ],
         environment: {
           GITHUB_TOKEN: githubToken,
+          GIT_TRACE: '1',
+          GIT_CURL_VERBOSE: '1',
+          UV_VERBOSE: '1',
         },
         command: [
           'bash',
@@ -168,7 +171,7 @@ export class AgUiAgentStack extends cdk.Stack {
         # use exact to remove any packages that shouldn't be installed
         # use no-deps to only install what's in requirements.txt and not any
         # sub-dependencies pip is aware of
-        uv pip install --no-installer-metadata \
+        uv pip install -vv --no-installer-metadata \
                         --link-mode=copy \
                         --target /pip-cache/packages \
                         --python-platform aarch64-manylinux_2_28 \
@@ -176,7 +179,7 @@ export class AgUiAgentStack extends cdk.Stack {
                         --exact \
                         --no-deps \
                         --cache-dir=/pip-cache/global-cache \
-                        -r /asset-output/requirements.txt &&
+                        -r /asset-output/requirements.txt &&/
 
         cp -r /pip-cache/packages/* /asset-output/
         `,
