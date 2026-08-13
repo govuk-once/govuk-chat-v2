@@ -37,10 +37,10 @@ def get_memory_session_manager(
 
 
 def session_manager_provider(input_data):
-    actor_id = input_data.forwarded_props.get("endUserId")
-
-    if actor_id is None:
-        raise ValueError("No endUserId found in payload")
+    # TODO: remove this "default-user" fallback once we figure out a way
+    # to populate the forwarded props when running in development with
+    # AgentCore CLI.
+    actor_id = input_data.forwarded_props.get("endUserId", "default-user")
 
     return get_memory_session_manager(input_data.thread_id, actor_id)
 
