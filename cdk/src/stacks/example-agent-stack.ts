@@ -171,7 +171,7 @@ export class ExampleAgentStack extends cdk.Stack {
         uv pip install --no-installer-metadata \
                         --link-mode=copy \
                         --target /pip-cache/packages \
-                        --python-platform aarch64-manylinux2014 \
+                        --python-platform aarch64-manylinux_2_28 \
                         --python-version 3.13 \
                         --exact \
                         --no-deps \
