@@ -45,8 +45,8 @@ importers:
         specifier: 2.243.0-alpha.0
         version: 2.243.0-alpha.0(@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.263.0(constructs@10.8.1))(constructs@10.8.1))(aws-cdk-lib@2.263.0(constructs@10.8.1))(constructs@10.8.1)
       aws-cdk:
-        specifier: ^2.1133.0
-        version: 2.1133.0
+        specifier: ^2.1135.0
+        version: 2.1135.0
       aws-cdk-lib:
         specifier: ^2.263.0
         version: 2.263.0(constructs@10.8.1)
@@ -750,8 +750,8 @@ packages:
       - yaml
       - mime-types
 
-  aws-cdk@2.1133.0:
-    resolution: {integrity: sha512-DGlCBwqxSHTe1u/IoT5WV+Bbd2K3UhwFHsdMqb2nQa1fkJmaQgoNFu0It+p3HxyMWeW+gKsVzT5KcjQPQ6Kzuw==}
+  aws-cdk@2.1135.0:
+    resolution: {integrity: sha512-Vfz2kllheB+8y9audOtcw0qo0v6EnjxfO2pK7x6eSulHmD0GaAvkqrg6MF+20wxE2KTyuY1UDBzICO+nHUaFtA==}
     engines: {node: '>= 18.0.0'}
     hasBin: true
 
@@ -1826,7 +1826,7 @@ snapshots:
       '@aws-cdk/cloud-assembly-schema': 54.17.0
       constructs: 10.8.1
 
-  aws-cdk@2.1133.0: {}
+  aws-cdk@2.1135.0: {}
 
   balanced-match@4.0.4: {}
 
