@@ -2,32 +2,36 @@
 
 Prior to us putting together more formal ADR type documents, this keeps a brief list of key decisions made in prototyping.
 
-## 1. Use Python as main lanugage
+## 1. Use Python for AI/Data Science and TypeScript for other parts
 
-- Python is the most common language in the AI space, with the richest library support
-- Python is a GDS supported language
-- Python has first class AWS support and fast cold start times on AWS Lambda
-- Python is often the default language of those working in the AI / Data space, particularly data scientists, and thus we want a cleaner route from prototype to production than we've previously had porting between languages.
+- [We previously][old-python-ts-decision] intended for this project to use Python as the default
+  language for all but CDK - which was provisionally TypeScript. However, since then we've:
+  - learnt that returning streaming responses with Python on AWS Lambda requires
+    [workarounds][lambda-workaround] that increase complexity and negatively impact performance
+  - decided to run agents as distinct services, via
+    [AWS Bedrock AgentCore Runtime][agentcore-runtime], which removed the need for the agent
+    to use the same language as the backend HTTP service
+  - experienced less friction building AWS Lambdas in TypeScript, due to better tooling
+    support
+  - built a successful [user interface prototype][ui-proto] with [AssistantUI][assistant-ui]
+    and expect further UIs to be built in full-stack TypeScript
+- We therefore expect that while Python will be the language choice for AI/Data Science aspects,
+  most notably agents, TypeScript will be the default choice for anything else, with usage
+  expected predominantly in HTTP APIs, user interfaces and CDK Infrastructure as Code
+- We don't expect the Once Platform team to provide a port of their TypeScript CDK Constructs
+  in Python in the medium term, so feel TypeScript CDK is our only platform-friendly option
+- We understand this creates a risk that we won't be able to share libraries between tooling
+  built in the different languages
+- This is consistent with [TAG ADR 011][]
 
-## 2. Use TypeScript/NodeJS for AWS CDK
+[old-python-ts-decision]: https://github.com/govuk-once/govuk-chat-v2-prototype/blob/7b3d8ef1b7e708015e72aa84d6ba4eec8cd5442c/decisions.md#L5-L17
+[lambda-workaround]: https://github.com/govuk-once/govuk-chat-v2-prototype/commit/b54e1fc8d5227ecbc0c740c132de005a52d9375d
+[agentcore-runtime]: https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agents-tools-runtime.html
+[ui-proto]: https://github.com/govuk-once/govuk-chat-v2-experiments/tree/009865a93af1a3386b0390d0288ca0f6c438eefe/ui
+[assistant-ui]: https://www.assistant-ui.com/
+[TAG ADR 011]: https://gdsgovukagents.atlassian.net/wiki/spaces/TAG/pages/159318076/011+-+Use+Python+as+the+default+language+for+AI+Projects
 
-- While CDK supports Python, the App & AI Platform team only currently have resources in TypeScript
-- The platform team expects to support Python in future as well as TypeScript, but no concrete commitments
-- We don't yet know how heavily we'll rely on internal dependencies for CDK, but it seems unnecessary to cut this off at a language level in the short term
-- On Chat team we already expect to have to work with JS somewhat so don't expect infra being written in TS to be a significant impedement or inconvenience at this stage.
-
-## 3. Use Lambda Web Adapter to run Python API Code
-
-- We want to use HTTP streaming, yet Python Lambda Runtime does not currently support this
-- Running FastAPI in [Lambda Web Adapater](https://github.com/awslabs/aws-lambda-web-adapter) allows streaming support and a Python backend
-- This seemed more appealing than other alternatives:
-  1. Switch to Node.JS over Python - unappealing due to decision #1 to use Python
-  2. Build a custom runtime for Python Lambda's that supports streaming - unappealing due to it being quite a low level operation that'd impact maintenance and how we write the lambdas
-  3. Use ECS to host FastAPI - unappealing as it's much more heavy duty set-up infra wise
-  4. Use AWS AppSync - unappealing since it imposes the communication technology (GraphQL) for our API, reducing our flexibility
-- Cold starts are likely to be a problem without use of features such as Lambda SnapStart
-
-## 4. Use Amazon Strands as the agentic framework SDK
+## 2. Use Amazon Strands as the agentic framework SDK
 
 We want to use an agentic SDK to orchestrate agent logic rather than building a custom agent loop from scratch. This reduces boilerplate and lets us focus on product behaviour over "plumbing".
 Other teams across the Agentic workstream have been experimenting with Strands, the Claude Agent SDK, and Google ADK, giving us a useful reference point across options.
