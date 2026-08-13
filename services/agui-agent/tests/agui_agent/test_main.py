@@ -1,6 +1,5 @@
 import json
 
-import pytest
 from ag_ui.core import RunAgentInput
 from fastapi.testclient import TestClient
 
@@ -76,8 +75,15 @@ def test_invocations_endpoint_streams_agui_events(mocker):
     assert events[3]["delta"] == "Who's there?"
 
 
-def test_session_manager_provider_raises_without_actor_id():
-    input_without_actor_id = run_agent_input(forwardedProps={})
+def test_session_manager_provider_defaults_actor_id_when_missing(mocker):
+    mock_get_memory_session_manager = mocker.patch(
+        "agui_agent.main.get_memory_session_manager"
+    )
 
-    with pytest.raises(ValueError, match="No endUserId found in payload"):
-        session_manager_provider(input_without_actor_id)
+    agent_input = run_agent_input(forwardedProps={})
+    result = session_manager_provider(agent_input)
+
+    mock_get_memory_session_manager.assert_called_once_with(
+        "session-123", "default-user"
+    )
+    assert result == mock_get_memory_session_manager.return_value
