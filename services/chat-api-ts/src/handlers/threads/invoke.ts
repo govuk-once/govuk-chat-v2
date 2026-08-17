@@ -5,17 +5,12 @@ import {
 } from '@aws-sdk/client-bedrock-agentcore';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
 import {
-  EventType,
-  type RunErrorEvent,
-  type RunStartedEvent,
-} from '@ag-ui/core';
-import { EventEncoder } from '@ag-ui/encoder';
-import {
   RunAgentInputSchema,
   ClientInputHeadersSchema,
 } from '../../schemas/client-input.ts';
 import { writeJsonErrorResponse } from '../../http/errors.ts';
 import { lowercaseHeaders } from '../../http/headers.ts';
+import { relayAgentEventStream } from '../../streaming/agent-event-stream.ts';
 import { z } from 'zod';
 
 const agentRuntimeArn = process.env.AGENT_RUNTIME_ARN;
@@ -24,8 +19,6 @@ if (!agentRuntimeArn) {
 }
 
 const client = new BedrockAgentCoreClient({});
-const encoder = new EventEncoder();
-const textDecoder = new TextDecoder('utf-8');
 
 export const handler = awslambda.streamifyResponse(
   async (
@@ -108,55 +101,11 @@ export const handler = awslambda.streamifyResponse(
       },
     });
 
-    let isRunStarted = false;
-
-    try {
-      for await (const chunk of response.response as AsyncIterable<Uint8Array>) {
-        const sseChunk = textDecoder.decode(chunk, { stream: true });
-
-        if (!sseChunk.trim()) continue;
-
-        if (!isRunStarted) {
-          const dataLine = sseChunk
-            .split('\n')
-            .find((line) => line.trimStart().startsWith('data:'));
-
-          if (dataLine) {
-            try {
-              const parsed = JSON.parse(dataLine.replace(/^data:\s*/, ''));
-              if (parsed.type === EventType.RUN_STARTED) {
-                isRunStarted = true;
-              }
-            } catch (error) {
-              // Ignore JSON parsing errors
-              if (!(error instanceof SyntaxError)) {
-                throw error;
-              }
-            }
-          }
-        }
-
-        sseStream.write(sseChunk);
-      }
-    } catch {
-      // TODO: Log error here.
-      const errorEvent: RunErrorEvent = {
-        type: EventType.RUN_ERROR,
-        message: 'Agent invocation error',
-      };
-
-      if (!isRunStarted) {
-        const startEvent: RunStartedEvent = {
-          type: EventType.RUN_STARTED,
-          threadId: body.threadId,
-          runId,
-        };
-        sseStream.write(encoder.encodeSSE(startEvent));
-      }
-
-      sseStream.write(encoder.encodeSSE(errorEvent));
-    } finally {
-      sseStream.end();
-    }
+    await relayAgentEventStream({
+      source: response.response as AsyncIterable<Uint8Array>,
+      destination: sseStream,
+      threadId: body.threadId,
+      runId,
+    });
   },
 );

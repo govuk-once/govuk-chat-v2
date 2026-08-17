@@ -296,40 +296,6 @@ describe('handler', () => {
         );
         expect(responseStream.end).toHaveBeenCalledOnce();
       });
-
-      it('does not duplicate RUN_STARTED if stream fails after RUN_STARTED was already sent', async () => {
-        const responseStream = createResponseStream();
-
-        const runStartedEvent: RunStartedEvent = {
-          type: EventType.RUN_STARTED,
-          threadId: VALID_THREAD_ID,
-          runId: VALID_RUN_ID,
-        };
-
-        send.mockResolvedValueOnce({
-          response: createFailingStream([encoder.encode(runStartedEvent)]),
-        });
-
-        await testEnv.handler(
-          makeEvent({
-            threadId: VALID_THREAD_ID,
-            runId: VALID_RUN_ID,
-            messages: VALID_MESSAGES,
-          }),
-          responseStream,
-          {},
-        );
-
-        const expectedErrorEvent: RunErrorEvent = {
-          type: EventType.RUN_ERROR,
-          message: 'Agent invocation error',
-        };
-
-        expect(writtenText(responseStream)).toBe(
-          encoder.encode(runStartedEvent) + encoder.encode(expectedErrorEvent),
-        );
-        expect(responseStream.end).toHaveBeenCalledOnce();
-      });
     });
   });
 });
