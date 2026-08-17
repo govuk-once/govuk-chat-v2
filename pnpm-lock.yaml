@@ -65,6 +65,18 @@ importers:
       '@aws-sdk/client-bedrock-agentcore':
         specifier: ^3.1104.0
         version: 3.1107.0
+      '@middy/core':
+        specifier: ^7.7.3
+        version: 7.7.3
+      '@middy/http-error-handler':
+        specifier: ^7.7.3
+        version: 7.7.3
+      '@middy/http-header-normalizer':
+        specifier: ^7.7.3
+        version: 7.7.3
+      '@middy/http-json-body-parser':
+        specifier: ^7.7.3
+        version: 7.7.3
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -559,6 +571,31 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
+
+  '@middy/core@7.7.3':
+    resolution: {integrity: sha512-p/BgM230u87cVq1W4nMmADKZlR6GW4pOWK3rlTBJkLSfApZhqvLz5A+FI7mWJ7uN8Yr+5tSwM5LTwBXKi297hA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@aws/durable-execution-sdk-js': ^2.0.0
+    peerDependenciesMeta:
+      '@aws/durable-execution-sdk-js':
+        optional: true
+
+  '@middy/http-error-handler@7.7.3':
+    resolution: {integrity: sha512-A5QNb7DokS6o2iUooVCK6m3GNUjbhJNP/HlGOmdY9GDYbMnArKFS4snSqPuz+E7XAxbE22eRVoivE+wicpJQmw==}
+    engines: {node: '>=22'}
+
+  '@middy/http-header-normalizer@7.7.3':
+    resolution: {integrity: sha512-KFOqVvNG5NVJnLFbbWhs6aluLIpcxOVC1JL1w7QbHpjuEI0tkF8ttLlbKh9fetaOrcwxAmY0BZzjctVLCgPnpw==}
+    engines: {node: '>=22'}
+
+  '@middy/http-json-body-parser@7.7.3':
+    resolution: {integrity: sha512-LUlnhrbyl7zlBL2vwd/dL0CcuR0gv88Wy8KRlEPPfkqTkt5+ROd2ilsEkTIOORfKQtz10yrcOPb7D5uA6KFvbw==}
+    engines: {node: '>=22'}
+
+  '@middy/util@7.7.3':
+    resolution: {integrity: sha512-EINBXiWfzkk9yT1f9X3UA5/nhBhCbu5YyjM6UQ0Yx/rXHQ75ORennA/2LZKJatC34t6R9j6KsGDIlqh3E4f3cQ==}
+    engines: {node: '>=22'}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
@@ -1864,6 +1901,24 @@ snapshots:
   '@humanwhocodes/retry@0.4.3': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
+
+  '@middy/core@7.7.3':
+    dependencies:
+      '@middy/util': 7.7.3
+
+  '@middy/http-error-handler@7.7.3':
+    dependencies:
+      '@middy/util': 7.7.3
+
+  '@middy/http-header-normalizer@7.7.3':
+    dependencies:
+      '@middy/util': 7.7.3
+
+  '@middy/http-json-body-parser@7.7.3':
+    dependencies:
+      '@middy/util': 7.7.3
+
+  '@middy/util@7.7.3': {}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
