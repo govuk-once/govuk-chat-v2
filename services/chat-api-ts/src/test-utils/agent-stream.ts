@@ -1,7 +1,7 @@
-import { vi, type Mock } from 'vitest';
+import { vi } from 'vitest';
 import type { BaseEvent } from '@ag-ui/core';
 import { EventEncoder } from '@ag-ui/encoder';
-import type { Writable } from 'node:stream';
+import { PassThrough } from 'node:stream';
 
 export const send = vi.fn();
 export const encoder = new EventEncoder();
@@ -31,23 +31,7 @@ export function stubAwsLambdaGlobal(): void {
   });
 }
 
-export function createResponseStream(): Writable {
-  return {
-    write: vi.fn<(chunk: unknown) => boolean>(),
-    end: vi.fn<() => void>(),
-  } as unknown as Writable;
-}
-
-export function writtenText(stream: Writable): string {
-  const writeMock = stream.write as Mock<(chunk: unknown) => boolean>;
-  return writeMock.mock.calls
-    .map(([chunk]) =>
-      Buffer.isBuffer(chunk) ? chunk.toString() : String(chunk),
-    )
-    .join('');
-}
-
-export async function* asyncChunks(
+async function* asyncChunks(
   chunks: Array<Uint8Array | string>,
 ): AsyncGenerator<Buffer> {
   for (const chunk of chunks) {
@@ -66,4 +50,19 @@ export async function* createFailingStream(
 
 export function aguiEventStream(events: BaseEvent[]): AsyncGenerator<Buffer> {
   return asyncChunks(events.map((event) => encoder.encode(event)));
+}
+
+export function createResponseStream(): PassThrough {
+  return new PassThrough();
+}
+
+export function writtenText(stream: PassThrough): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    stream.on('data', (chunk) => {
+      chunks.push(Buffer.from(chunk));
+    });
+    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    stream.on('error', reject);
+  });
 }

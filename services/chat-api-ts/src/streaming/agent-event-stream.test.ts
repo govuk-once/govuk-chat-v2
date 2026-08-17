@@ -8,7 +8,6 @@ import {
   encoder,
   aguiEventStream,
   createFailingStream,
-  createResponseStream,
   writtenText,
 } from '../test-utils/agent-stream.ts';
 import { relayAgentEventStream } from './agent-event-stream.ts';
@@ -17,35 +16,29 @@ const THREAD_ID = crypto.randomUUID();
 const RUN_ID = crypto.randomUUID();
 
 describe('relayAgentEventStream', () => {
-  it('relays a well-formed event stream unchanged and ends the destination', async () => {
+  it('relays a well-formed event stream unchanged', async () => {
     const events = [
       { type: EventType.RUN_STARTED, threadId: THREAD_ID, runId: RUN_ID },
       { type: EventType.RUN_FINISHED, threadId: THREAD_ID, runId: RUN_ID },
     ];
-    const destination = createResponseStream();
 
-    await relayAgentEventStream({
+    const sseStream = relayAgentEventStream({
       source: aguiEventStream(events),
-      destination,
       threadId: THREAD_ID,
       runId: RUN_ID,
     });
+    const text = await writtenText(sseStream);
 
-    expect(writtenText(destination)).toBe(
-      events.map((event) => encoder.encode(event)).join(''),
-    );
-    expect(destination.end).toHaveBeenCalledOnce();
+    expect(text).toBe(events.map((event) => encoder.encode(event)).join(''));
   });
 
   it('emits synthetic RUN_STARTED followed by RUN_ERROR when the source fails before RUN_STARTED', async () => {
-    const destination = createResponseStream();
-
-    await relayAgentEventStream({
+    const sseStream = relayAgentEventStream({
       source: createFailingStream(),
-      destination,
       threadId: THREAD_ID,
       runId: RUN_ID,
     });
+    const text = await writtenText(sseStream);
 
     const expectedStartEvent: RunStartedEvent = {
       type: EventType.RUN_STARTED,
@@ -57,10 +50,9 @@ describe('relayAgentEventStream', () => {
       message: 'Agent invocation error',
     };
 
-    expect(writtenText(destination)).toBe(
+    expect(text).toBe(
       encoder.encode(expectedStartEvent) + encoder.encode(expectedErrorEvent),
     );
-    expect(destination.end).toHaveBeenCalledOnce();
   });
 
   it('does not duplicate RUN_STARTED when the source fails after RUN_STARTED was already relayed', async () => {
@@ -69,23 +61,21 @@ describe('relayAgentEventStream', () => {
       threadId: THREAD_ID,
       runId: RUN_ID,
     };
-    const destination = createResponseStream();
 
-    await relayAgentEventStream({
+    const sseStream = relayAgentEventStream({
       source: createFailingStream([encoder.encode(runStartedEvent)]),
-      destination,
       threadId: THREAD_ID,
       runId: RUN_ID,
     });
+    const text = await writtenText(sseStream);
 
     const expectedErrorEvent: RunErrorEvent = {
       type: EventType.RUN_ERROR,
       message: 'Agent invocation error',
     };
 
-    expect(writtenText(destination)).toBe(
+    expect(text).toBe(
       encoder.encode(runStartedEvent) + encoder.encode(expectedErrorEvent),
     );
-    expect(destination.end).toHaveBeenCalledOnce();
   });
 });

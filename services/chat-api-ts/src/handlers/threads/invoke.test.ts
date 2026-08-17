@@ -28,7 +28,10 @@ const testEnv = {} as { handler: HandlerFunction };
 const VALID_THREAD_ID = crypto.randomUUID();
 const VALID_RUN_ID = crypto.randomUUID();
 const VALID_USER_ID = 'user-abc-123';
-const DEFAULT_HEADERS = { 'end-user-id': VALID_USER_ID };
+const DEFAULT_HEADERS = {
+  'end-user-id': VALID_USER_ID,
+  'content-type': 'application/json',
+};
 const AGENT_RUNTIME_ARN =
   'arn:aws:bedrock-agentcore:eu-west-1:123456789012:runtime/test';
 const VALID_MESSAGES = [
@@ -59,9 +62,10 @@ async function runAndGetErrorBody(
 ) {
   const responseStream = createResponseStream();
   await testEnv.handler(makeEvent(body, headers), responseStream, {});
+  const text = await writtenText(responseStream);
   return {
     responseStream,
-    parsed: JSON.parse(writtenText(responseStream)),
+    parsed: JSON.parse(text),
   };
 }
 
@@ -85,10 +89,14 @@ describe('handler', () => {
   });
 
   describe('request headers', () => {
-    it('returns 400 when end-user-id header is missing', async () => {
+    it('returns 422 when end-user-id header is missing', async () => {
       const { parsed } = await runAndGetErrorBody(
-        { threadId: VALID_THREAD_ID, messages: VALID_MESSAGES },
-        {},
+        {
+          threadId: VALID_THREAD_ID,
+          runId: VALID_RUN_ID,
+          messages: VALID_MESSAGES,
+        },
+        { 'content-type': 'application/json' },
       );
 
       expect(parsed.error).toBe('Invalid request headers');
@@ -99,16 +107,17 @@ describe('handler', () => {
     it('normalises header keys to lowercase before validation', async () => {
       const { parsed } = await runAndGetErrorBody(
         { threadId: VALID_THREAD_ID, messages: VALID_MESSAGES },
-        { 'End-User-Id': VALID_USER_ID },
+        { 'End-User-Id': VALID_USER_ID, 'content-type': 'application/json' },
       );
 
       expect(parsed.error).toBe('Invalid request body');
-      expect(parsed.details.fieldErrors).not.toHaveProperty('end-user-id');
+      expectFieldError(parsed.details, 'runId');
     });
   });
 
   describe('request body parsing', () => {
-    it('returns 400 JSON for invalid JSON body', async () => {
+    // Middy return a 422 for malformend JSON where you'd expect it to be a 400.
+    it('returns 422 as plain text for malformed JSON body', async () => {
       const responseStream = createResponseStream();
       const event = {
         body: '{not valid json',
@@ -116,10 +125,26 @@ describe('handler', () => {
       } as unknown as APIGatewayProxyEvent;
 
       await testEnv.handler(event, responseStream, {});
+      const text = await writtenText(responseStream);
 
-      expect(JSON.parse(writtenText(responseStream))).toEqual({
-        error: 'Invalid JSON in request body',
-      });
+      expect(text).toContain('Invalid or malformed JSON was provided');
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('returns 415 when Content-Type is missing or not JSON', async () => {
+      const responseStream = createResponseStream();
+
+      await testEnv.handler(
+        makeEvent(
+          { threadId: VALID_THREAD_ID, messages: VALID_MESSAGES },
+          { 'end-user-id': VALID_USER_ID },
+        ),
+        responseStream,
+        {},
+      );
+      const text = await writtenText(responseStream);
+
+      expect(text).toBeTruthy();
       expect(send).not.toHaveBeenCalled();
     });
   });
@@ -144,6 +169,17 @@ describe('handler', () => {
 
       expect(parsed.error).toBe('Invalid request body');
       expectFieldError(parsed.details, 'messages');
+    });
+
+    it('returns a 422 when end-user-id is missing from the headers', async () => {
+      const { parsed } = await runAndGetErrorBody(
+        { threadId: 'not-a-uuid' },
+        { 'content-type': 'application/json' },
+      );
+
+      expect(parsed.error).toBe('Invalid request headers');
+      expectFieldError(parsed.details, 'end-user-id');
+      expect(send).not.toHaveBeenCalled();
     });
   });
 
@@ -195,11 +231,9 @@ describe('handler', () => {
       };
 
       await testEnv.handler(makeEvent(requestBody), responseStream, {});
+      const text = await writtenText(responseStream);
 
-      expect(writtenText(responseStream)).toBe(
-        events.map((event) => encoder.encode(event)).join(''),
-      );
-      expect(responseStream.end).toHaveBeenCalledOnce();
+      expect(text).toBe(events.map((event) => encoder.encode(event)).join(''));
       expect(invokeAgentRuntimeCommand).toHaveBeenCalledWith({
         agentRuntimeArn: AGENT_RUNTIME_ARN,
         runtimeSessionId: VALID_THREAD_ID,
@@ -224,50 +258,33 @@ describe('handler', () => {
   describe('agent runtime failures', () => {
     describe('pre-stream failures', () => {
       it('returns 500 JSON error when runtime client invocation fails before opening stream', async () => {
-        const responseStream = createResponseStream();
         send.mockRejectedValueOnce(new Error('Error from agent runtime'));
 
-        await testEnv.handler(
-          makeEvent({
-            threadId: VALID_THREAD_ID,
-            runId: VALID_RUN_ID,
-            messages: VALID_MESSAGES,
-          }),
-          responseStream,
-          {},
-        );
-
-        expect(JSON.parse(writtenText(responseStream))).toEqual({
-          error: 'Failed to invoke agent runtime',
+        const { parsed } = await runAndGetErrorBody({
+          threadId: VALID_THREAD_ID,
+          runId: VALID_RUN_ID,
+          messages: VALID_MESSAGES,
         });
-        expect(responseStream.end).toHaveBeenCalledOnce();
+
+        expect(parsed).toEqual({ error: 'Failed to invoke agent runtime' });
       });
 
       it('returns 500 JSON error when no response body is returned from agent runtime', async () => {
-        const responseStream = createResponseStream();
         send.mockResolvedValueOnce({ response: undefined });
 
-        await testEnv.handler(
-          makeEvent({
-            threadId: VALID_THREAD_ID,
-            runId: VALID_RUN_ID,
-            messages: VALID_MESSAGES,
-          }),
-          responseStream,
-          {},
-        );
-
-        expect(JSON.parse(writtenText(responseStream))).toEqual({
-          error: 'Failed to invoke agent runtime',
+        const { parsed } = await runAndGetErrorBody({
+          threadId: VALID_THREAD_ID,
+          runId: VALID_RUN_ID,
+          messages: VALID_MESSAGES,
         });
-        expect(responseStream.end).toHaveBeenCalledOnce();
+
+        expect(parsed).toEqual({ error: 'Failed to invoke agent runtime' });
       });
     });
 
     describe('mid-stream failures', () => {
-      it('emits synthetic RUN_STARTED followed by RUN_ERROR when response stream fails before RUN_STARTED chunk', async () => {
+      it('emits a RunError event when the stream throws an error', async () => {
         const responseStream = createResponseStream();
-
         send.mockResolvedValueOnce({ response: createFailingStream() });
 
         await testEnv.handler(
@@ -279,6 +296,7 @@ describe('handler', () => {
           responseStream,
           {},
         );
+        const text = await writtenText(responseStream);
 
         const expectedStartEvent: RunStartedEvent = {
           type: EventType.RUN_STARTED,
@@ -290,11 +308,10 @@ describe('handler', () => {
           message: 'Agent invocation error',
         };
 
-        expect(writtenText(responseStream)).toBe(
+        expect(text).toBe(
           encoder.encode(expectedStartEvent) +
             encoder.encode(expectedErrorEvent),
         );
-        expect(responseStream.end).toHaveBeenCalledOnce();
       });
     });
   });

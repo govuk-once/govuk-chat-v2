@@ -1,4 +1,3 @@
-import type { Writable } from 'node:stream';
 import type { z } from 'zod';
 
 export type FlattenedError = ReturnType<typeof z.flattenError>;
@@ -9,20 +8,24 @@ export interface SimpleErrorBody {
 
 export interface ValidationErrorBody {
   error: string;
-  details: FlattenedError;
+  details: FlattenedError | Record<string, FlattenedError>;
 }
 
 export type ErrorBody = SimpleErrorBody | ValidationErrorBody;
 
-export function writeJsonErrorResponse(
-  responseStream: Writable,
+export interface JsonErrorResponse {
+  statusCode: number;
+  headers: { 'Content-Type': 'application/json' };
+  body: string;
+}
+
+export function buildJsonErrorResponse(
   statusCode: number,
   body: ErrorBody,
-): void {
-  const stream = awslambda.HttpResponseStream.from(responseStream, {
+): JsonErrorResponse {
+  return {
     statusCode,
     headers: { 'Content-Type': 'application/json' },
-  });
-  stream.write(JSON.stringify(body));
-  stream.end();
+    body: JSON.stringify(body),
+  };
 }
