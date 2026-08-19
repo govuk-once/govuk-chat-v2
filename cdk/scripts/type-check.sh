@@ -1,1 +1,1 @@
-../../scripts/shared/tsc-no-emit.sh
+../../scripts/shared/pnpm-tsc-no-emit.sh

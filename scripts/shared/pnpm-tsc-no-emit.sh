@@ -3,4 +3,4 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-tsc --noEmit
+pnpm exec tsc --noEmit
