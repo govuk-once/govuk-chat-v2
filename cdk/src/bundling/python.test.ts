@@ -30,7 +30,9 @@ describe('agentCoreCodeAsset', () => {
       expect.objectContaining({
         bundling: expect.objectContaining({
           command: expect.arrayContaining([
-            expect.stringContaining('dnf install -y git zip gcc python3-devel'),
+            expect.stringContaining(
+              'dnf install -y --setopt=keepcache=1 git zip gcc python3-devel',
+            ),
           ]),
         }),
       }),

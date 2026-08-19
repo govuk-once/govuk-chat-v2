@@ -40,6 +40,10 @@ export function agentCoreCodeAsset(
           hostPath: repoRoot(),
         },
         {
+          containerPath: '/var/cache/dnf',
+          hostPath: path.resolve(repoRoot(), 'cdk/cache/dnf'),
+        },
+        {
           containerPath: '/pip-cache/global-cache',
           hostPath: path.resolve(repoRoot(), 'cdk/cache/pip/global-cache'),
         },
@@ -60,7 +64,7 @@ export function agentCoreCodeAsset(
         '-c',
         `
         SECONDS=0 &&
-        dnf install -y ${dnfPackages.join(' ')} &&
+        dnf install -y --setopt=keepcache=1 ${dnfPackages.join(' ')} &&
         pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
         git config --global url."https://x-access-token:\${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/" &&
 
