@@ -1,14 +1,9 @@
 import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import path from 'node:path';
 import { Construct } from 'constructs';
-import {
-  getResourceNamePrefix,
-  hashGlobs,
-  repoRoot,
-} from '../constants/environment.ts';
+import { agentCoreCodeAsset } from '../bundling/python.ts';
+import { getResourceNamePrefix } from '../constants/environment.ts';
 
 export interface AguiAgentStackProps extends cdk.StackProps {
   serviceName: string;
@@ -105,86 +100,11 @@ export class AguiAgentStack extends cdk.Stack {
   }
 
   agentCode(githubToken: string): agentcore.AgentRuntimeArtifact {
-    const assetHash = hashGlobs(
-      path.resolve(repoRoot(), 'services/agui-agent/src/**/*.py'),
-      path.resolve(repoRoot(), 'uv.lock'),
-    );
-
-    return agentcore.AgentRuntimeArtifact.fromCodeAsset({
-      path: path.resolve(repoRoot(), 'services/agui-agent'),
-      runtime: agentcore.AgentCoreRuntime.PYTHON_3_13,
-      entrypoint: ['opentelemetry-instrument', 'agui_agent/main.py'],
-      bundling: {
-        // there aren't agentcore bundling images, so I think a Lambda one
-        // will be ok
-        image: lambda.Runtime.PYTHON_3_13.bundlingImage,
-        volumes: [
-          {
-            containerPath: '/repo-root',
-            hostPath: repoRoot(),
-          },
-          // cache for all pip dependencies
-          {
-            containerPath: '/pip-cache/global-cache',
-            hostPath: path.resolve(repoRoot(), 'cdk/cache/pip/global-cache'),
-          },
-          // cache for this asset
-          {
-            containerPath: '/pip-cache/packages',
-            hostPath: path.resolve(
-              repoRoot(),
-              'cdk/cache/pip/agui-agent-packages',
-            ),
-          },
-        ],
-        environment: {
-          GITHUB_TOKEN: githubToken,
-        },
-        command: [
-          'bash',
-          '-c',
-          `
-        dnf install -y git gcc python3-devel libjpeg-turbo-devel &&
-        pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
-        git config --global url."https://x-access-token:\${github_token}@github.com/".insteadof "https://github.com/" &&
-
-        cp -r /asset-input/src/* /asset-output/ &&
-
-        cd /repo-root &&
-
-        # create a requirements.txt file of dependencies
-        # any editable dependencies are copied
-        # current project is not included
-        uv export --frozen \
-                  --no-editable \
-                  --no-dev \
-                  --no-emit-project \
-                  --package agui-agent \
-                  -o /asset-output/requirements.txt &&
-
-        # install the requirements.txt
-        # use a shared directory so faster for subsequent runs
-        # target appropriate python platform and versions for any compilation
-        # use exact to remove any packages that shouldn't be installed
-        # use no-deps to only install what's in requirements.txt and not any
-        # sub-dependencies pip is aware of
-        uv pip install --no-installer-metadata \
-                        --link-mode=copy \
-                        --target /pip-cache/packages \
-                        --python-platform aarch64-manylinux_2_28 \
-                        --python-version 3.13 \
-                        --exact \
-                        --no-deps \
-                        --cache-dir=/pip-cache/global-cache \
-                        -r /asset-output/requirements.txt &&
-
-        cp -r /pip-cache/packages/* /asset-output/
-        `,
-        ],
-        user: 'root',
-      },
-      assetHashType: cdk.AssetHashType.CUSTOM,
-      assetHash: assetHash,
+    return agentCoreCodeAsset({
+      packageName: 'agui-agent',
+      entrypoint: 'agui_agent/main.py',
+      githubToken,
+      extraDnfPackages: ['gcc', 'python3-devel', 'libjpeg-turbo-devel'],
     });
   }
 }
