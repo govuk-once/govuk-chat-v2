@@ -145,6 +145,7 @@ export class ExampleAgentStack extends cdk.Stack {
           'bash',
           '-c',
           `
+        SECONDS=0 &&
         dnf install -y git zip &&
         pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
         git config --global url."https://x-access-token:\${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/" &&
@@ -182,7 +183,9 @@ export class ExampleAgentStack extends cdk.Stack {
         # Write files to a zip to have a single file output rather
         # than hundreds, this reduces time in CDK validation
         cd /pip-cache/packages && zip -qr /asset-output/code.zip . &&
-        cd /asset-input/src && zip -qur /asset-output/code.zip .
+        cd /asset-input/src && zip -qur /asset-output/code.zip . &&
+
+        echo "Asset bundling complete in $SECONDS seconds"
         `,
         ],
         user: 'root',
