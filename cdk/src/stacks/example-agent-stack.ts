@@ -140,15 +140,16 @@ export class ExampleAgentStack extends cdk.Stack {
         environment: {
           GITHUB_TOKEN: githubToken,
         },
+        outputType: cdk.BundlingOutput.ARCHIVED,
         command: [
           'bash',
           '-c',
           `
-        dnf install -y git &&
+        dnf install -y git zip &&
         pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
         git config --global url."https://x-access-token:\${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/" &&
 
-        cp -r /asset-input/src/* /asset-output/ &&
+        mkdir /tmp/bundle &&
 
         cd /repo-root &&
 
@@ -160,7 +161,7 @@ export class ExampleAgentStack extends cdk.Stack {
                   --no-dev \
                   --no-emit-project \
                   --package example-agent \
-                  -o /asset-output/requirements.txt &&
+                  -o /tmp/bundle/requirements.txt &&
 
         # Install the requirements.txt
         # Use a shared directory so faster for subsequent runs
@@ -176,9 +177,12 @@ export class ExampleAgentStack extends cdk.Stack {
                         --exact \
                         --no-deps \
                         --cache-dir=/pip-cache/global-cache \
-                        -r /asset-output/requirements.txt &&
+                        -r /tmp/bundle/requirements.txt &&
 
-        cp -r /pip-cache/packages/* /asset-output/
+        # Write files to a zip to have a single file output rather
+        # than hundreds, this reduces time in CDK validation
+        cd /pip-cache/packages && zip -qr /asset-output/code.zip . &&
+        cd /asset-input/src && zip -qur /asset-output/code.zip .
         `,
         ],
         user: 'root',
