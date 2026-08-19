@@ -9,10 +9,14 @@ if [[ "${ZSH_EVAL_CONTEXT}" == "toplevel" ]]; then
 fi
 
 aws_role="${AWS_ROLE:-once-chat-development-admin}"
+# We only expect people to be deploying to testing this on eu-west-1, if we
+# have reasons to deploy elsewhere we could change this to allow an env var
+# override
+aws_region=eu-west-1
 
-echo "== Exporting AWS credentials for role: $aws_role =="
+echo "== Exporting AWS credentials for role: $aws_role on region: $aws_region =="
 
-env_vars=$(gds aws "$aws_role" -e)
+env_vars=$(gds aws "$aws_role" -r "$aws_region" -e)
 cmd_status=$?
 
 if (( $cmd_status != 0 )); then
