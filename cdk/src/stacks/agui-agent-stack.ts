@@ -10,7 +10,7 @@ import {
   repoRoot,
 } from '../constants/environment.ts';
 
-export interface AgUiAgentStackProps extends cdk.StackProps {
+export interface AguiAgentStackProps extends cdk.StackProps {
   serviceName: string;
   teamName: string;
   repositoryUrl: string;
@@ -18,10 +18,10 @@ export interface AgUiAgentStackProps extends cdk.StackProps {
   githubToken: string;
 }
 
-export class AgUiAgentStack extends cdk.Stack {
+export class AguiAgentStack extends cdk.Stack {
   public readonly agentRuntimeArn: string;
 
-  constructor(scope: Construct, id: string, props: AgUiAgentStackProps) {
+  constructor(scope: Construct, id: string, props: AguiAgentStackProps) {
     super(scope, id, props);
 
     cdk.Tags.of(this).add('ServiceName', props.serviceName);

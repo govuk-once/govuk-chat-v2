@@ -3,7 +3,7 @@ import baseContext from '../../cdk.json' with { type: 'json' };
 import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { Tags, Template } from 'aws-cdk-lib/assertions';
 import { describe, it, expect, vi } from 'vitest';
-import { AgUiAgentStack } from './agui-agent-stack.ts';
+import { AguiAgentStack } from './agui-agent-stack.ts';
 
 const context = {
   ...baseContext,
@@ -11,7 +11,7 @@ const context = {
   'aws:cdk:bundling-stacks': [],
 };
 
-describe('AgUiAgentStack', () => {
+describe('AguiAgentStack', () => {
   const baseProps = {
     serviceName: 'chat-api',
     teamName: 'chat',
@@ -22,13 +22,13 @@ describe('AgUiAgentStack', () => {
 
   function stackTemplate() {
     const app = new cdk.App({ context });
-    const stack = new AgUiAgentStack(app, 'TestStack', baseProps);
+    const stack = new AguiAgentStack(app, 'TestStack', baseProps);
     return Template.fromStack(stack);
   }
 
   function stackTags() {
     const app = new cdk.App({ context });
-    const stack = new AgUiAgentStack(app, 'TestStack', baseProps);
+    const stack = new AguiAgentStack(app, 'TestStack', baseProps);
     return Tags.fromStack(stack);
   }
 
@@ -41,7 +41,7 @@ describe('AgUiAgentStack', () => {
     const app = new cdk.App({ context });
     const expectedToken = 'expected-token';
 
-    new AgUiAgentStack(app, 'TestStack', {
+    new AguiAgentStack(app, 'TestStack', {
       ...baseProps,
       githubToken: expectedToken,
     });
