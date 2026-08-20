@@ -13,6 +13,7 @@ export interface ChatApiTsStackProps extends cdk.StackProps {
   agentRuntimeArn: string;
   repositoryUrl: string;
   environment: string;
+  skipEndUserIdValidation?: boolean;
 }
 
 export class ChatApiTsStack extends cdk.Stack {
@@ -52,6 +53,9 @@ export class ChatApiTsStack extends cdk.Stack {
 
     const agentStreamFunction = this.lambdaHandler('threads/invoke.ts', {
       AGENT_RUNTIME_ARN: props.agentRuntimeArn,
+      ...(props.skipEndUserIdValidation && {
+        SKIP_END_USER_ID_VALIDATION: 'true',
+      }),
     });
 
     agentStreamFunction.addToRolePolicy(

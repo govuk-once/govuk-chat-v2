@@ -64,6 +64,39 @@ describe('ChatApiTsStack', () => {
         },
       });
     });
+
+    it('sets SKIP_END_USER_ID_VALIDATION when skipEndUserIdValidation is true', () => {
+      const app = new cdk.App({ context });
+      const stack = new ChatApiTsStack(app, 'TestStack', {
+        ...baseProps,
+        skipEndUserIdValidation: true,
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: Match.stringLikeRegexp('chat-api-ts-threads-invoke-ts'),
+        Environment: {
+          Variables: Match.objectLike({
+            SKIP_END_USER_ID_VALIDATION: 'true',
+          }),
+        },
+      });
+    });
+
+    it('does not set SKIP_END_USER_ID_VALIDATION by default', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: Match.stringLikeRegexp('chat-api-ts-threads-invoke-ts'),
+        Environment: {
+          Variables: Match.not(
+            Match.objectLike({
+              SKIP_END_USER_ID_VALIDATION: Match.anyValue(),
+            }),
+          ),
+        },
+      });
+    });
   });
 
   describe('API Gateway', () => {

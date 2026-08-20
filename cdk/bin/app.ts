@@ -3,6 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import {
   getEnvironment,
   getResourceNamePrefix,
+  isEphemeralEnvironment,
   serviceMetadata,
 } from '../src/constants/environment.ts';
 import { AguiAgentStack } from '../src/stacks/agui-agent-stack.ts';
@@ -43,6 +44,7 @@ new ChatApiTsStack(app, 'ChatApiTsStack', {
   env: env,
   environment: getEnvironment(),
   agentRuntimeArn: aguiAgentStack.agentRuntimeArn,
+  skipEndUserIdValidation: isEphemeralEnvironment(),
   stackName: `${getResourceNamePrefix()}-ChatApiTsStack`,
   ...serviceMetadata,
 });
