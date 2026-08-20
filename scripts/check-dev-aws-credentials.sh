@@ -41,7 +41,7 @@ expected_aws_role="${AWS_ROLE:-once-chat-development-admin}"
 
 echo_if_verbose "== Checking for AWS env vars =="
 
-if [[ -v AWS_ACCESS_KEY_ID ]]; then
+if [[ -n "${AWS_ACCESS_KEY_ID:-}" ]]; then
     echo_if_verbose "AWS env vars found"
 else
     echo "AWS env vars are not available" >&2
