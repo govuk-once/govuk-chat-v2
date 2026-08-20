@@ -5,6 +5,7 @@ import {
   getResourceNamePrefix,
   serviceMetadata,
 } from '../src/constants/environment.ts';
+import { AguiAgentStack } from '../src/stacks/agui-agent-stack.ts';
 import { ChatApiTsStack } from '../src/stacks/chat-api-ts-stack.ts';
 import { ChatApiFastapiStack } from '../src/stacks/chat-api-fastapi-stack.ts';
 import { ExampleAgentStack } from '../src/stacks/example-agent-stack.ts';
@@ -21,6 +22,14 @@ const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
   region: process.env.CDK_DEFAULT_REGION || 'eu-west-1',
 };
+
+new AguiAgentStack(app, 'AguiAgentStack', {
+  env: env,
+  environment: getEnvironment(),
+  githubToken: githubToken,
+  stackName: `${getResourceNamePrefix()}-AguiAgentStack`,
+  ...serviceMetadata,
+});
 
 const exampleAgentStack = new ExampleAgentStack(app, 'ExampleAgentStack', {
   env: env,
