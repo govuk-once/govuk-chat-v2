@@ -5,9 +5,9 @@ import {
   type RunStartedEvent,
 } from '@ag-ui/core';
 import { EventEncoder } from '@ag-ui/encoder';
+import { createParser, type EventSourceMessage } from 'eventsource-parser';
 
 const encoder = new EventEncoder();
-const textDecoder = new TextDecoder('utf-8');
 
 export interface RelayAgentEventStreamParameters {
   source: AsyncIterable<Uint8Array>;
@@ -22,28 +22,26 @@ export async function relayAgentEventStream({
   runId,
 }: RelayAgentEventStreamParameters): Promise<void> {
   let isRunStarted = false;
+  const textDecoder = new TextDecoder('utf-8');
+  const parser = createParser({
+    onEvent: (event: EventSourceMessage) => {
+      const parsed = JSON.parse(event.data);
+      if (parsed.type === EventType.RUN_STARTED) {
+        isRunStarted = true;
+      }
+    },
+  });
 
   try {
     for await (const chunk of source) {
-      const sseChunk = textDecoder.decode(chunk, { stream: true });
-
-      if (!sseChunk.trim()) continue;
-
       if (!isRunStarted) {
-        // TODO: Look into using library to do this parsing for us.
-        const dataLine = sseChunk
-          .split('\n')
-          .find((line) => line.trimStart().startsWith('data:'));
-
-        if (dataLine) {
-          const parsed = JSON.parse(dataLine.replace(/^data:\s*/, ''));
-          if (parsed.type === EventType.RUN_STARTED) {
-            isRunStarted = true;
-          }
+        const sseChunk = textDecoder.decode(chunk, { stream: true });
+        if (sseChunk.trim()) {
+          parser.feed(sseChunk);
         }
       }
 
-      destination.write(sseChunk);
+      destination.write(chunk);
     }
   } catch {
     // TODO: Log error here.
