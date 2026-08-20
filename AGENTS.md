@@ -204,9 +204,10 @@ For code itself, prefer making it self-documenting over describing it:
 CDK is TypeScript, so the [TypeScript](#typescript) conventions apply. In
 addition:
 
-- Stacks live in `cdk/stacks/` and are instantiated in `cdk/bin/app.ts`. Shared
+- Stacks live in `cdk/src/stacks/` and are instantiated in `cdk/bin/app.ts`. Shared
   helpers and constants (naming, environment detection, metadata) live in
-  `cdk/constants/` — reuse them rather than reinventing.
+  `cdk/src/constants/` — reuse them rather than reinventing. Other shared helper
+  files should have appropriate directories in `cdk/src`.
 - Namespace every named resource. We share a single dev AWS account, so
   unprefixed resource names cause one developer's deploy to collide with — or
   block — another's. Derive names from `getResourceNamePrefix()` (which is
