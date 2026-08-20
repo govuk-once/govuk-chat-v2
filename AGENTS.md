@@ -222,6 +222,10 @@ For code itself, prefer making it self-documenting over describing it:
 - Share code via `libs/python`. When Python needs to be reused across packages,
   put it in a module under `libs/python` rather than reaching across package
   boundaries.
+- When writing pytest tests make sure the unit under test is identifiable, we
+  follow the convention that tests functions are prefixed with
+  `def test_<function_name>_<behaviour_tested>`. If that is too verbose for a
+  function we group them under a class of `Test<FunctionName>`.
 
 #### CDK
 
