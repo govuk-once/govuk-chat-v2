@@ -122,6 +122,30 @@ To keep diffs free of editor-dependent noise: end every text file with a
 newline, and don't leave trailing whitespace (except where a syntax like
 markdown makes it meaningful).
 
+#### Testing
+
+We unit test so we can be confident our logic still behaves as intended —
+most valuably when something underneath us changes, such as a dependency
+upgrade. That confidence depends on the suite staying readable, so we aim
+for tests that are necessary and sufficient to test our logic paths.
+
+- Cover the logic paths through the unit — branches, boundaries, error
+  handling. Don't assert incidental detail: exact wording, field-by-field
+  shapes, values with no branch behind them. Tests aren't here to catch typos.
+- Only test edge cases the code actually handles. If there's no code for a
+  case, there's nothing to test — write the code first or leave it. The
+  exception is a regression test: if a bug reached us once, a test pinning that
+  scenario earns its place. Say so in the test name or the commit.
+- Stay inside the unit under test. Don't re-test collaborators, libraries or
+  framework behaviour through it.
+- Keep existing tests in scope — when behaviour changes, update or delete
+  the tests that covered it rather than leaving them in place and adding
+  more alongside.
+- Follow existing test patterns; ask before introducing a new framework,
+  harness or fixture style.
+- LLMs tend to over-generate tests - really think about whether new tests or
+  assertions meet the guidelines here.
+
 #### Documentation
 
 Documentation is valuable but it easily goes stale, so we keep it lean and put
@@ -198,6 +222,10 @@ For code itself, prefer making it self-documenting over describing it:
 - Share code via `libs/python`. When Python needs to be reused across packages,
   put it in a module under `libs/python` rather than reaching across package
   boundaries.
+- When writing pytest tests make sure the unit under test is identifiable, we
+  follow the convention that tests functions are prefixed with
+  `def test_<function_name>_<behaviour_tested>`. If that is too verbose for a
+  function we group them under a class of `Test<FunctionName>`.
 
 #### CDK
 
@@ -220,8 +248,9 @@ addition:
 - Keep dev resources disposable. Use `isEphemeralEnvironment()` to distinguish
   throwaway developer/test environments from `stag`/`prod`, and make ephemeral
   resources tear down cleanly (e.g. `RemovalPolicy.DESTROY`).
-- Keep tests lean. CDK tests exist for coverage and light confidence that a
-  stack has the intended side effect — assert presence with `Template.fromStack`
+- Keep tests lean (see [Testing](#testing)). CDK tests exist for coverage
+  and light confidence that a stack has the intended side effect — assert
+  presence with `Template.fromStack`
   (`hasResource`, `hasOutput`, `Tags.hasValues`). Don't get bogged down
   asserting full CloudFormation output.
 
