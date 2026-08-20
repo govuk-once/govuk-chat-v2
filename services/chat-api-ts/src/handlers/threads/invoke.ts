@@ -4,12 +4,9 @@ import {
   InvokeAgentRuntimeCommand,
 } from '@aws-sdk/client-bedrock-agentcore';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
-import {
-  RunAgentInputSchema,
-  ClientInputHeadersSchema,
-} from '../../schemas/client-input.ts';
+import { RunAgentInputSchema } from '../../schemas/client-input.ts';
 import { streamedJsonErrorResponse } from '../../http/errors.ts';
-import { lowercaseHeaders } from '../../http/headers.ts';
+import { parseEndUserId } from '../../http/headers.ts';
 import { relayAgentEventStream } from '../../streaming/agent-event-stream.ts';
 import { z } from 'zod';
 
@@ -25,21 +22,15 @@ export const handler = awslambda.streamifyResponse(
     event: APIGatewayProxyEvent,
     responseStream: Writable,
   ): Promise<void> => {
-    // TODO: Make this optional so we can toggle it off in dev mode.
-    const parsedHeader = ClientInputHeadersSchema.safeParse(
-      // Doing manual header normalisation isn't ideal. We will likely replace
-      // this with something down the line. For example, middy handles header
-      // normalisation.
-      lowercaseHeaders(event.headers),
-    );
-    if (!parsedHeader.success) {
+    const headerResult = parseEndUserId(event.headers);
+    if (!headerResult.success) {
       return streamedJsonErrorResponse(responseStream, 422, {
         error: 'Agent invocation error',
-        details: z.flattenError(parsedHeader.error),
+        details: headerResult.error,
       });
     }
 
-    const endUserId = parsedHeader.data['end-user-id'];
+    const { endUserId } = headerResult;
 
     // TODO: Extract request body parsing/validation into a shared helper if
     // other handlers end up needing the same JSON parsing + Zod validation.
@@ -76,7 +67,7 @@ export const handler = awslambda.streamifyResponse(
       messages: body.messages ?? [],
       tools: body.tools ?? [],
       context: body.context ?? [],
-      forwardedProps: { endUserId },
+      forwardedProps: { ...(endUserId && { endUserId }) },
     };
 
     let response;

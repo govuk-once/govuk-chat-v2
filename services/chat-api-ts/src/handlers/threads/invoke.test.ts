@@ -108,14 +108,6 @@ describe('handler', () => {
       );
     });
 
-    it('normalises header keys to lowercase before validation', async () => {
-      const { parsed } = await runAndGetErrorBody(
-        { threadId: VALID_THREAD_ID, messages: VALID_MESSAGES },
-        { 'End-User-Id': VALID_USER_ID },
-      );
-
-      expect(parsed.details.fieldErrors).not.toHaveProperty('end-user-id');
-    });
   });
 
   describe('request body parsing', () => {

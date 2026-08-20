@@ -32,10 +32,13 @@ export const RunAgentInputSchema = z
   })
   .strict();
 
+const endUserIdSchema = z.uuid({ message: 'end-user-id must be a valid UUID' });
+
 export const ClientInputHeadersSchema = z.object({
-  'end-user-id': z.uuid({
-    message: 'end-user-id must be a valid UUID',
-  }),
+  'end-user-id':
+    process.env.SKIP_END_USER_ID_VALIDATION === 'true'
+      ? endUserIdSchema.optional()
+      : endUserIdSchema,
 });
 
 export type RunAgentInputBody = z.infer<typeof RunAgentInputSchema>;
