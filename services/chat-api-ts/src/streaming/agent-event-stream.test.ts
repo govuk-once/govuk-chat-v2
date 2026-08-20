@@ -9,7 +9,6 @@ import {
   aguiEventStream,
   createFailingStream,
   createResponseStream,
-  writtenText,
 } from '../test-utils/agent-stream.ts';
 import { relayAgentEventStream } from './agent-event-stream.ts';
 
@@ -31,7 +30,7 @@ describe('relayAgentEventStream', () => {
       runId: RUN_ID,
     });
 
-    expect(writtenText(destination)).toBe(
+    expect(destination.read()).toBe(
       events.map((event) => encoder.encode(event)).join(''),
     );
     expect(destination.end).toHaveBeenCalledOnce();
@@ -57,7 +56,7 @@ describe('relayAgentEventStream', () => {
       message: 'Agent invocation error',
     };
 
-    expect(writtenText(destination)).toBe(
+    expect(destination.read()).toBe(
       encoder.encode(expectedStartEvent) + encoder.encode(expectedErrorEvent),
     );
     expect(destination.end).toHaveBeenCalledOnce();
@@ -83,7 +82,7 @@ describe('relayAgentEventStream', () => {
       message: 'Agent invocation error',
     };
 
-    expect(writtenText(destination)).toBe(
+    expect(destination.read()).toBe(
       encoder.encode(runStartedEvent) + encoder.encode(expectedErrorEvent),
     );
     expect(destination.end).toHaveBeenCalledOnce();
