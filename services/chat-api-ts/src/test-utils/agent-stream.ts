@@ -1,7 +1,7 @@
-import { expect, vi, type Mock } from 'vitest';
+import { expect, vi } from 'vitest';
 import type { BaseEvent } from '@ag-ui/core';
 import { EventEncoder } from '@ag-ui/encoder';
-import { PassThrough, type Writable } from 'node:stream';
+import { Writable } from 'node:stream';
 
 export const send = vi.fn();
 export const encoder = new EventEncoder();
@@ -21,9 +21,24 @@ export function stubBedrockAgentCoreClient(): void {
   }));
 }
 
-export interface ResponseStream extends Writable {
+export class ResponseStream extends Writable {
+  private chunks: Buffer[] = [];
   statusCode?: number;
   headers?: Record<string, string>;
+
+  // eslint-disable-next-line unicorn/prefer-private-class-fields
+  _write(
+    chunk: Buffer,
+    _encoding: BufferEncoding,
+    callback: (error?: Error | null) => void,
+  ): void {
+    this.chunks.push(Buffer.from(chunk));
+    callback();
+  }
+
+  read(): string {
+    return Buffer.concat(this.chunks).toString();
+  }
 }
 
 export function stubAwsLambdaGlobal(): void {
@@ -43,19 +58,9 @@ export function stubAwsLambdaGlobal(): void {
 }
 
 export function createResponseStream(): ResponseStream {
-  const stream = new PassThrough() as ResponseStream;
-  vi.spyOn(stream, 'write');
+  const stream = new ResponseStream();
   vi.spyOn(stream, 'end');
   return stream;
-}
-
-export function writtenText(stream: Writable): string {
-  const writeMock = stream.write as Mock<(chunk: unknown) => boolean>;
-  return writeMock.mock.calls
-    .map(([chunk]) =>
-      Buffer.isBuffer(chunk) ? chunk.toString() : String(chunk),
-    )
-    .join('');
 }
 
 export function expectJsonHttpResponse(
@@ -64,7 +69,7 @@ export function expectJsonHttpResponse(
   body: unknown,
 ): void {
   expect(responseStream.statusCode).toBe(statusCode);
-  expect(JSON.parse(writtenText(responseStream))).toEqual(body);
+  expect(JSON.parse(responseStream.read())).toEqual(body);
 }
 
 export async function* asyncChunks(

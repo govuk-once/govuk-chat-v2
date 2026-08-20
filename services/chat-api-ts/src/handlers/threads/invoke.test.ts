@@ -8,7 +8,6 @@ import {
   stubAwsLambdaGlobal,
   stubBedrockAgentCoreClient,
   createResponseStream,
-  writtenText,
   expectJsonHttpResponse,
   aguiEventStream,
   createFailingStream,
@@ -68,7 +67,7 @@ async function runAndGetErrorBody(
   await testEnv.handler(makeEvent(body, headers), responseStream, {});
   return {
     responseStream,
-    parsed: JSON.parse(writtenText(responseStream)),
+    parsed: JSON.parse(responseStream.read()),
   };
 }
 
@@ -211,7 +210,7 @@ describe('handler', () => {
 
       await testEnv.handler(makeEvent(requestBody), responseStream, {});
 
-      expect(writtenText(responseStream)).toBe(
+      expect(responseStream.read()).toBe(
         events.map((event) => encoder.encode(event)).join(''),
       );
       expect(invokeAgentRuntimeCommand).toHaveBeenCalledWith(
@@ -291,7 +290,7 @@ describe('handler', () => {
           {},
         );
 
-        expect(writtenText(responseStream)).toContain(EventType.RUN_ERROR);
+        expect(responseStream.read()).toContain(EventType.RUN_ERROR);
       });
     });
   });
