@@ -13,6 +13,7 @@ resolution-markers = [
 [manifest]
 members = [
     "agent-runtime-types",
+    "agentcore-cli-wrapper",
     "agui-agent",
     "chat-api-fastapi",
     "example-agent",
@@ -79,6 +80,31 @@ dev = [
 ]
 
 [[package]]
+name = "agentcore-cli-wrapper"
+version = "0.1.0"
+source = { editable = "libs/python/agentcore-cli-wrapper" }
+dependencies = [
+    { name = "click" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "click", specifier = ">=8.3.1" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyright", specifier = ">=1.1.411" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "ruff", specifier = ">=0.16.2" },
+]
+
+[[package]]
 name = "agui-agent"
 version = "0.1.0"
 source = { editable = "services/agui-agent" }
@@ -94,6 +120,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "agentcore-cli-wrapper" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -115,6 +142,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "agentcore-cli-wrapper", editable = "libs/python/agentcore-cli-wrapper" },
     { name = "pyright", specifier = ">=1.1.411" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
@@ -826,6 +854,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "agentcore-cli-wrapper" },
     { name = "bedrock-agentcore-starter-toolkit" },
     { name = "pyright" },
     { name = "pytest" },
@@ -845,6 +874,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "agentcore-cli-wrapper", editable = "libs/python/agentcore-cli-wrapper" },
     { name = "bedrock-agentcore-starter-toolkit", specifier = ">=0.3.9" },
     { name = "pyright", specifier = ">=1.1.411" },
     { name = "pytest", specifier = ">=9.1.1" },

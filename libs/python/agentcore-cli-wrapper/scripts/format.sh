@@ -1,0 +1,1 @@
+../../../../scripts/shared/ruff-prettier-format.sh
