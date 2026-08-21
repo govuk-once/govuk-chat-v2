@@ -15,5 +15,5 @@ cd "$SCRIPTS_DIR/../cdk"
 
 # We turn off validation here because it can make deploys painfully slow once
 # a few assets have built up in cdk.out
-CDK_VALIDATION=false pnpm exec cdk deploy "$@"
+CDK_VALIDATION=false pnpm exec cdk deploy --outputs-file "cdk-outputs/$1.json" "$@"
 

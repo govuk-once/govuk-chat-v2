@@ -14,6 +14,10 @@ cdk.out
 /cdk/cache/*
 !/cdk/cache/.keep
 
+# Stack outputs, written per developer by dev-cdk-deploy.sh
+/cdk/cdk-outputs/*
+!/cdk/cdk-outputs/.keep
+
 # Bedrock Agentcore
 # The config file for the agentcore starter kit is very specific to the
 # local environment
