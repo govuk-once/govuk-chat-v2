@@ -1,49 +1,27 @@
 # Example agent
 
-A quick example of an LLM agent intended to be run on AWS Bedrock AgentCore Runtime.
+A quick example of an LLM agent intended to be run on AWS Bedrock AgentCore
+Runtime.
 
 ## Usage
 
-Prior to running this you will need to deploy dependent infrastructure to AWS, this can be done with:
+Deploy the agent's infrastructure with:
 
 ```
 ./scripts/cdk-deploy.sh
 ```
 
-### Local
+Then run it on your own machine with:
 
 ```
-./scripts/run.sh
+./scripts/agentcore-inspector.sh
 ```
 
-Then in another terminal window:
+See the
+[AgentCore CLI wrapper](../../libs/python/agentcore-cli-wrapper/README.md) for
+what that needs and what else you can pass it.
 
-```
-./scripts/agentcore.sh invoke --dev "Hello agent"
-```
-
-### AWS
-
-```
-./scripts/agentcore.sh invoke "Hello agent"
-```
-
-### Using memory
-
-By default, the agent will use the same short-term memory session on every invocation. If you want to use a different session, you can pass the `session_id` and `end_user_id` parameters to the agent:
-
-```
-./scripts/agentcore.sh invoke [--dev] --session-id=db05c8e4-e6fd-44b2-baea-244504a8b779 '{ "prompt": "Tell me a short joke", "end_user_id": "1"}'
-```
-
-To view memory events:
-
-```
-uv run agentcore memory show events --all
-```
-
-or for a specific actor / session:
-
-```
-uv run agentcore memory show events --all --actor-id=1 --session-id=db05c8e4-e6fd-44b2-baea-244504a8b779
-```
+The Inspector's chat pane stays empty for this agent, which streams this
+repository's own event format rather than AG-UI. It still runs, and the traces
+and resources views still work. To read a reply, use the two-terminal fallback
+in the wrapper's README.
