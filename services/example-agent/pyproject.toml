@@ -14,11 +14,9 @@ dependencies = [
 [dependency-groups]
 dev = [
     "agentcore-cli-wrapper",
-    "bedrock-agentcore-starter-toolkit>=0.3.9",
     "pyright>=1.1.411",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
-    "pyyaml>=6.0.3",
     "ruff>=0.16.2",
 ]
 

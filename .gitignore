@@ -18,11 +18,6 @@ cdk.out
 /cdk/cdk-outputs/*
 !/cdk/cdk-outputs/.keep
 
-# Bedrock Agentcore
-# The config file for the agentcore starter kit is very specific to the
-# local environment
-.bedrock_agentcore.yaml
-
 # AgentCore CLI local state, generated per developer by the local development
 # tooling
 services/*/agentcore/.cli/
