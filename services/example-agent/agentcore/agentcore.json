@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.agentcore.aws.dev/v1/agentcore.json",
+  "name": "ExampleAgent",
+  "version": 1,
+  "managedBy": "CDK",
+  "runtimes": [
+    {
+      "name": "ExampleAgent",
+      "build": "CodeZip",
+      "entrypoint": "src/example_agent/main.py",
+      "codeLocation": ".",
+      "runtimeVersion": "PYTHON_3_13",
+      "networkMode": "PUBLIC",
+      "protocol": "HTTP"
+    }
+  ],
+  "memories": [
+    {
+      "name": "ExampleAgentMemory",
+      "eventExpiryDuration": 90
+    }
+  ]
+}

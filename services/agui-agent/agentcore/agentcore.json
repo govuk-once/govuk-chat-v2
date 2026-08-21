@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.agentcore.aws.dev/v1/agentcore.json",
+  "name": "AguiAgent",
+  "version": 1,
+  "managedBy": "CDK",
+  "runtimes": [
+    {
+      "name": "AguiAgent",
+      "build": "CodeZip",
+      "entrypoint": "src/agui_agent/main.py",
+      "codeLocation": ".",
+      "runtimeVersion": "PYTHON_3_13",
+      "networkMode": "PUBLIC",
+      "protocol": "AGUI"
+    }
+  ],
+  "memories": [
+    {
+      "name": "AguiAgentMemory",
+      "eventExpiryDuration": 90
+    }
+  ]
+}
