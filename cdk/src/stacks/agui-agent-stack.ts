@@ -39,8 +39,16 @@ export class AguiAgentStack extends cdk.Stack {
       value: runtime.agentRuntimeArn,
     });
 
+    new cdk.CfnOutput(this, 'AgentRuntimeRoleArn', {
+      value: runtime.role.roleArn,
+    });
+
     new cdk.CfnOutput(this, 'ShortTermMemoryId', {
       value: shortTermMemory.memoryId,
+    });
+
+    new cdk.CfnOutput(this, 'ShortTermMemoryArn', {
+      value: shortTermMemory.memoryArn,
     });
   }
 
