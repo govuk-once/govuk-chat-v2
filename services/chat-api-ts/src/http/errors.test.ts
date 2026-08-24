@@ -4,7 +4,7 @@ import {
   expectJsonHttpResponse,
   stubAwsLambdaGlobal,
 } from '../test-utils/agent-stream.ts';
-import { streamedJsonErrorResponse } from './errors.ts';
+import { buildJsonErrorResponse, streamedJsonErrorResponse } from './errors.ts';
 
 beforeAll(() => {
   stubAwsLambdaGlobal();
@@ -25,5 +25,19 @@ describe('streamedJsonErrorResponse', () => {
       'Content-Type': 'application/json',
     });
     expect(responseStream.end).toHaveBeenCalledOnce();
+  });
+});
+
+describe('buildJsonErrorResponse', () => {
+  it('builds a JSON response with the given status code and body', () => {
+    const response = buildJsonErrorResponse(400, {
+      error: 'Invalid request body',
+    });
+
+    expect(response).toEqual({
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Invalid request body' }),
+    });
   });
 });

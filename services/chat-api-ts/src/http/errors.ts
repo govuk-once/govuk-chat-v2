@@ -26,3 +26,20 @@ export function streamedJsonErrorResponse(
   stream.write(JSON.stringify(body));
   stream.end();
 }
+
+export interface JsonErrorResponse {
+  statusCode: number;
+  headers: { 'Content-Type': 'application/json' };
+  body: string;
+}
+
+export function buildJsonErrorResponse(
+  statusCode: number,
+  body: ErrorBody,
+): JsonErrorResponse {
+  return {
+    statusCode,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  };
+}
