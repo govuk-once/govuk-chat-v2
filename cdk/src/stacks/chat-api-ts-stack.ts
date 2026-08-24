@@ -46,10 +46,6 @@ export class ChatApiTsStack extends cdk.Stack {
       },
     );
 
-    const helloWorldLambda = new apigateway.LambdaIntegration(
-      this.lambdaHandler('hello-world.ts'),
-    );
-
     const agentStreamFunction = this.lambdaHandler('threads/invoke.ts', {
       AGENT_RUNTIME_ARN: props.agentRuntimeArn,
     });
@@ -74,12 +70,6 @@ export class ChatApiTsStack extends cdk.Stack {
     );
 
     const v1 = api.root.addResource('v1');
-
-    // TODO: Remove hello-world endpoint once threads invoke endpoint
-    // is merged.
-    // GET /v1/hello-world
-    const helloWorld = v1.addResource('hello-world');
-    helloWorld.addMethod('GET', helloWorldLambda);
 
     // POST /v1/threads/invoke
     const agentStream = v1.addResource('threads').addResource('invoke');

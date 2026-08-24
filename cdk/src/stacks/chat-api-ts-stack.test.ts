@@ -44,14 +44,6 @@ describe('ChatApiTsStack', () => {
   });
 
   describe('API lambda functions', () => {
-    it('creates a hello-world lambda', () => {
-      const template = stackTemplate();
-
-      template.hasResourceProperties('AWS::Lambda::Function', {
-        FunctionName: Match.stringLikeRegexp('chat-api-ts-hello-world-ts'),
-      });
-    });
-
     it('creates the agent-stream lambda with AGENT_RUNTIME_ARN configured', () => {
       const template = stackTemplate();
 
@@ -73,17 +65,6 @@ describe('ChatApiTsStack', () => {
       template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
     });
 
-    it('exposes a /v1/hello-world resource', () => {
-      const template = stackTemplate();
-
-      template.hasResourceProperties('AWS::ApiGateway::Resource', {
-        PathPart: 'v1',
-      });
-      template.hasResourceProperties('AWS::ApiGateway::Resource', {
-        PathPart: 'hello-world',
-      });
-    });
-
     it('exposes a /v1/threads/invoke resource path', () => {
       const template = stackTemplate();
 
@@ -95,15 +76,6 @@ describe('ChatApiTsStack', () => {
       });
       template.hasResourceProperties('AWS::ApiGateway::Resource', {
         PathPart: 'invoke',
-      });
-    });
-
-    it('requires IAM auth on GET requests', () => {
-      const template = stackTemplate();
-
-      template.hasResourceProperties('AWS::ApiGateway::Method', {
-        HttpMethod: 'GET',
-        AuthorizationType: 'AWS_IAM',
       });
     });
 
