@@ -99,5 +99,17 @@ describe('ExampleAgentStack', () => {
 
       template.hasOutput('ShortTermMemoryId', {});
     });
+
+    it('outputs the execution role arn', () => {
+      const template = stackTemplate();
+
+      template.hasOutput('AgentRuntimeRoleArn', {});
+    });
+
+    it('outputs the memory arn', () => {
+      const template = stackTemplate();
+
+      template.hasOutput('ShortTermMemoryArn', {});
+    });
   });
 });
