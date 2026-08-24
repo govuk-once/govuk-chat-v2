@@ -8,7 +8,7 @@ import {
   encoder,
   aguiEventStream,
   createFailingStream,
-  createResponseStream,
+  collectStreamText,
 } from '../test-utils/agent-stream.ts';
 import { logger } from '../logging/logger.ts';
 import { relayAgentEventStream } from './agent-event-stream.ts';
@@ -17,33 +17,27 @@ const THREAD_ID = crypto.randomUUID();
 const RUN_ID = crypto.randomUUID();
 
 describe('relayAgentEventStream', () => {
-  it('relays a well-formed event stream unchanged and ends the destination', async () => {
+  it('relays a well-formed event stream unchanged', async () => {
     const events = [
       { type: EventType.RUN_STARTED, threadId: THREAD_ID, runId: RUN_ID },
       { type: EventType.RUN_FINISHED, threadId: THREAD_ID, runId: RUN_ID },
     ];
-    const destination = createResponseStream();
 
-    await relayAgentEventStream({
+    const sseStream = relayAgentEventStream({
       source: aguiEventStream(events),
-      destination,
       threadId: THREAD_ID,
       runId: RUN_ID,
     });
 
-    expect(destination.read()).toBe(
+    expect(await collectStreamText(sseStream)).toBe(
       events.map((event) => encoder.encode(event)).join(''),
     );
-    expect(destination.end).toHaveBeenCalledOnce();
   });
 
   it('emits synthetic RUN_STARTED followed by RUN_ERROR when the source fails before RUN_STARTED', async () => {
     const logError = vi.spyOn(logger, 'error');
-    const destination = createResponseStream();
-
-    await relayAgentEventStream({
+    const sseStream = relayAgentEventStream({
       source: createFailingStream(),
-      destination,
       threadId: THREAD_ID,
       runId: RUN_ID,
     });
@@ -58,10 +52,9 @@ describe('relayAgentEventStream', () => {
       message: 'Agent invocation error',
     };
 
-    expect(destination.read()).toBe(
+    expect(await collectStreamText(sseStream)).toBe(
       encoder.encode(expectedStartEvent) + encoder.encode(expectedErrorEvent),
     );
-    expect(destination.end).toHaveBeenCalledOnce();
     expect(logError).toHaveBeenCalledWith('Agent event stream relay failed', {
       error: new Error('Stream failure'),
       threadId: THREAD_ID,
@@ -76,11 +69,9 @@ describe('relayAgentEventStream', () => {
       threadId: THREAD_ID,
       runId: RUN_ID,
     };
-    const destination = createResponseStream();
 
-    await relayAgentEventStream({
+    const sseStream = relayAgentEventStream({
       source: createFailingStream([encoder.encode(runStartedEvent)]),
-      destination,
       threadId: THREAD_ID,
       runId: RUN_ID,
     });
@@ -90,10 +81,9 @@ describe('relayAgentEventStream', () => {
       message: 'Agent invocation error',
     };
 
-    expect(destination.read()).toBe(
+    expect(await collectStreamText(sseStream)).toBe(
       encoder.encode(runStartedEvent) + encoder.encode(expectedErrorEvent),
     );
-    expect(destination.end).toHaveBeenCalledOnce();
     expect(logError).toHaveBeenCalledWith('Agent event stream relay failed', {
       error: new Error('Stream failure'),
       threadId: THREAD_ID,
