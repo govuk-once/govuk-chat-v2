@@ -22,6 +22,7 @@ import {
 } from '../../http/zod-validator.ts';
 import {
   buildJsonErrorResponse,
+  jsonHttpErrorHandler,
   type JsonErrorResponse,
 } from '../../http/errors.ts';
 import { logger } from '../../logging/logger.ts';
@@ -114,4 +115,5 @@ export const handler = middy({
   .use(zodHeadersValidator(ClientInputHeadersSchema, 'Agent invocation error'))
   .use(httpJsonBodyParser())
   .use(zodBodyValidator(RunAgentInputSchema, 'Agent invocation error'))
+  .use(jsonHttpErrorHandler())
   .handler(invokeAgent);

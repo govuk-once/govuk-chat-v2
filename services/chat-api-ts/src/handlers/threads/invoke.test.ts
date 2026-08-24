@@ -126,6 +126,46 @@ describe('handler', () => {
     });
   });
 
+  describe('request body parsing', () => {
+    it('returns a 422 for a malformed JSON body', async () => {
+      const logWarn = vi.spyOn(logger, 'warn');
+      const logError = vi.spyOn(logger, 'error');
+      const responseStream = testEnv.responseStream;
+      const event = {
+        body: '{not valid json',
+        headers: DEFAULT_HEADERS,
+      } as unknown as APIGatewayProxyEvent;
+
+      await testEnv.handler(event, responseStream, {});
+
+      expectJsonHttpResponse(responseStream, 422, {
+        error: 'Invalid or malformed JSON was provided',
+      });
+      expect(logWarn).toHaveBeenCalledWith(
+        'Request rejected before reaching the handler',
+        { error: expect.any(Error), statusCode: 422 },
+      );
+      expect(logError).not.toHaveBeenCalled();
+    });
+
+    it('returns 415 when Content-Type is missing or not JSON', async () => {
+      const responseStream = testEnv.responseStream;
+
+      await testEnv.handler(
+        makeEvent(
+          { threadId: VALID_THREAD_ID, messages: VALID_MESSAGES },
+          { 'end-user-id': VALID_USER_ID },
+        ),
+        responseStream,
+        {},
+      );
+
+      expectJsonHttpResponse(responseStream, 415, {
+        error: 'Unsupported Media Type',
+      });
+    });
+  });
+
   describe('request body validation', () => {
     it('returns 422 with validation details when schema validation occurs', async () => {
       const { responseStream } = await runAndGetErrorBody({
