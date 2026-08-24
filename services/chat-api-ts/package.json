@@ -11,5 +11,11 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.162"
+  },
+  "dependencies": {
+    "@ag-ui/core": "^0.0.57",
+    "@ag-ui/encoder": "^0.0.57",
+    "@aws-sdk/client-bedrock-agentcore": "^3.1104.0",
+    "zod": "^4.4.3"
   }
 }
