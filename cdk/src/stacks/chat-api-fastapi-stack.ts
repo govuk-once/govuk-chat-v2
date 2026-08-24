@@ -173,12 +173,14 @@ export class ChatApiFastapiStack extends cdk.Stack {
               containerPath: '/repo-root',
               hostPath: repoRoot(),
             },
-            // cache for all pip dependencies
+            {
+              containerPath: '/var/cache/dnf',
+              hostPath: path.resolve(repoRoot(), 'cdk/cache/dnf'),
+            },
             {
               containerPath: '/pip-cache/global-cache',
               hostPath: path.resolve(repoRoot(), 'cdk/cache/pip/global-cache'),
             },
-            // cache for this asset
             {
               containerPath: '/pip-cache/packages',
               hostPath: path.resolve(
@@ -187,21 +189,19 @@ export class ChatApiFastapiStack extends cdk.Stack {
               ),
             },
           ],
+          outputType: cdk.BundlingOutput.ARCHIVED,
           command: [
             'bash',
             '-c',
             `
+          SECONDS=0 &&
+          dnf install -y --setopt=keepcache=1 zip &&
           pip install uv==0.10.2 --root-user-action=ignore --cache-dir=/pip-cache/global-cache &&
 
-          cp -r /asset-input/src/* /asset-output/ &&
-          cp -r /asset-input/scripts/lambda-run.sh /asset-output/ &&
+          mkdir /tmp/bundle &&
 
           cd /repo-root &&
 
-          # Create a requirements.txt file of dependencies
-          # Any editable dependencies are copied
-          # Current project is not included
-          # AWS bundled depenencies are excluded
           uv export --frozen \
                     --no-editable \
                     --no-dev \
@@ -209,14 +209,8 @@ export class ChatApiFastapiStack extends cdk.Stack {
                     --package chat-api-fastapi \
                     --prune botocore \
                     --prune boto3 \
-                    -o /asset-output/requirements.txt &&
+                    -o /tmp/bundle/requirements.txt &&
 
-          # Install the requirements.txt
-          # Use a shared directory so faster for subsequent runs
-          # Target appropriate Python platform and versions for any compilation
-          # Use exact to remove any packages that shouldn't be installed
-          # Use no-deps to only install what's in requirements.txt and not any
-          # sub-dependencies pip is aware of
           uv pip install --no-installer-metadata \
                          --link-mode=copy \
                          --target /pip-cache/packages \
@@ -225,9 +219,13 @@ export class ChatApiFastapiStack extends cdk.Stack {
                          --exact \
                          --no-deps \
                          --cache-dir=/pip-cache/global-cache \
-                         -r /asset-output/requirements.txt &&
+                         -r /tmp/bundle/requirements.txt &&
 
-          cp -r /pip-cache/packages/* /asset-output/
+          cd /pip-cache/packages && zip -qr /asset-output/code.zip . &&
+          cd /asset-input/src && zip -qur /asset-output/code.zip . &&
+          cd /asset-input/scripts && zip -qur /asset-output/code.zip lambda-run.sh &&
+
+          echo "Asset bundling complete in $SECONDS seconds"
           `,
           ],
           user: 'root',
