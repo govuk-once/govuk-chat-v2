@@ -1,8 +1,8 @@
 # Draft API Specification
 
-This serves as a draft specification for the HTTP API of Chat V2, with the intention of it being used as a guide for our prototype development. It may well evolve into an OpenAPI specification, as per the one for [Chat v1](https://github.com/alphagov/govuk-chat/blob/main/docs/api_openapi_specification.yml), but it is intentionally loose now for flexibility.
+This serves as a draft specification for the HTTP API of Chat V2, with the intention of it being used as a guide for our development. It may well evolve into an OpenAPI specification, as per the one for [Chat v1](https://github.com/alphagov/govuk-chat/blob/main/docs/api_openapi_specification.yml), but it is intentionally loose now for flexibility.
 
-It deliberately includes some tricky concepts compared to Chat V1 - such as stopping a stream, deleting a conversation and conversation branching. This is to help us form opinions on their suitability at a prototype stage. It is purposefully quite similar to functionality available in tools like ChatGPT and Anthropic Claude.
+It deliberately includes some tricky concepts compared to Chat V1 - such as stopping a stream, deleting a conversation and conversation branching. This is to help us form opinions on their suitability. It is purposefully quite similar to functionality available in tools like ChatGPT and Anthropic Claude.
 
 ## Key changes in comparison to Chat V1
 

@@ -20,8 +20,8 @@ Out of scope — don't add these here:
 - the supporting services of GOV.UK Chat V2 (owned by their respective teams)
 - tools shared across teams (MCP servers, agents)
 
-All code must be production quality, even as the product matures from prototype
-to production: readable, maintainable, secure, and covered by automated tests.
+All code must be production quality: readable, maintainable, secure, and
+covered by automated tests.
 
 ### Directory structure
 
@@ -45,8 +45,8 @@ precedence.
 We code in the open — everything here will become public. Only commit what is
 safe to share publicly; **never commit secrets** (e.g. API keys). Treat LLM
 prompts as sensitive, as they can advance jailbreaks: **don't write or commit
-production prompts** — only dummy prototype prompts that don't represent the
-production system.
+production prompts** — only dummy prompts that don't represent the production
+system.
 
 Prefer consistency with the existing codebase over individual preference. Before
 any routine development decision, check the codebase for precedent and follow

@@ -16,7 +16,7 @@ export const GovUkOnceEnvironments = {
 export const serviceMetadata = {
   serviceName: 'govuk-chat',
   teamName: 'chat-team',
-  repositoryUrl: 'https://github.com/govuk-once/govuk-chat-v2-prototype',
+  repositoryUrl: 'https://github.com/govuk-once/govuk-chat-v2',
 };
 
 export const getEnvironment = (): string => {

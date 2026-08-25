@@ -24,8 +24,8 @@ Prior to us putting together more formal ADR type documents, this keeps a brief 
   built in the different languages
 - This is consistent with [TAG ADR 011][]
 
-[old-python-ts-decision]: https://github.com/govuk-once/govuk-chat-v2-prototype/blob/7b3d8ef1b7e708015e72aa84d6ba4eec8cd5442c/decisions.md#L5-L17
-[lambda-workaround]: https://github.com/govuk-once/govuk-chat-v2-prototype/commit/b54e1fc8d5227ecbc0c740c132de005a52d9375d
+[old-python-ts-decision]: https://github.com/govuk-once/govuk-chat-v2/blob/7b3d8ef1b7e708015e72aa84d6ba4eec8cd5442c/decisions.md#L5-L17
+[lambda-workaround]: https://github.com/govuk-once/govuk-chat-v2/commit/b54e1fc8d5227ecbc0c740c132de005a52d9375d
 [agentcore-runtime]: https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agents-tools-runtime.html
 [ui-proto]: https://github.com/govuk-once/govuk-chat-v2-experiments/tree/009865a93af1a3386b0390d0288ca0f6c438eefe/ui
 [assistant-ui]: https://www.assistant-ui.com/

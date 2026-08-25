@@ -17,7 +17,7 @@ members = [
     "agui-agent",
     "chat-api-fastapi",
     "example-agent",
-    "govuk-chat-v2-prototype",
+    "govuk-chat-v2",
 ]
 
 [[package]]
@@ -985,7 +985,7 @@ wheels = [
 ]
 
 [[package]]
-name = "govuk-chat-v2-prototype"
+name = "govuk-chat-v2"
 version = "0.1.0"
 source = { virtual = "." }
 
