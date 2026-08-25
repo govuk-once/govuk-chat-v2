@@ -90,7 +90,10 @@ export class ChatApiTsStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_24_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(30),
-      environment: environment,
+      environment: {
+        POWERTOOLS_SERVICE_NAME: 'chat-api-ts',
+        ...environment,
+      },
       entry: path.resolve(
         repoRoot(),
         `services/chat-api-ts/src/handlers/${handlerPath}`,

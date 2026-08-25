@@ -1,6 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
+import { z } from 'zod';
 import { EventType, type BaseEvent } from '@ag-ui/core';
+import { logger } from '../../logging/logger.ts';
 import {
   send,
   encoder,
@@ -96,6 +98,8 @@ describe('configuration', () => {
 describe('handler', () => {
   describe('request headers', () => {
     it('returns 422 when end-user-id header is missing', async () => {
+      const logWarn = vi.spyOn(logger, 'warn');
+
       const { responseStream } = await runAndGetErrorBody(
         { threadId: VALID_THREAD_ID, messages: VALID_MESSAGES },
         {},
@@ -105,6 +109,10 @@ describe('handler', () => {
         responseStream,
         422,
         fieldErrorResponse(['end-user-id']),
+      );
+      expect(logWarn).toHaveBeenCalledWith(
+        'Request headers failed schema validation',
+        { error: expect.any(z.ZodError) },
       );
     });
 
@@ -120,6 +128,7 @@ describe('handler', () => {
 
   describe('request body parsing', () => {
     it('returns a 400 JSON error for invalid JSON body', async () => {
+      const logWarn = vi.spyOn(logger, 'warn');
       const responseStream = testEnv.responseStream;
       const event = {
         body: '{not valid json',
@@ -131,11 +140,17 @@ describe('handler', () => {
       expectJsonHttpResponse(responseStream, 400, {
         error: 'Invalid JSON in request body',
       });
+      expect(logWarn).toHaveBeenCalledWith(
+        'Failed to parse request body as JSON',
+        { error: expect.any(SyntaxError) },
+      );
     });
   });
 
   describe('request body validation', () => {
     it('returns 422 with validation details when schema validation occurs', async () => {
+      const logWarn = vi.spyOn(logger, 'warn');
+
       const { responseStream } = await runAndGetErrorBody({
         threadId: 'not-a-uuid',
       });
@@ -144,6 +159,10 @@ describe('handler', () => {
         responseStream,
         422,
         fieldErrorResponse(['threadId', 'messages']),
+      );
+      expect(logWarn).toHaveBeenCalledWith(
+        'Request body failed schema validation',
+        { error: expect.any(z.ZodError) },
       );
     });
 
@@ -236,8 +255,10 @@ describe('handler', () => {
   describe('agent runtime failures', () => {
     describe('pre-stream failures', () => {
       it('returns a 500 JSON error when runtime client invocation fails before opening stream', async () => {
+        const logError = vi.spyOn(logger, 'error');
         const responseStream = testEnv.responseStream;
-        send.mockRejectedValueOnce(new Error('Error from agent runtime'));
+        const runtimeError = new Error('Error from agent runtime');
+        send.mockRejectedValueOnce(runtimeError);
 
         await testEnv.handler(
           makeEvent({
@@ -252,9 +273,18 @@ describe('handler', () => {
         expectJsonHttpResponse(responseStream, 500, {
           error: 'Agent invocation error',
         });
+        expect(logError).toHaveBeenCalledWith(
+          'Agent runtime invocation failed',
+          {
+            error: runtimeError,
+            threadId: VALID_THREAD_ID,
+            runId: VALID_RUN_ID,
+          },
+        );
       });
 
       it('returns a 500 JSON error when no response body is returned from agent runtime', async () => {
+        const logError = vi.spyOn(logger, 'error');
         const responseStream = testEnv.responseStream;
         send.mockResolvedValueOnce({ response: undefined });
 
@@ -271,6 +301,10 @@ describe('handler', () => {
         expectJsonHttpResponse(responseStream, 500, {
           error: 'Agent invocation error',
         });
+        expect(logError).toHaveBeenCalledWith(
+          'Agent runtime returned no response body',
+          { threadId: VALID_THREAD_ID, runId: VALID_RUN_ID },
+        );
       });
     });
 
