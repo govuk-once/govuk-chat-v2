@@ -52,6 +52,7 @@ describe('ChatApiTsStack', () => {
         Environment: {
           Variables: Match.objectLike({
             AGENT_RUNTIME_ARN: baseProps.agentRuntimeArn,
+            POWERTOOLS_SERVICE_NAME: 'chat-api-ts',
           }),
         },
       });

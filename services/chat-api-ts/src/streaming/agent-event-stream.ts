@@ -6,6 +6,7 @@ import {
 } from '@ag-ui/core';
 import { EventEncoder } from '@ag-ui/encoder';
 import { createParser, type EventSourceMessage } from 'eventsource-parser';
+import { logger } from '../logging/logger.ts';
 
 const encoder = new EventEncoder();
 
@@ -43,10 +44,13 @@ export async function relayAgentEventStream({
 
       destination.write(chunk);
     }
-  } catch {
-    // TODO: Log error here.
-    // TODO: Look into if we should raise an error after we've finished writing to
-    // the destination.
+  } catch (error) {
+    logger.error('Agent event stream relay failed', {
+      error,
+      threadId,
+      runId,
+    });
+
     const errorEvent: RunErrorEvent = {
       type: EventType.RUN_ERROR,
       message: 'Agent invocation error',

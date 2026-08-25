@@ -10,6 +10,7 @@ import {
 } from '../../schemas/client-input.ts';
 import { streamedJsonErrorResponse } from '../../http/errors.ts';
 import { lowercaseHeaders } from '../../http/headers.ts';
+import { logger } from '../../logging/logger.ts';
 import { relayAgentEventStream } from '../../streaming/agent-event-stream.ts';
 import { z } from 'zod';
 
@@ -33,6 +34,9 @@ export const handler = awslambda.streamifyResponse(
       lowercaseHeaders(event.headers),
     );
     if (!parsedHeader.success) {
+      logger.warn('Request headers failed schema validation', {
+        error: parsedHeader.error,
+      });
       return streamedJsonErrorResponse(responseStream, 422, {
         error: 'Agent invocation error',
         details: z.flattenError(parsedHeader.error),
@@ -51,7 +55,7 @@ export const handler = awslambda.streamifyResponse(
       if (!(error instanceof SyntaxError)) {
         throw error;
       }
-      // TODO: log error here
+      logger.warn('Failed to parse request body as JSON', { error });
       return streamedJsonErrorResponse(responseStream, 400, {
         error: 'Invalid JSON in request body',
       });
@@ -59,7 +63,9 @@ export const handler = awslambda.streamifyResponse(
 
     const parseResult = RunAgentInputSchema.safeParse(rawBody);
     if (!parseResult.success) {
-      // TODO: log error here
+      logger.warn('Request body failed schema validation', {
+        error: parseResult.error,
+      });
       return streamedJsonErrorResponse(responseStream, 422, {
         error: 'Agent invocation error',
         details: z.flattenError(parseResult.error),
@@ -91,15 +97,24 @@ export const handler = awslambda.streamifyResponse(
       });
 
       response = await client.send(command);
+    } catch (error) {
+      logger.error('Agent runtime invocation failed', {
+        error,
+        threadId: body.threadId,
+        runId,
+      });
+      return streamedJsonErrorResponse(responseStream, 500, {
+        error: 'Agent invocation error',
+      });
+    }
 
-      // The SDK types 'response.response' as optional, so we guard against
-      // it being absent even though the runtime should always return a body.
-      if (!response.response) {
-        // TODO: Log error here.
-        throw new Error('Agent invocation error');
-      }
-    } catch {
-      // TODO: Log error here.
+    // The SDK types 'response.response' as optional, so we guard against
+    // it being absent even though the runtime should always return a body.
+    if (!response.response) {
+      logger.error('Agent runtime returned no response body', {
+        threadId: body.threadId,
+        runId,
+      });
       return streamedJsonErrorResponse(responseStream, 500, {
         error: 'Agent invocation error',
       });

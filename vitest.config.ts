@@ -6,5 +6,6 @@ export default defineConfig({
     clearMocks: true,
     restoreMocks: true,
     unstubEnvs: true,
+    env: { POWERTOOLS_LOG_LEVEL: 'SILENT' },
   },
 });
