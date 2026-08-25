@@ -10,6 +10,7 @@ fi
 SCRIPTS_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 ${SCRIPTS_DIR}/check-dev-aws-credentials.sh
+${SCRIPTS_DIR}/clean-orphaned-cdk-assets.sh
 
 cd "$SCRIPTS_DIR/../cdk"
 
