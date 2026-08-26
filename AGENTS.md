@@ -158,7 +158,20 @@ the effort where it stays accurate. In order of what we rely on most:
 - Architectural decisions are documented at the point in time they are made,
   as ADRs in [docs/adr](docs/adr). When you make a similarly significant
   decision, add one — see [docs/adr/README.md](docs/adr/README.md) for the
-  format, naming and when a decision warrants an ADR at all.
+  format, naming and when a decision warrants an ADR at all. Don't restate that
+  guidance here; it lives in one place so it can't drift.
+
+  Three things an agent writing an ADR tends to get wrong:
+
+  - **Don't invent content.** An ADR records what a human decided, including
+    the reasoning they actually gave. If the rationale is thin, leave it thin
+    and ask — don't pad it with plausible-sounding justification.
+  - **Don't edit accepted ADRs to reflect new thinking.** Supersede them with a
+    new one. The value of the record is that it preserves what we believed at
+    the time, mistakes included.
+  - **Ask before writing one.** Whether a decision is significant enough to
+    warrant an ADR is a judgement for the team, not a side effect of a task.
+
 - Guides for developers (getting started, how things work) live in the relevant
   README.md files. Keep these succinct — the more detail a guide carries the
   faster it drifts out of date, so cover what a developer needs to orient
