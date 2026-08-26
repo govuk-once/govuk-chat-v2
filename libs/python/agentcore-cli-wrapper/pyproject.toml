@@ -1,0 +1,30 @@
+[project]
+name = "agentcore-cli-wrapper"
+version = "0.1.0"
+description = "Repository development tooling for agents"
+readme = "README.md"
+dependencies = [
+    "click>=8.3.1",
+]
+
+[project.scripts]
+agentcore-inspector = "agentcore_cli_wrapper.cli:main"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.411",
+    "pytest>=9.1.1",
+    "ruff>=0.16.2",
+]
+
+[build-system]
+requires = ["setuptools>=83.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]

@@ -1,0 +1,86 @@
+name: AgentCore CLI Wrapper CI
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/agentcore-cli-wrapper-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'libs/python/agentcore-cli-wrapper/**'
+  pull_request:
+    paths:
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/agentcore-cli-wrapper-ci.yaml'
+      - 'uv.lock'
+      - 'pnpm-lock.yaml'
+      - 'libs/python/agentcore-cli-wrapper/**'
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+
+      - name: Run tests
+        run: libs/python/agentcore-cli-wrapper/scripts/test.sh
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+
+      - name: Run linter
+        run: libs/python/agentcore-cli-wrapper/scripts/lint.sh
+
+  ruff_format:
+    name: Ruff formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+
+      - name: Run formatter
+        run: libs/python/agentcore-cli-wrapper/scripts/format-ruff.sh
+
+  prettier_format:
+    name: Prettier formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run Prettier
+        run: libs/python/agentcore-cli-wrapper/scripts/format-prettier.sh
+
+  typing:
+    name: Type checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-python-uv-env
+        with:
+          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+
+      - name: Run type checks
+        run: libs/python/agentcore-cli-wrapper/scripts/type-check.sh
