@@ -45,7 +45,7 @@ script to check which commands to run.
 
 ## Decisions
 
-There is a [decision log](decisions.md).
+Architecture decisions are recorded as ADRs in [docs/adr](docs/adr).
 
 ## Licence
 

@@ -155,10 +155,10 @@ the effort where it stays accurate. In order of what we rely on most:
   of that change — the reasoning, trade-offs and context that the diff alone
   can't convey. Write commit messages accordingly and keep changes focused so
   the history stays readable.
-- Architectural decisions are documented at the point in time they are made.
-  These are currently recorded in a light form in [decisions.md](decisions.md)
-  and are intended to be replaced with ADRs over time. When you make a similarly
-  significant decision, add to it.
+- Architectural decisions are documented at the point in time they are made,
+  as ADRs in [docs/adr](docs/adr). When you make a similarly significant
+  decision, add one — see [docs/adr/README.md](docs/adr/README.md) for the
+  format, naming and when a decision warrants an ADR at all.
 - Guides for developers (getting started, how things work) live in the relevant
   README.md files. Keep these succinct — the more detail a guide carries the
   faster it drifts out of date, so cover what a developer needs to orient
