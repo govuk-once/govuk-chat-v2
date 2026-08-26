@@ -9,7 +9,7 @@ dependencies = [
     "ag-ui-protocol >= 0.1.10",
     "aws-opentelemetry-distro >= 0.19.0",
     "bedrock-agentcore >= 1.20.0",
-    "govuk-chat-v2-prototype-private",
+    "govuk-chat-v2-private",
     "strands-agents >= 1.15.0",
     "strands-agents-tools >= 0.2.14",
 ]
@@ -39,4 +39,4 @@ pythonpath = [
 ]
 
 [tool.uv.sources]
-govuk-chat-v2-prototype-private = { git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" }
+govuk-chat-v2-private = { git = "https://github.com/govuk-once/govuk-chat-v2-private.git" }
