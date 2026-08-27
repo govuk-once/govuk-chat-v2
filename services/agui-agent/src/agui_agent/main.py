@@ -6,7 +6,7 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
     AgentCoreMemorySessionManager,
 )
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
-from govuk_chat_v2_prototype_private import load_prompts
+from govuk_chat_v2_private import load_prompts
 from strands import Agent
 from strands.models import BedrockModel
 

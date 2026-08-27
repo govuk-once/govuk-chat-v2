@@ -8,7 +8,7 @@ from agent_runtime_types import (
     StreamEndEvent,
     StreamStartEvent,
 )
-from govuk_chat_v2_prototype_private import load_prompts
+from govuk_chat_v2_private import load_prompts
 from strands.agent import AgentResult
 
 from example_agent.main import app, invoke

@@ -113,7 +113,7 @@ dependencies = [
     { name = "ag-ui-strands" },
     { name = "aws-opentelemetry-distro" },
     { name = "bedrock-agentcore" },
-    { name = "govuk-chat-v2-prototype-private" },
+    { name = "govuk-chat-v2-private" },
     { name = "strands-agents" },
     { name = "strands-agents-tools" },
 ]
@@ -135,7 +135,7 @@ requires-dist = [
     { name = "ag-ui-strands", specifier = ">=0.1.7" },
     { name = "aws-opentelemetry-distro", specifier = ">=0.19.0" },
     { name = "bedrock-agentcore", specifier = ">=1.20.0" },
-    { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
+    { name = "govuk-chat-v2-private", git = "https://github.com/govuk-once/govuk-chat-v2-private.git" },
     { name = "strands-agents", specifier = ">=1.15.0" },
     { name = "strands-agents-tools", specifier = ">=0.2.14" },
 ]
@@ -744,7 +744,7 @@ dependencies = [
     { name = "agent-runtime-types" },
     { name = "aws-opentelemetry-distro" },
     { name = "bedrock-agentcore" },
-    { name = "govuk-chat-v2-prototype-private" },
+    { name = "govuk-chat-v2-private" },
     { name = "strands-agents" },
 ]
 
@@ -762,7 +762,7 @@ requires-dist = [
     { name = "agent-runtime-types", editable = "libs/python/agent-runtime-types" },
     { name = "aws-opentelemetry-distro", specifier = ">=0.18.0" },
     { name = "bedrock-agentcore", specifier = ">=1.18.1" },
-    { name = "govuk-chat-v2-prototype-private", git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git" },
+    { name = "govuk-chat-v2-private", git = "https://github.com/govuk-once/govuk-chat-v2-private.git" },
     { name = "strands-agents", specifier = ">=1.47.0" },
 ]
 
@@ -990,9 +990,9 @@ version = "0.1.0"
 source = { virtual = "." }
 
 [[package]]
-name = "govuk-chat-v2-prototype-private"
+name = "govuk-chat-v2-private"
 version = "0.1.0"
-source = { git = "https://github.com/govuk-once/govuk-chat-v2-prototype-private.git#f31a0faf3043c84267af35f69aba63cda4f48ed8" }
+source = { git = "https://github.com/govuk-once/govuk-chat-v2-private.git#692a1c03b06d9974db77ccb4018992dd98313791" }
 dependencies = [
     { name = "pyyaml" },
 ]
