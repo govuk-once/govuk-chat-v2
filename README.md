@@ -1,4 +1,4 @@
-# GOV.UK Chat V2 prototype
+# GOV.UK Chat V2
 
 GOV.UK Chat V2 which is an API product to provide an AI powered chatbot for UK
 government guidance and services. It is a successor to [GOV.UK Chat](https://github.com/alphagov/govuk-chat) (V1) and intended to be a foundational tool that acts a gateway and
@@ -45,7 +45,7 @@ script to check which commands to run.
 
 ## Decisions
 
-There is a [decision log](decisions.md).
+Architecture decisions are recorded as ADRs in [docs/adr](docs/adr).
 
 ## Licence
 

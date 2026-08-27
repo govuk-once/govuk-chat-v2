@@ -1,5 +1,5 @@
 {
-  "name": "@govuk-chat-v2-prototype/cdk",
+  "name": "@govuk-chat-v2/cdk",
   "type": "module",
   "private": true,
   "scripts": {
