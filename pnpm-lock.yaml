@@ -10,7 +10,7 @@ importers:
     devDependencies:
       '@aws/agentcore':
         specifier: ~0.24.2
-        version: 0.24.2(@aws-cdk/cli-plugin-contract@2.182.2)(@types/react@19.2.18)(@typescript-eslint/parser@8.67.0(eslint@10.8.1)(typescript@6.0.3))(aws-cdk-lib@2.264.0(constructs@10.8.1))(constructs@10.8.1)(eslint-config-prettier@10.1.8(eslint@10.8.1))(eslint@10.8.1)(prettier@3.9.6)(typescript@6.0.3)
+        version: 0.24.2(@aws-cdk/cli-plugin-contract@2.182.2)(@types/react@19.2.18)(@typescript-eslint/parser@8.67.0(eslint@10.8.1)(typescript@6.0.3))(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)(eslint-config-prettier@10.1.8(eslint@10.8.1))(eslint@10.8.1)(prettier@3.9.6)(typescript@6.0.3)
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.8.1)
@@ -49,13 +49,13 @@ importers:
     dependencies:
       '@aws-cdk/aws-bedrock-agentcore-alpha':
         specifier: 2.243.0-alpha.0
-        version: 2.243.0-alpha.0(@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.264.0(constructs@10.8.1))(constructs@10.8.1))(aws-cdk-lib@2.264.0(constructs@10.8.1))(constructs@10.8.1)
+        version: 2.243.0-alpha.0(@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1))(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)
       aws-cdk:
         specifier: ^2.1136.0
         version: 2.1136.0
       aws-cdk-lib:
-        specifier: ^2.264.0
-        version: 2.264.0(constructs@10.8.1)
+        specifier: ^2.266.0
+        version: 2.266.0(constructs@10.8.1)
       constructs:
         specifier: ^10.8.1
         version: 10.8.1
@@ -103,8 +103,8 @@ packages:
     resolution: {integrity: sha512-3NX/MpTdroi0aKz134A6RC2Gb2iXVECN4QaAXnvCIxxIm3C3AVB1mkUe8NaaiyvOpDfsrqWhYtj+Q6a62RrTsw==}
     engines: {node: '>=18'}
 
-  '@aws-cdk/asset-awscli-v1@2.2.282':
-    resolution: {integrity: sha512-7hKMi5tTxDcKGIMIOq14PnY0GBcugW33Uh/2YHDZiEwSxLeFOCYBwhR+BFXONb/EJeVI3RETFgailNZbkcKF6g==}
+  '@aws-cdk/asset-awscli-v1@2.2.292':
+    resolution: {integrity: sha512-d4aMFsAFj19FtxVyw8IzlUKv5Zu4sIvgnEjI2IU6IWBJgVbJ4aFnadANqYa+6MwB1CQbGOg0jh8WE77M+Nb/9A==}
 
   '@aws-cdk/asset-node-proxy-agent-v6@2.1.2':
     resolution: {integrity: sha512-pDiuqH+qY3zM9lhhLjbKJ1tnKOHzQ2V4Wr/3qsxyKeKAkuPMI/BVGvZG1PbrikUw949cGVTfVEt4ETKKYnrj0Q==}
@@ -140,13 +140,6 @@ packages:
     engines: {node: '>= 18.0.0'}
     peerDependencies:
       '@aws-cdk/cloud-assembly-schema': '>=54.12.0'
-
-  '@aws-cdk/cloud-assembly-schema@54.18.0':
-    resolution: {integrity: sha512-KceoGMrKbXp3qigQ8y67yq3Cd1k43GOw+E4KMf/MbDbRGyZEkfdLihhCD7obXvN5f1cKemZECFj+klLEoo1biA==}
-    engines: {node: '>= 18.0.0'}
-    bundledDependencies:
-      - jsonschema
-      - semver
 
   '@aws-cdk/cloud-assembly-schema@54.20.0':
     resolution: {integrity: sha512-ts2dVBi0VUXOLKcqyLYsHUWYpwGPFd+xm4q+6Y4jjP8orwodjRi2mJrmpy9b0gHnbv8e/hFnmEbqrD0bBJOnPA==}
@@ -1657,8 +1650,8 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
-  aws-cdk-lib@2.264.0:
-    resolution: {integrity: sha512-TzeWc4aM2qftdoWzIgqV7DotzUO9+DqYLXHvL2qygZqkrJdvITTp8ojHstxYPH40FfA+RL4x5hVfa52NCTB0ZA==}
+  aws-cdk-lib@2.266.0:
+    resolution: {integrity: sha512-sBQU42pEc9ud3yeVU2En2euQRUhCg63eaJIPEVpBtE5aPhJjN3d9MkzQ9eYGLVXP3fnohUE54BiVOdUrkEDUbg==}
     engines: {node: '>= 20.0.0'}
     peerDependencies:
       constructs: ^10.5.0
@@ -3584,19 +3577,19 @@ snapshots:
       ansi-styles: 6.2.3
       is-fullwidth-code-point: 5.1.0
 
-  '@aws-cdk/asset-awscli-v1@2.2.282': {}
+  '@aws-cdk/asset-awscli-v1@2.2.292': {}
 
   '@aws-cdk/asset-node-proxy-agent-v6@2.1.2': {}
 
-  '@aws-cdk/aws-bedrock-agentcore-alpha@2.243.0-alpha.0(@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.264.0(constructs@10.8.1))(constructs@10.8.1))(aws-cdk-lib@2.264.0(constructs@10.8.1))(constructs@10.8.1)':
+  '@aws-cdk/aws-bedrock-agentcore-alpha@2.243.0-alpha.0(@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1))(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)':
     dependencies:
-      '@aws-cdk/aws-bedrock-alpha': 2.243.0-alpha.0(aws-cdk-lib@2.264.0(constructs@10.8.1))(constructs@10.8.1)
-      aws-cdk-lib: 2.264.0(constructs@10.8.1)
+      '@aws-cdk/aws-bedrock-alpha': 2.243.0-alpha.0(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)
+      aws-cdk-lib: 2.266.0(constructs@10.8.1)
       constructs: 10.8.1
 
-  '@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.264.0(constructs@10.8.1))(constructs@10.8.1)':
+  '@aws-cdk/aws-bedrock-alpha@2.243.0-alpha.0(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)':
     dependencies:
-      aws-cdk-lib: 2.264.0(constructs@10.8.1)
+      aws-cdk-lib: 2.266.0(constructs@10.8.1)
       constructs: 10.8.1
 
   '@aws-cdk/aws-service-spec@0.1.205':
@@ -3629,8 +3622,6 @@ snapshots:
       json-source-map: 0.6.1
       jsonschema: 1.5.0
       semver: 7.8.5
-
-  '@aws-cdk/cloud-assembly-schema@54.18.0': {}
 
   '@aws-cdk/cloud-assembly-schema@54.20.0': {}
 
@@ -4441,7 +4432,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@aws/agentcore@0.24.2(@aws-cdk/cli-plugin-contract@2.182.2)(@types/react@19.2.18)(@typescript-eslint/parser@8.67.0(eslint@10.8.1)(typescript@6.0.3))(aws-cdk-lib@2.264.0(constructs@10.8.1))(constructs@10.8.1)(eslint-config-prettier@10.1.8(eslint@10.8.1))(eslint@10.8.1)(prettier@3.9.6)(typescript@6.0.3)':
+  '@aws/agentcore@0.24.2(@aws-cdk/cli-plugin-contract@2.182.2)(@types/react@19.2.18)(@typescript-eslint/parser@8.67.0(eslint@10.8.1)(typescript@6.0.3))(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)(eslint-config-prettier@10.1.8(eslint@10.8.1))(eslint@10.8.1)(prettier@3.9.6)(typescript@6.0.3)':
     dependencies:
       '@aws-cdk/cdk-assets-lib': 1.4.16
       '@aws-cdk/toolkit-lib': 1.39.0(@aws-cdk/cli-plugin-contract@2.182.2)
@@ -4469,7 +4460,7 @@ snapshots:
       '@opentelemetry/resources': 2.10.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-metrics': 2.10.0(@opentelemetry/api@1.9.1)
       '@smithy/shared-ini-file-loader': 4.7.2
-      aws-cdk-lib: 2.264.0(constructs@10.8.1)
+      aws-cdk-lib: 2.266.0(constructs@10.8.1)
       commander: 14.0.3
       constructs: 10.8.1
       dotenv: 17.4.2
@@ -5530,11 +5521,11 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  aws-cdk-lib@2.264.0(constructs@10.8.1):
+  aws-cdk-lib@2.266.0(constructs@10.8.1):
     dependencies:
-      '@aws-cdk/asset-awscli-v1': 2.2.282
+      '@aws-cdk/asset-awscli-v1': 2.2.292
       '@aws-cdk/asset-node-proxy-agent-v6': 2.1.2
-      '@aws-cdk/cloud-assembly-schema': 54.18.0
+      '@aws-cdk/cloud-assembly-schema': 54.20.0
       constructs: 10.8.1
 
   aws-cdk@2.1136.0: {}
