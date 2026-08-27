@@ -1,18 +1,32 @@
-import type { Writable } from 'node:stream';
+import { Readable } from 'node:stream';
+import middy from '@middy/core';
+import { executionModeStreamifyResponse } from '@middy/core/StreamifyResponse';
+import httpHeaderNormalizer from '@middy/http-header-normalizer';
+import httpJsonBodyParser from '@middy/http-json-body-parser';
+import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
 import {
   BedrockAgentCoreClient,
   InvokeAgentRuntimeCommand,
 } from '@aws-sdk/client-bedrock-agentcore';
-import type { APIGatewayProxyEvent } from 'aws-lambda';
 import {
   RunAgentInputSchema,
   ClientInputHeadersSchema,
+  type RunAgentInputBody,
+  type ClientInputHeaders,
 } from '../../schemas/client-input.ts';
-import { streamedJsonErrorResponse } from '../../http/errors.ts';
-import { lowercaseHeaders } from '../../http/headers.ts';
+import {
+  zodBodyValidator,
+  zodHeadersValidator,
+  type ValidatedBodyEvent,
+  type ValidatedHeadersEvent,
+} from '../../http/zod-validator.ts';
+import {
+  buildJsonErrorResponse,
+  jsonHttpErrorHandler,
+  type JsonErrorResponse,
+} from '../../http/errors.ts';
 import { logger } from '../../logging/logger.ts';
 import { relayAgentEventStream } from '../../streaming/agent-event-stream.ts';
-import { z } from 'zod';
 
 const agentRuntimeArn = process.env.AGENT_RUNTIME_ARN;
 if (!agentRuntimeArn) {
@@ -21,118 +35,85 @@ if (!agentRuntimeArn) {
 
 const client = new BedrockAgentCoreClient({});
 
-export const handler = awslambda.streamifyResponse(
-  async (
-    event: APIGatewayProxyEvent,
-    responseStream: Writable,
-  ): Promise<void> => {
-    // TODO: Make this optional so we can toggle it off in dev mode.
-    const parsedHeader = ClientInputHeadersSchema.safeParse(
-      // Doing manual header normalisation isn't ideal. We will likely replace
-      // this with something down the line. For example, middy handles header
-      // normalisation.
-      lowercaseHeaders(event.headers),
-    );
-    if (!parsedHeader.success) {
-      logger.warn('Request headers failed schema validation', {
-        error: parsedHeader.error,
-      });
-      return streamedJsonErrorResponse(responseStream, 422, {
-        error: 'Agent invocation error',
-        details: z.flattenError(parsedHeader.error),
-      });
-    }
+interface AgentEventStreamResponse {
+  statusCode: number;
+  headers: Record<string, string>;
+  body: Readable;
+}
 
-    const endUserId = parsedHeader.data['end-user-id'];
+type InvokeEvent = ValidatedBodyEvent<RunAgentInputBody> &
+  ValidatedHeadersEvent<ClientInputHeaders>;
 
-    // TODO: Extract request body parsing/validation into a shared helper if
-    // other handlers end up needing the same JSON parsing + Zod validation.
-    let rawBody: unknown;
-    try {
-      rawBody = event.body ? JSON.parse(event.body) : {};
-    } catch (error) {
-      // JSON parsing errors throw SyntaxErrors
-      if (!(error instanceof SyntaxError)) {
-        throw error;
-      }
-      logger.warn('Failed to parse request body as JSON', { error });
-      return streamedJsonErrorResponse(responseStream, 400, {
-        error: 'Invalid JSON in request body',
-      });
-    }
+async function invokeAgent(
+  event: InvokeEvent,
+): Promise<AgentEventStreamResponse | JsonErrorResponse> {
+  const endUserId = event.headers['end-user-id'];
+  const body = event.body;
 
-    const parseResult = RunAgentInputSchema.safeParse(rawBody);
-    if (!parseResult.success) {
-      logger.warn('Request body failed schema validation', {
-        error: parseResult.error,
-      });
-      return streamedJsonErrorResponse(responseStream, 422, {
-        error: 'Agent invocation error',
-        details: z.flattenError(parseResult.error),
-      });
-    }
+  const payload = {
+    threadId: body.threadId,
+    runId: body.runId,
+    state: body.state ?? {},
+    messages: body.messages ?? [],
+    tools: body.tools ?? [],
+    context: body.context ?? [],
+    forwardedProps: { endUserId },
+  };
 
-    const body = parseResult.data;
-    const runId = body.runId;
-
-    const payload = {
-      threadId: body.threadId,
-      runId,
-      state: body.state ?? {},
-      messages: body.messages ?? [],
-      tools: body.tools ?? [],
-      context: body.context ?? [],
-      forwardedProps: { endUserId },
-    };
-
-    let response;
-    try {
-      const command = new InvokeAgentRuntimeCommand({
-        agentRuntimeArn,
-        runtimeSessionId: body.threadId,
-        contentType: 'application/json',
-        accept: 'text/event-stream',
-        qualifier: 'DEFAULT',
-        payload: JSON.stringify(payload),
-      });
-
-      response = await client.send(command);
-    } catch (error) {
-      logger.error('Agent runtime invocation failed', {
-        error,
-        threadId: body.threadId,
-        runId,
-      });
-      return streamedJsonErrorResponse(responseStream, 500, {
-        error: 'Agent invocation error',
-      });
-    }
-
-    // The SDK types 'response.response' as optional, so we guard against
-    // it being absent even though the runtime should always return a body.
-    if (!response.response) {
-      logger.error('Agent runtime returned no response body', {
-        threadId: body.threadId,
-        runId,
-      });
-      return streamedJsonErrorResponse(responseStream, 500, {
-        error: 'Agent invocation error',
-      });
-    }
-
-    const sseStream = awslambda.HttpResponseStream.from(responseStream, {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-      },
+  let response;
+  try {
+    const command = new InvokeAgentRuntimeCommand({
+      agentRuntimeArn,
+      runtimeSessionId: body.threadId,
+      contentType: 'application/json',
+      accept: 'text/event-stream',
+      qualifier: 'DEFAULT',
+      payload: JSON.stringify(payload),
     });
 
-    await relayAgentEventStream({
-      source: response.response as AsyncIterable<Uint8Array>,
-      destination: sseStream,
+    response = await client.send(command);
+  } catch (error) {
+    logger.error('Agent runtime invocation failed', {
+      error,
       threadId: body.threadId,
-      runId,
+      runId: body.runId,
     });
-  },
-);
+    return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
+  }
+
+  // The SDK types 'response.response' as optional, so we guard against
+  // it being absent even though the runtime should always return a body.
+  if (!response.response) {
+    logger.error('Agent runtime returned no response body', {
+      threadId: body.threadId,
+      runId: body.runId,
+    });
+    return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
+  }
+
+  const agentEvents = relayAgentEventStream({
+    source: response.response as AsyncIterable<Uint8Array>,
+    threadId: body.threadId,
+    runId: body.runId,
+  });
+
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+    },
+    body: Readable.from(agentEvents),
+  };
+}
+
+export const handler = middy({
+  executionMode: executionModeStreamifyResponse,
+})
+  .use(injectLambdaContext(logger, { resetKeys: true }))
+  .use(httpHeaderNormalizer())
+  .use(zodHeadersValidator(ClientInputHeadersSchema, 'Agent invocation error'))
+  .use(httpJsonBodyParser())
+  .use(zodBodyValidator(RunAgentInputSchema, 'Agent invocation error'))
+  .use(jsonHttpErrorHandler())
+  .handler(invokeAgent);

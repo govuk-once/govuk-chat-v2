@@ -1,6 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
-import { z } from 'zod';
 import { EventType, type BaseEvent } from '@ag-ui/core';
 import { logger } from '../../logging/logger.ts';
 import {
@@ -34,7 +33,10 @@ beforeEach(() => {
 const VALID_THREAD_ID = crypto.randomUUID();
 const VALID_RUN_ID = crypto.randomUUID();
 const VALID_USER_ID = crypto.randomUUID();
-const DEFAULT_HEADERS = { 'end-user-id': VALID_USER_ID };
+const DEFAULT_HEADERS = {
+  'end-user-id': VALID_USER_ID,
+  'content-type': 'application/json',
+};
 const AGENT_RUNTIME_ARN =
   'arn:aws:bedrock-agentcore:eu-west-1:123456789012:runtime/test';
 const VALID_MESSAGES = [
@@ -73,9 +75,9 @@ async function runAndGetErrorBody(
   };
 }
 
-function fieldErrorResponse(fields: string[]): unknown {
+function fieldErrorResponse(error: string, fields: string[]): unknown {
   return expect.objectContaining({
-    error: 'Agent invocation error',
+    error,
     details: expect.objectContaining({
       fieldErrors: expect.objectContaining(
         Object.fromEntries(fields.map((field) => [field, expect.anything()])),
@@ -98,37 +100,36 @@ describe('configuration', () => {
 describe('handler', () => {
   describe('request headers', () => {
     it('returns 422 when end-user-id header is missing', async () => {
-      const logWarn = vi.spyOn(logger, 'warn');
-
       const { responseStream } = await runAndGetErrorBody(
         { threadId: VALID_THREAD_ID, messages: VALID_MESSAGES },
-        {},
+        { 'content-type': 'application/json' },
       );
 
       expectJsonHttpResponse(
         responseStream,
         422,
-        fieldErrorResponse(['end-user-id']),
-      );
-      expect(logWarn).toHaveBeenCalledWith(
-        'Request headers failed schema validation',
-        { error: expect.any(z.ZodError) },
+        fieldErrorResponse('Agent invocation error', ['end-user-id']),
       );
     });
 
-    it('normalises header keys to lowercase before validation', async () => {
-      const { parsed } = await runAndGetErrorBody(
+    it('normalises header keys before validation', async () => {
+      const { responseStream } = await runAndGetErrorBody(
         { threadId: VALID_THREAD_ID, messages: VALID_MESSAGES },
-        { 'End-User-Id': VALID_USER_ID },
+        { 'End-User-Id': VALID_USER_ID, 'content-type': 'application/json' },
       );
 
-      expect(parsed.details.fieldErrors).not.toHaveProperty('end-user-id');
+      expectJsonHttpResponse(
+        responseStream,
+        422,
+        fieldErrorResponse('Agent invocation error', ['runId']),
+      );
     });
   });
 
   describe('request body parsing', () => {
-    it('returns a 400 JSON error for invalid JSON body', async () => {
+    it('returns a 422 for a malformed JSON body', async () => {
       const logWarn = vi.spyOn(logger, 'warn');
+      const logError = vi.spyOn(logger, 'error');
       const responseStream = testEnv.responseStream;
       const event = {
         body: '{not valid json',
@@ -137,20 +138,36 @@ describe('handler', () => {
 
       await testEnv.handler(event, responseStream, {});
 
-      expectJsonHttpResponse(responseStream, 400, {
-        error: 'Invalid JSON in request body',
+      expectJsonHttpResponse(responseStream, 422, {
+        error: 'Invalid or malformed JSON was provided',
       });
       expect(logWarn).toHaveBeenCalledWith(
-        'Failed to parse request body as JSON',
-        { error: expect.any(SyntaxError) },
+        'Request rejected before reaching the handler',
+        { error: expect.any(Error), statusCode: 422 },
       );
+      expect(logError).not.toHaveBeenCalled();
+    });
+
+    it('returns 415 when Content-Type is missing or not JSON', async () => {
+      const responseStream = testEnv.responseStream;
+
+      await testEnv.handler(
+        makeEvent(
+          { threadId: VALID_THREAD_ID, messages: VALID_MESSAGES },
+          { 'end-user-id': VALID_USER_ID },
+        ),
+        responseStream,
+        {},
+      );
+
+      expectJsonHttpResponse(responseStream, 415, {
+        error: 'Unsupported Media Type',
+      });
     });
   });
 
   describe('request body validation', () => {
     it('returns 422 with validation details when schema validation occurs', async () => {
-      const logWarn = vi.spyOn(logger, 'warn');
-
       const { responseStream } = await runAndGetErrorBody({
         threadId: 'not-a-uuid',
       });
@@ -158,11 +175,7 @@ describe('handler', () => {
       expectJsonHttpResponse(
         responseStream,
         422,
-        fieldErrorResponse(['threadId', 'messages']),
-      );
-      expect(logWarn).toHaveBeenCalledWith(
-        'Request body failed schema validation',
-        { error: expect.any(z.ZodError) },
+        fieldErrorResponse('Agent invocation error', ['threadId', 'messages']),
       );
     });
 
@@ -175,7 +188,7 @@ describe('handler', () => {
       expectJsonHttpResponse(
         responseStream,
         422,
-        fieldErrorResponse(['messages']),
+        fieldErrorResponse('Agent invocation error', ['messages']),
       );
     });
   });

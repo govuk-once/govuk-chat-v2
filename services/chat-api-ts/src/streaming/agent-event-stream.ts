@@ -1,4 +1,3 @@
-import type { Writable } from 'node:stream';
 import {
   EventType,
   type RunErrorEvent,
@@ -12,16 +11,15 @@ const encoder = new EventEncoder();
 
 export interface RelayAgentEventStreamParameters {
   source: AsyncIterable<Uint8Array>;
-  destination: Writable;
   threadId: string;
   runId: string;
 }
-export async function relayAgentEventStream({
+
+export async function* relayAgentEventStream({
   source,
-  destination,
   threadId,
   runId,
-}: RelayAgentEventStreamParameters): Promise<void> {
+}: RelayAgentEventStreamParameters): AsyncGenerator<string | Uint8Array> {
   let isRunStarted = false;
   const textDecoder = new TextDecoder('utf-8');
   const parser = createParser({
@@ -42,7 +40,10 @@ export async function relayAgentEventStream({
         }
       }
 
-      destination.write(chunk);
+      // Relayed as the bytes that arrived: decoding is only needed to sniff
+      // for RUN_STARTED, so re-encoding a decoded string would be lossy for
+      // no gain.
+      yield chunk;
     }
   } catch (error) {
     logger.error('Agent event stream relay failed', {
@@ -62,11 +63,9 @@ export async function relayAgentEventStream({
         threadId,
         runId,
       };
-      destination.write(encoder.encodeSSE(startEvent));
+      yield encoder.encodeSSE(startEvent);
     }
 
-    destination.write(encoder.encodeSSE(errorEvent));
-  } finally {
-    destination.end();
+    yield encoder.encodeSSE(errorEvent);
   }
 }

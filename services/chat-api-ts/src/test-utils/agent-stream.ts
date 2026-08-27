@@ -72,7 +72,7 @@ export function expectJsonHttpResponse(
   expect(JSON.parse(responseStream.read())).toEqual(body);
 }
 
-export async function* asyncChunks(
+async function* asyncChunks(
   chunks: Array<Uint8Array | string>,
 ): AsyncGenerator<Buffer> {
   for (const chunk of chunks) {
@@ -91,4 +91,14 @@ export async function* createFailingStream(
 
 export function aguiEventStream(events: BaseEvent[]): AsyncGenerator<Buffer> {
   return asyncChunks(events.map((event) => encoder.encode(event)));
+}
+
+export async function collectStreamText(
+  stream: AsyncIterable<string | Uint8Array>,
+): Promise<string> {
+  let text = '';
+  for await (const chunk of stream) {
+    text += typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString();
+  }
+  return text;
 }
