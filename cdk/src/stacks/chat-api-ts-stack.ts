@@ -1,11 +1,16 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import path from 'node:path';
 import { Construct } from 'constructs';
-import { getResourceNamePrefix, repoRoot } from '../constants/environment.ts';
+import {
+  getResourceNamePrefix,
+  isEphemeralEnvironment,
+  repoRoot,
+} from '../constants/environment.ts';
 
 export interface ChatApiTsStackProps extends cdk.StackProps {
   serviceName: string;
@@ -13,6 +18,11 @@ export interface ChatApiTsStackProps extends cdk.StackProps {
   agentRuntimeArn: string;
   repositoryUrl: string;
   environment: string;
+}
+
+interface CognitoAuth {
+  authorizer: apigateway.CognitoUserPoolsAuthorizer;
+  scope: string;
 }
 
 export class ChatApiTsStack extends cdk.Stack {
@@ -24,14 +34,99 @@ export class ChatApiTsStack extends cdk.Stack {
     cdk.Tags.of(this).add('RepositoryUrl', props.repositoryUrl);
     cdk.Tags.of(this).add('Environment', props.environment);
 
-    const apiGateway = this.apiGateway(props);
+    const auth = this.cognitoAuth();
+    const apiGateway = this.apiGateway(props, auth);
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
       value: apiGateway.url,
     });
   }
 
-  apiGateway(props: ChatApiTsStackProps): apigateway.RestApi {
+  cognitoAuth(): CognitoAuth {
+    const userPool = new cognito.UserPool(
+      this,
+      `${getResourceNamePrefix()}-chat-api-ts-user-pool`,
+      {
+        userPoolName: `${getResourceNamePrefix()}-chat-api-ts-user-pool`,
+        selfSignUpEnabled: false,
+        removalPolicy: isEphemeralEnvironment()
+          ? cdk.RemovalPolicy.DESTROY
+          : cdk.RemovalPolicy.RETAIN,
+      },
+    );
+
+    const invokeScope = new cognito.ResourceServerScope({
+      scopeName: 'invoke',
+      scopeDescription: 'Invoke the Chat API',
+    });
+
+    const resourceServer = userPool.addResourceServer(
+      `${getResourceNamePrefix()}-chat-api-ts-resource-server`,
+      {
+        identifier: 'chat-api',
+        scopes: [invokeScope],
+      },
+    );
+
+    const appClient = userPool.addClient(
+      `${getResourceNamePrefix()}-chat-api-ts-app-client`,
+      {
+        userPoolClientName: `${getResourceNamePrefix()}-chat-api-ts-app-client`,
+        generateSecret: true,
+        oAuth: {
+          flows: { clientCredentials: true },
+          scopes: [
+            cognito.OAuthScope.resourceServer(resourceServer, invokeScope),
+          ],
+        },
+        // Longer-lived tokens for ephermeral environments so refreshing
+        // doesn't need to happen so often
+        accessTokenValidity: cdk.Duration.hours(
+          isEphemeralEnvironment() ? 24 : 1,
+        ),
+      },
+    );
+
+    const domain = userPool.addDomain(
+      `${getResourceNamePrefix()}-chat-api-ts-domain`,
+      {
+        cognitoDomain: {
+          domainPrefix: getResourceNamePrefix(),
+        },
+      },
+    );
+
+    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+      this,
+      `${getResourceNamePrefix()}-chat-api-ts-authorizer`,
+      {
+        authorizerName: `${getResourceNamePrefix()}-chat-api-ts-authorizer`,
+        cognitoUserPools: [userPool],
+      },
+    );
+
+    new cdk.CfnOutput(this, 'UserPoolId', {
+      value: userPool.userPoolId,
+    });
+
+    new cdk.CfnOutput(this, 'AppClientId', {
+      value: appClient.userPoolClientId,
+    });
+
+    new cdk.CfnOutput(this, 'TokenEndpoint', {
+      value: `https://${domain.domainName}.auth.${this.region}.amazoncognito.com/oauth2/token`,
+    });
+
+    return {
+      authorizer,
+      scope: `chat-api/${invokeScope.scopeName}`,
+    };
+  }
+
+  apiGateway(
+    props: ChatApiTsStackProps,
+    auth: CognitoAuth,
+  ): apigateway.RestApi {
     const api = new apigateway.RestApi(
       this,
       `${getResourceNamePrefix()}-chat-api-ts-gateway`,
@@ -41,7 +136,9 @@ export class ChatApiTsStack extends cdk.Stack {
           stageName: props.environment,
         },
         defaultMethodOptions: {
-          authorizationType: apigateway.AuthorizationType.IAM,
+          authorizationType: apigateway.AuthorizationType.COGNITO,
+          authorizer: auth.authorizer,
+          authorizationScopes: [auth.scope],
         },
       },
     );

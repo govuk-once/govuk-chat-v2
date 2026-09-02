@@ -80,12 +80,13 @@ describe('ChatApiTsStack', () => {
       });
     });
 
-    it('requires IAM auth on POST requests', () => {
+    it('requires Cognito auth on POST requests', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::ApiGateway::Method', {
         HttpMethod: 'POST',
-        AuthorizationType: 'AWS_IAM',
+        AuthorizationType: 'COGNITO_USER_POOLS',
+        AuthorizationScopes: ['chat-api/invoke'],
       });
     });
 
@@ -93,6 +94,42 @@ describe('ChatApiTsStack', () => {
       const template = stackTemplate();
 
       template.hasOutput('GatewayUrl', {});
+    });
+  });
+
+  describe('Cognito', () => {
+    it('creates a User Pool', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::Cognito::UserPool', {
+        UserPoolName: Match.stringLikeRegexp('chat-api-ts-user-pool'),
+      });
+    });
+
+    it('creates a Resource Server with an invoke scope', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::Cognito::UserPoolResourceServer', {
+        Identifier: 'chat-api',
+        Scopes: Match.arrayWith([Match.objectLike({ ScopeName: 'invoke' })]),
+      });
+    });
+
+    it('creates an App Client with client credentials flow', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+        AllowedOAuthFlows: ['client_credentials'],
+        GenerateSecret: true,
+      });
+    });
+
+    it('outputs the User Pool ID and App Client ID', () => {
+      const template = stackTemplate();
+
+      template.hasOutput('UserPoolId', {});
+      template.hasOutput('AppClientId', {});
+      template.hasOutput('TokenEndpoint', {});
     });
   });
 });
