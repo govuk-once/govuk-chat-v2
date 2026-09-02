@@ -15,9 +15,13 @@ To invoke:
 
 ```
 GATEWAY_URL=$(scripts/fetch-cdk-output.sh ChatApiTsStack GatewayUrl)
-./aws-curl.sh -X POST "${GATEWAY_URL%/}/v1/threads/invoke" \
+export TOKEN_ENDPOINT=$(scripts/fetch-cdk-output.sh ChatApiTsStack TokenEndpoint)
+export USER_POOL_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack UserPoolId)
+export APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack AppClientId)
+
+./scripts/api-curl.sh -X POST "${GATEWAY_URL%/}/v1/threads/invoke" \
   -H "Content-Type: application/json" \
-  -H "end-user-id: "'"$(uuidgen)"'" \
+  -H "end-user-id: $(uuidgen)" \
   -d '{
     "threadId": "'"$(uuidgen)"'",
     "runId": "'"$(uuidgen)"'",
