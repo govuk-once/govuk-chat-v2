@@ -30,3 +30,12 @@ export APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack AppClientId)
     ]
   }'
 ```
+
+## Threads
+
+A thread belongs to the end user in the `end-user-id` header. It is
+identified by that header and the client's `threadId` together, so two end
+users sending the same `threadId` get separate threads. The API generates
+its own id for each thread and uses it as the agent runtime session. The
+client never sees that id. `RUN_STARTED` and `RUN_FINISHED` carry the
+client's `threadId`. Threads expire a year after their last message.

@@ -1,5 +1,6 @@
 import {
   EventType,
+  type BaseEvent,
   type RunErrorEvent,
   type RunStartedEvent,
 } from '@ag-ui/core';
@@ -9,46 +10,51 @@ import { logger } from '../logging/logger.ts';
 
 const encoder = new EventEncoder();
 
+type RelayedEvent = BaseEvent & { threadId?: string };
+
 export interface RelayAgentEventStreamParameters {
   source: AsyncIterable<Uint8Array>;
-  threadId: string;
+  userThreadId: string;
+  systemThreadId: string;
   runId: string;
 }
 
 export async function* relayAgentEventStream({
   source,
-  threadId,
+  userThreadId,
+  systemThreadId,
   runId,
-}: RelayAgentEventStreamParameters): AsyncGenerator<string | Uint8Array> {
+}: RelayAgentEventStreamParameters): AsyncGenerator<string> {
   let isRunStarted = false;
   const textDecoder = new TextDecoder('utf-8');
+  const parsedEvents: RelayedEvent[] = [];
   const parser = createParser({
     onEvent: (event: EventSourceMessage) => {
-      const parsed = JSON.parse(event.data);
-      if (parsed.type === EventType.RUN_STARTED) {
-        isRunStarted = true;
-      }
+      parsedEvents.push(JSON.parse(event.data) as RelayedEvent);
     },
   });
 
   try {
     for await (const chunk of source) {
-      if (!isRunStarted) {
-        const sseChunk = textDecoder.decode(chunk, { stream: true });
-        if (sseChunk.trim()) {
-          parser.feed(sseChunk);
-        }
-      }
+      parser.feed(textDecoder.decode(chunk, { stream: true }));
 
-      // Relayed as the bytes that arrived: decoding is only needed to sniff
-      // for RUN_STARTED, so re-encoding a decoded string would be lossy for
-      // no gain.
-      yield chunk;
+      const completedEvents = [...parsedEvents];
+      parsedEvents.length = 0;
+      for (const event of completedEvents) {
+        if (event.type === EventType.RUN_STARTED) {
+          isRunStarted = true;
+        }
+        if ('threadId' in event) {
+          event.threadId = userThreadId;
+        }
+        yield encoder.encodeSSE(event);
+      }
     }
   } catch (error) {
     logger.error('Agent event stream relay failed', {
       error,
-      threadId,
+      threadId: systemThreadId,
+      userThreadId,
       runId,
     });
 
@@ -60,7 +66,7 @@ export async function* relayAgentEventStream({
     if (!isRunStarted) {
       const startEvent: RunStartedEvent = {
         type: EventType.RUN_STARTED,
-        threadId,
+        threadId: userThreadId,
         runId,
       };
       yield encoder.encodeSSE(startEvent);
