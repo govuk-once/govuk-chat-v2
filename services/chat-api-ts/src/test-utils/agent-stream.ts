@@ -94,11 +94,11 @@ export function aguiEventStream(events: BaseEvent[]): AsyncGenerator<Buffer> {
 }
 
 export async function collectStreamText(
-  stream: AsyncIterable<string | Uint8Array>,
+  stream: AsyncIterable<string>,
 ): Promise<string> {
   let text = '';
   for await (const chunk of stream) {
-    text += typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString();
+    text += chunk;
   }
   return text;
 }

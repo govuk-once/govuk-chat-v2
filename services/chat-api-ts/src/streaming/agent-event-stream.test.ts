@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   EventType,
+  type BaseEvent,
   type RunErrorEvent,
   type RunStartedEvent,
 } from '@ag-ui/core';
@@ -13,24 +14,29 @@ import {
 import { logger } from '../logging/logger.ts';
 import { relayAgentEventStream } from './agent-event-stream.ts';
 
-const THREAD_ID = crypto.randomUUID();
+const USER_THREAD_ID = crypto.randomUUID();
+const SYSTEM_THREAD_ID = crypto.randomUUID();
 const RUN_ID = crypto.randomUUID();
 
 describe('relayAgentEventStream', () => {
-  it('relays a well-formed event stream unchanged', async () => {
-    const events = [
-      { type: EventType.RUN_STARTED, threadId: THREAD_ID, runId: RUN_ID },
-      { type: EventType.RUN_FINISHED, threadId: THREAD_ID, runId: RUN_ID },
+  it('relays the event stream with run events carrying the client thread id', async () => {
+    const eventsForThread = (threadId: string): BaseEvent[] => [
+      { type: EventType.RUN_STARTED, threadId, runId: RUN_ID },
+      { type: EventType.TEXT_MESSAGE_CONTENT, messageId: 'msg-1', delta: 'Hi' },
+      { type: EventType.RUN_FINISHED, threadId, runId: RUN_ID },
     ];
 
     const sseStream = relayAgentEventStream({
-      source: aguiEventStream(events),
-      threadId: THREAD_ID,
+      source: aguiEventStream(eventsForThread(SYSTEM_THREAD_ID)),
+      userThreadId: USER_THREAD_ID,
+      systemThreadId: SYSTEM_THREAD_ID,
       runId: RUN_ID,
     });
 
     expect(await collectStreamText(sseStream)).toBe(
-      events.map((event) => encoder.encode(event)).join(''),
+      eventsForThread(USER_THREAD_ID)
+        .map((event) => encoder.encode(event))
+        .join(''),
     );
   });
 
@@ -38,13 +44,14 @@ describe('relayAgentEventStream', () => {
     const logError = vi.spyOn(logger, 'error');
     const sseStream = relayAgentEventStream({
       source: createFailingStream(),
-      threadId: THREAD_ID,
+      userThreadId: USER_THREAD_ID,
+      systemThreadId: SYSTEM_THREAD_ID,
       runId: RUN_ID,
     });
 
     const expectedStartEvent: RunStartedEvent = {
       type: EventType.RUN_STARTED,
-      threadId: THREAD_ID,
+      threadId: USER_THREAD_ID,
       runId: RUN_ID,
     };
     const expectedErrorEvent: RunErrorEvent = {
@@ -57,7 +64,8 @@ describe('relayAgentEventStream', () => {
     );
     expect(logError).toHaveBeenCalledWith('Agent event stream relay failed', {
       error: new Error('Stream failure'),
-      threadId: THREAD_ID,
+      threadId: SYSTEM_THREAD_ID,
+      userThreadId: USER_THREAD_ID,
       runId: RUN_ID,
     });
   });
@@ -66,27 +74,34 @@ describe('relayAgentEventStream', () => {
     const logError = vi.spyOn(logger, 'error');
     const runStartedEvent: RunStartedEvent = {
       type: EventType.RUN_STARTED,
-      threadId: THREAD_ID,
+      threadId: SYSTEM_THREAD_ID,
       runId: RUN_ID,
     };
 
     const sseStream = relayAgentEventStream({
       source: createFailingStream([encoder.encode(runStartedEvent)]),
-      threadId: THREAD_ID,
+      userThreadId: USER_THREAD_ID,
+      systemThreadId: SYSTEM_THREAD_ID,
       runId: RUN_ID,
     });
 
+    const expectedStartEvent: RunStartedEvent = {
+      type: EventType.RUN_STARTED,
+      threadId: USER_THREAD_ID,
+      runId: RUN_ID,
+    };
     const expectedErrorEvent: RunErrorEvent = {
       type: EventType.RUN_ERROR,
       message: 'Agent invocation error',
     };
 
     expect(await collectStreamText(sseStream)).toBe(
-      encoder.encode(runStartedEvent) + encoder.encode(expectedErrorEvent),
+      encoder.encode(expectedStartEvent) + encoder.encode(expectedErrorEvent),
     );
     expect(logError).toHaveBeenCalledWith('Agent event stream relay failed', {
       error: new Error('Stream failure'),
-      threadId: THREAD_ID,
+      threadId: SYSTEM_THREAD_ID,
+      userThreadId: USER_THREAD_ID,
       runId: RUN_ID,
     });
   });
