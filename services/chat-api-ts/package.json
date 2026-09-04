@@ -13,7 +13,7 @@
     "@types/aws-lambda": "^8.10.162"
   },
   "dependencies": {
-    "@ag-ui/core": "^0.0.57",
+    "@ag-ui/core": "^0.0.58",
     "@ag-ui/encoder": "^0.0.57",
     "@aws-lambda-powertools/logger": "^2.35.0",
     "@aws-sdk/client-bedrock-agentcore": "^3.1104.0",
