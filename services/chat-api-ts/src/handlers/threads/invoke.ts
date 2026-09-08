@@ -27,6 +27,13 @@ import {
 } from '../../http/errors.ts';
 import { logger } from '../../logging/logger.ts';
 import { resolveThread } from '../../persistence/threads.ts';
+import {
+  beginRun,
+  finishRun,
+  releaseRun,
+  type RunClaim,
+  type RunKey,
+} from '../../persistence/runs.ts';
 import { relayAgentEventStream } from '../../streaming/agent-event-stream.ts';
 
 const agentRuntimeArn = process.env.AGENT_RUNTIME_ARN;
@@ -36,6 +43,15 @@ if (!agentRuntimeArn) {
 
 const client = new BedrockAgentCoreClient({});
 
+const REJECTION_MESSAGES: Record<
+  Exclude<RunClaim['status'], 'claimed'>,
+  string
+> = {
+  'thread-busy': 'A run is already in progress on this thread',
+  'duplicate-run': 'This run id has already been used on this thread',
+  'duplicate-message': 'This message id has already been used on this thread',
+};
+
 interface AgentEventStreamResponse {
   statusCode: number;
   headers: Record<string, string>;
@@ -44,6 +60,19 @@ interface AgentEventStreamResponse {
 
 type InvokeEvent = ValidatedBodyEvent<RunAgentInputBody> &
   ValidatedHeadersEvent<ClientInputHeaders>;
+
+async function releaseClaim(
+  runKey: Pick<RunKey, 'systemThreadId' | 'runId'>,
+): Promise<void> {
+  try {
+    await releaseRun(runKey);
+  } catch (error) {
+    logger.error('Releasing the thread after a failed invocation failed', {
+      error,
+      ...runKey,
+    });
+  }
+}
 
 async function invokeAgent(
   event: InvokeEvent,
@@ -64,6 +93,34 @@ async function invokeAgent(
   }
 
   const { systemThreadId } = thread;
+  const messageId = body.messages.at(-1)!.id;
+  const runKey = { systemThreadId, runId: body.runId, messageId };
+
+  let claim: RunClaim;
+  try {
+    claim = await beginRun(runKey);
+  } catch (error) {
+    logger.error('Run claim failed', {
+      error,
+      threadId: systemThreadId,
+      userThreadId: body.threadId,
+      runId: body.runId,
+    });
+    return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
+  }
+
+  if (claim.status !== 'claimed') {
+    logger.warn('Run rejected before invoking the agent', {
+      status: claim.status,
+      threadId: systemThreadId,
+      userThreadId: body.threadId,
+      runId: body.runId,
+    });
+    return buildJsonErrorResponse(409, {
+      error: REJECTION_MESSAGES[claim.status],
+    });
+  }
+
   const payload = {
     threadId: systemThreadId,
     runId: body.runId,
@@ -93,6 +150,7 @@ async function invokeAgent(
       userThreadId: body.threadId,
       runId: body.runId,
     });
+    await releaseClaim(runKey);
     return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
   }
 
@@ -104,6 +162,7 @@ async function invokeAgent(
       userThreadId: body.threadId,
       runId: body.runId,
     });
+    await releaseClaim(runKey);
     return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
   }
 
@@ -112,6 +171,8 @@ async function invokeAgent(
     userThreadId: body.threadId,
     systemThreadId,
     runId: body.runId,
+    onRunFinished: () => finishRun(runKey),
+    onRunFailed: () => releaseRun(runKey),
   });
 
   return {

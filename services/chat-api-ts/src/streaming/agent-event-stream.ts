@@ -17,6 +17,8 @@ export interface RelayAgentEventStreamParameters {
   userThreadId: string;
   systemThreadId: string;
   runId: string;
+  onRunFinished: () => Promise<void>;
+  onRunFailed: () => Promise<void>;
 }
 
 export async function* relayAgentEventStream({
@@ -24,8 +26,12 @@ export async function* relayAgentEventStream({
   userThreadId,
   systemThreadId,
   runId,
+  onRunFinished,
+  onRunFailed,
 }: RelayAgentEventStreamParameters): AsyncGenerator<string> {
   let isRunStarted = false;
+  let isOutcomeReported = false;
+  const logContext = { threadId: systemThreadId, userThreadId, runId };
   const textDecoder = new TextDecoder('utf-8');
   const parsedEvents: RelayedEvent[] = [];
   const parser = createParser({
@@ -33,6 +39,23 @@ export async function* relayAgentEventStream({
       parsedEvents.push(JSON.parse(event.data) as RelayedEvent);
     },
   });
+
+  const errorEvent: RunErrorEvent = {
+    type: EventType.RUN_ERROR,
+    message: 'Agent invocation error',
+  };
+
+  async function releaseThread(): Promise<void> {
+    isOutcomeReported = true;
+    try {
+      await onRunFailed();
+    } catch (error) {
+      logger.error('Releasing the thread after a failed run failed', {
+        error,
+        ...logContext,
+      });
+    }
+  }
 
   try {
     for await (const chunk of source) {
@@ -47,21 +70,20 @@ export async function* relayAgentEventStream({
         if ('threadId' in event) {
           event.threadId = userThreadId;
         }
+        if (event.type === EventType.RUN_FINISHED) {
+          await onRunFinished();
+          isOutcomeReported = true;
+        }
+        if (event.type === EventType.RUN_ERROR) {
+          await releaseThread();
+        }
         yield encoder.encodeSSE(event);
       }
     }
   } catch (error) {
-    logger.error('Agent event stream relay failed', {
-      error,
-      threadId: systemThreadId,
-      userThreadId,
-      runId,
-    });
+    logger.error('Agent event stream relay failed', { error, ...logContext });
 
-    const errorEvent: RunErrorEvent = {
-      type: EventType.RUN_ERROR,
-      message: 'Agent invocation error',
-    };
+    await releaseThread();
 
     if (!isRunStarted) {
       const startEvent: RunStartedEvent = {
@@ -73,5 +95,9 @@ export async function* relayAgentEventStream({
     }
 
     yield encoder.encodeSSE(errorEvent);
+  } finally {
+    if (!isOutcomeReported) {
+      await releaseThread();
+    }
   }
 }
