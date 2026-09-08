@@ -2,9 +2,9 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { Entity, Service } from 'electrodb';
 
-const table = process.env.THREADS_TABLE_NAME;
+const table = process.env.CHAT_API_TABLE_NAME;
 if (!table) {
-  throw new Error('THREADS_TABLE_NAME is not configured');
+  throw new Error('CHAT_API_TABLE_NAME is not configured');
 }
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));

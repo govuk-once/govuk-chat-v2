@@ -14,7 +14,7 @@ const testEnv = {} as { resolveThread: typeof resolveThread };
 
 beforeAll(async () => {
   stubDynamoDBDocumentClient();
-  vi.stubEnv('THREADS_TABLE_NAME', 'test-threads');
+  vi.stubEnv('CHAT_API_TABLE_NAME', 'test-chat-api');
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(NOW);
 
@@ -69,12 +69,12 @@ function writes(input: SentInput, kind: 'Put' | 'Update'): WriteItem[] {
 }
 
 describe('configuration', () => {
-  it('throws an error during module import when THREADS_TABLE_NAME is not configured', async () => {
+  it('throws an error during module import when CHAT_API_TABLE_NAME is not configured', async () => {
     vi.resetModules();
-    vi.stubEnv('THREADS_TABLE_NAME', undefined);
+    vi.stubEnv('CHAT_API_TABLE_NAME', undefined);
 
     await expect(import('./threads.ts')).rejects.toThrow(
-      'THREADS_TABLE_NAME is not configured',
+      'CHAT_API_TABLE_NAME is not configured',
     );
   });
 });

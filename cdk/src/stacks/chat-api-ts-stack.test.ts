@@ -61,13 +61,13 @@ describe('ChatApiTsStack', () => {
           Variables: Match.objectLike({
             AGENT_RUNTIME_ARN: baseProps.agentRuntimeArn,
             POWERTOOLS_SERVICE_NAME: 'chat-api-ts',
-            THREADS_TABLE_NAME: { Ref: tableId },
+            CHAT_API_TABLE_NAME: { Ref: tableId },
           }),
         },
       });
     });
 
-    it('grants the agent-stream lambda access to the thread table', () => {
+    it('grants the agent-stream lambda access to the table', () => {
       const template = stackTemplate();
 
       const [tableId] = Object.keys(
@@ -94,12 +94,12 @@ describe('ChatApiTsStack', () => {
     });
   });
 
-  describe('DynamoDB thread table', () => {
+  describe('DynamoDB table', () => {
     it('creates the table with the keys and TTL attribute the repository expects', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::DynamoDB::Table', {
-        TableName: Match.stringLikeRegexp('chat-api-ts-threads'),
+        TableName: Match.stringLikeRegexp('chat-api-ts'),
         KeySchema: [
           { AttributeName: 'pk', KeyType: 'HASH' },
           { AttributeName: 'sk', KeyType: 'RANGE' },

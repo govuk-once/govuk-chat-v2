@@ -36,8 +36,8 @@ export class ChatApiTsStack extends cdk.Stack {
     cdk.Tags.of(this).add('Environment', props.environment);
 
     const auth = this.cognitoAuth();
-    const threadTable = this.threadTable();
-    const apiGateway = this.apiGateway(props, auth, threadTable);
+    const table = this.table();
+    const apiGateway = this.apiGateway(props, auth, table);
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
       value: apiGateway.url,
@@ -125,8 +125,8 @@ export class ChatApiTsStack extends cdk.Stack {
     };
   }
 
-  threadTable(): dynamodb.Table {
-    const tableName = `${getResourceNamePrefix()}-chat-api-ts-threads`;
+  table(): dynamodb.Table {
+    const tableName = `${getResourceNamePrefix()}-chat-api-ts`;
 
     return new dynamodb.Table(this, tableName, {
       tableName,
@@ -143,7 +143,7 @@ export class ChatApiTsStack extends cdk.Stack {
   apiGateway(
     props: ChatApiTsStackProps,
     auth: CognitoAuth,
-    threadTable: dynamodb.Table,
+    table: dynamodb.Table,
   ): apigateway.RestApi {
     const api = new apigateway.RestApi(
       this,
@@ -163,10 +163,10 @@ export class ChatApiTsStack extends cdk.Stack {
 
     const agentStreamFunction = this.lambdaHandler('threads/invoke.ts', {
       AGENT_RUNTIME_ARN: props.agentRuntimeArn,
-      THREADS_TABLE_NAME: threadTable.tableName,
+      CHAT_API_TABLE_NAME: table.tableName,
     });
 
-    threadTable.grantReadWriteData(agentStreamFunction);
+    table.grantReadWriteData(agentStreamFunction);
 
     agentStreamFunction.addToRolePolicy(
       new iam.PolicyStatement({
