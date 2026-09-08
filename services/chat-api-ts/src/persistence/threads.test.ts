@@ -68,17 +68,6 @@ function writes(input: SentInput, kind: 'Put' | 'Update'): WriteItem[] {
   );
 }
 
-describe('configuration', () => {
-  it('throws an error during module import when CHAT_API_TABLE_NAME is not configured', async () => {
-    vi.resetModules();
-    vi.stubEnv('CHAT_API_TABLE_NAME', undefined);
-
-    await expect(import('./threads.ts')).rejects.toThrow(
-      'CHAT_API_TABLE_NAME is not configured',
-    );
-  });
-});
-
 describe('resolveThread', () => {
   describe('when the mapping exists and has not expired', () => {
     it('returns the stored system id and refreshes the expiry on both records', async () => {

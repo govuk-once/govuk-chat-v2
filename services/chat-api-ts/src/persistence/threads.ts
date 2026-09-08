@@ -1,68 +1,8 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { Entity, Service } from 'electrodb';
-
-const table = process.env.CHAT_API_TABLE_NAME;
-if (!table) {
-  throw new Error('CHAT_API_TABLE_NAME is not configured');
-}
-
-const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-
-const ONE_YEAR_IN_SECONDS = 31_536_000;
-
-const ThreadMapping = new Entity({
-  model: { service: 'chat-api', entity: 'threadMapping', version: '1' },
-  attributes: {
-    endUserId: { type: 'string', required: true },
-    userThreadId: { type: 'string', required: true },
-    systemThreadId: { type: 'string', required: true, readOnly: true },
-    createdAt: { type: 'string', required: true, readOnly: true },
-    expiresAt: { type: 'number', required: true },
-  },
-  indexes: {
-    primary: {
-      pk: {
-        field: 'pk',
-        composite: ['endUserId'],
-        template: 'USER#${endUserId}',
-        casing: 'none',
-      },
-      sk: {
-        field: 'sk',
-        composite: ['userThreadId'],
-        template: 'THREAD#${userThreadId}',
-        casing: 'none',
-      },
-    },
-  },
-});
-
-const Thread = new Entity({
-  model: { service: 'chat-api', entity: 'thread', version: '1' },
-  attributes: {
-    systemThreadId: { type: 'string', required: true },
-    endUserId: { type: 'string', required: true, readOnly: true },
-    createdAt: { type: 'string', required: true, readOnly: true },
-    expiresAt: { type: 'number', required: true },
-  },
-  indexes: {
-    primary: {
-      pk: {
-        field: 'pk',
-        composite: ['systemThreadId'],
-        template: 'THREAD#${systemThreadId}',
-        casing: 'none',
-      },
-      sk: { field: 'sk', composite: [], template: 'THREAD', casing: 'none' },
-    },
-  },
-});
-
-const service = new Service(
-  { threadMapping: ThreadMapping, thread: Thread },
-  { table, client },
-);
+import {
+  cancellationCodes,
+  RETENTION_PERIOD_IN_SECONDS,
+  service,
+} from './service.ts';
 
 export interface ThreadKey {
   endUserId: string;
@@ -71,10 +11,6 @@ export interface ThreadKey {
 
 export interface ResolvedThread {
   systemThreadId: string;
-}
-
-function cancellationCodes(items: ReadonlyArray<{ code: string }>): string[] {
-  return items.map((item) => item.code);
 }
 
 async function refreshExpiry(
@@ -123,7 +59,7 @@ async function resolveThreadOnce(
 ): Promise<ResolvedThread | undefined> {
   const now = new Date();
   const nowSeconds = Math.floor(now.getTime() / 1000);
-  const expiresAt = nowSeconds + ONE_YEAR_IN_SECONDS;
+  const expiresAt = nowSeconds + RETENTION_PERIOD_IN_SECONDS;
 
   const { data: mapping } = await service.entities.threadMapping
     .get(key)
