@@ -60,8 +60,87 @@ const Thread = new Entity({
   },
 });
 
+const RunLock = new Entity({
+  model: { service: 'chat-api', entity: 'runLock', version: '1' },
+  attributes: {
+    systemThreadId: { type: 'string', required: true },
+    runId: { type: 'string', required: true },
+    expiresAt: { type: 'number', required: true },
+  },
+  indexes: {
+    primary: {
+      pk: {
+        field: 'pk',
+        composite: ['systemThreadId'],
+        template: 'THREAD#${systemThreadId}',
+        casing: 'none',
+      },
+      sk: { field: 'sk', composite: [], template: 'LOCK', casing: 'none' },
+    },
+  },
+});
+
+const Run = new Entity({
+  model: { service: 'chat-api', entity: 'run', version: '1' },
+  attributes: {
+    systemThreadId: { type: 'string', required: true },
+    runId: { type: 'string', required: true },
+    createdAt: { type: 'string', required: true, readOnly: true },
+    expiresAt: { type: 'number', required: true },
+  },
+  indexes: {
+    primary: {
+      pk: {
+        field: 'pk',
+        composite: ['systemThreadId'],
+        template: 'THREAD#${systemThreadId}',
+        casing: 'none',
+      },
+      sk: {
+        field: 'sk',
+        composite: ['runId'],
+        template: 'RUN#${runId}',
+        casing: 'none',
+      },
+    },
+  },
+});
+
+const UserMessage = new Entity({
+  model: { service: 'chat-api', entity: 'userMessage', version: '1' },
+  attributes: {
+    systemThreadId: { type: 'string', required: true },
+    messageId: { type: 'string', required: true },
+    runId: { type: 'string', required: true },
+    createdAt: { type: 'string', required: true, readOnly: true },
+    expiresAt: { type: 'number', required: true },
+  },
+  indexes: {
+    primary: {
+      pk: {
+        field: 'pk',
+        composite: ['systemThreadId'],
+        template: 'THREAD#${systemThreadId}',
+        casing: 'none',
+      },
+      sk: {
+        field: 'sk',
+        composite: ['messageId'],
+        template: 'MESSAGE#${messageId}',
+        casing: 'none',
+      },
+    },
+  },
+});
+
 export const service = new Service(
-  { threadMapping: ThreadMapping, thread: Thread },
+  {
+    threadMapping: ThreadMapping,
+    thread: Thread,
+    runLock: RunLock,
+    run: Run,
+    userMessage: UserMessage,
+  },
   { table, client },
 );
 

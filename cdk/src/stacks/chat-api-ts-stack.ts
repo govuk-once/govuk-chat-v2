@@ -21,6 +21,10 @@ export interface ChatApiTsStackProps extends cdk.StackProps {
   environment: string;
 }
 
+// A run holds its thread until it finishes, so a lambda that dies without
+// releasing must not hold it longer than it could have run for.
+const LAMBDA_TIMEOUT = cdk.Duration.seconds(30);
+
 interface CognitoAuth {
   authorizer: apigateway.CognitoUserPoolsAuthorizer;
   scope: string;
@@ -164,6 +168,7 @@ export class ChatApiTsStack extends cdk.Stack {
     const agentStreamFunction = this.lambdaHandler('threads/invoke.ts', {
       AGENT_RUNTIME_ARN: props.agentRuntimeArn,
       CHAT_API_TABLE_NAME: table.tableName,
+      RUN_LOCK_LEASE_SECONDS: LAMBDA_TIMEOUT.toSeconds().toString(),
     });
 
     table.grantReadWriteData(agentStreamFunction);
@@ -207,7 +212,7 @@ export class ChatApiTsStack extends cdk.Stack {
       functionName: functionName,
       runtime: lambda.Runtime.NODEJS_24_X,
       architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.seconds(30),
+      timeout: LAMBDA_TIMEOUT,
       environment: {
         POWERTOOLS_SERVICE_NAME: 'chat-api-ts',
         ...environment,
