@@ -1,6 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { Entity, Service } from 'electrodb';
+import { Entity, Service, type WhereAttributeSymbol } from 'electrodb';
 
 const table = process.env.CHAT_API_TABLE_NAME;
 if (!table) {
@@ -143,6 +143,21 @@ export const service = new Service(
   },
   { table, client },
 );
+
+interface ExpiringRecord {
+  systemThreadId: WhereAttributeSymbol<string>;
+  expiresAt: WhereAttributeSymbol<number>;
+}
+
+interface ExpiryOperations {
+  notExists: (attribute: WhereAttributeSymbol<string>) => string;
+  lte: (attribute: WhereAttributeSymbol<number>, value: number) => string;
+}
+
+export function absentOrExpired(nowSeconds: number) {
+  return (attribute: ExpiringRecord, operation: ExpiryOperations): string =>
+    `(${operation.notExists(attribute.systemThreadId)} OR ${operation.lte(attribute.expiresAt, nowSeconds)})`;
+}
 
 export function cancellationCodes(
   items: ReadonlyArray<{ code: string }>,

@@ -1,4 +1,6 @@
+import type { WhereAttributeSymbol } from 'electrodb';
 import {
+  absentOrExpired,
   cancellationCodes,
   RETENTION_PERIOD_IN_SECONDS,
   service,
@@ -21,6 +23,20 @@ export type RunClaim =
   | { status: 'duplicate-run' }
   | { status: 'duplicate-message' };
 
+interface ClaimedRecord {
+  runId: WhereAttributeSymbol<string>;
+}
+
+interface ClaimOperations {
+  notExists: (attribute: WhereAttributeSymbol<string>) => string;
+  eq: (attribute: WhereAttributeSymbol<string>, value: string) => string;
+}
+
+function claimedBy(runId: string) {
+  return (attribute: ClaimedRecord, operation: ClaimOperations): string =>
+    `(${operation.notExists(attribute.runId)} OR ${operation.eq(attribute.runId, runId)})`;
+}
+
 export async function beginRun(key: RunKey): Promise<RunClaim> {
   const nowSeconds = Math.floor(Date.now() / 1000);
   const { systemThreadId, runId, messageId } = key;
@@ -40,17 +56,11 @@ export async function beginRun(key: RunKey): Promise<RunClaim> {
         .commit(),
       run
         .check({ systemThreadId, runId })
-        .where(
-          (attribute, operation) =>
-            `(${operation.notExists(attribute.createdAt)} OR ${operation.lte(attribute.expiresAt, nowSeconds)})`,
-        )
+        .where(absentOrExpired(nowSeconds))
         .commit(),
       userMessage
         .check({ systemThreadId, messageId })
-        .where(
-          (attribute, operation) =>
-            `(${operation.notExists(attribute.createdAt)} OR ${operation.lte(attribute.expiresAt, nowSeconds)})`,
-        )
+        .where(absentOrExpired(nowSeconds))
         .commit(),
     ])
     .go();
@@ -88,25 +98,13 @@ export async function finishRun(key: RunKey): Promise<void> {
     .write(({ runLock, run, userMessage }) => [
       run
         .put({ systemThreadId, runId, createdAt, expiresAt })
-        .where(
-          (attribute, operation) =>
-            `(${operation.notExists(attribute.createdAt)} OR ${operation.lte(attribute.expiresAt, nowSeconds)})`,
-        )
+        .where(absentOrExpired(nowSeconds))
         .commit(),
       userMessage
         .put({ systemThreadId, messageId, runId, createdAt, expiresAt })
-        .where(
-          (attribute, operation) =>
-            `(${operation.notExists(attribute.createdAt)} OR ${operation.lte(attribute.expiresAt, nowSeconds)})`,
-        )
+        .where(absentOrExpired(nowSeconds))
         .commit(),
-      runLock
-        .delete({ systemThreadId })
-        .where(
-          (attribute, operation) =>
-            `(${operation.notExists(attribute.runId)} OR ${operation.eq(attribute.runId, runId)})`,
-        )
-        .commit(),
+      runLock.delete({ systemThreadId }).where(claimedBy(runId)).commit(),
     ])
     .go();
 
@@ -121,9 +119,6 @@ export async function releaseRun(
 ): Promise<void> {
   await service.entities.runLock
     .delete({ systemThreadId: key.systemThreadId })
-    .where(
-      (attribute, operation) =>
-        `(${operation.notExists(attribute.runId)} OR ${operation.eq(attribute.runId, key.runId)})`,
-    )
+    .where(claimedBy(key.runId))
     .go();
 }

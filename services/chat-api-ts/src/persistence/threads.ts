@@ -1,4 +1,5 @@
 import {
+  absentOrExpired,
   cancellationCodes,
   RETENTION_PERIOD_IN_SECONDS,
   service,
@@ -78,17 +79,11 @@ async function resolveThreadOnce(
     .write(({ threadMapping, thread }) => [
       threadMapping
         .put({ ...key, systemThreadId, createdAt, expiresAt })
-        .where(
-          (attribute, operation) =>
-            `(${operation.notExists(attribute.systemThreadId)} OR ${operation.lte(attribute.expiresAt, nowSeconds)})`,
-        )
+        .where(absentOrExpired(nowSeconds))
         .commit(),
       thread
         .put({ systemThreadId, endUserId: key.endUserId, createdAt, expiresAt })
-        .where(
-          (attribute, operation) =>
-            `(${operation.notExists(attribute.systemThreadId)} OR ${operation.lte(attribute.expiresAt, nowSeconds)})`,
-        )
+        .where(absentOrExpired(nowSeconds))
         .commit(),
     ])
     .go();
