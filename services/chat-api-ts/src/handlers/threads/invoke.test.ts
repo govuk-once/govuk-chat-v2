@@ -3,7 +3,7 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 import { EventType, type BaseEvent } from '@ag-ui/core';
 import { logger } from '../../logging/logger.ts';
 import type { ResolvedThread, ThreadKey } from '../../persistence/threads.ts';
-import type { RunClaim, RunKey } from '../../persistence/runs.ts';
+import type { MessageInput, RunClaim, RunKey } from '../../persistence/runs.ts';
 import {
   send,
   encoder,
@@ -52,7 +52,8 @@ const resolveThread = vi
   .fn<(key: ThreadKey) => Promise<ResolvedThread>>()
   .mockResolvedValue({ systemThreadId: SYSTEM_THREAD_ID });
 const beginRun = vi.fn<(key: RunKey) => Promise<RunClaim>>();
-const finishRun = vi.fn<(key: RunKey) => Promise<void>>();
+const finishRun =
+  vi.fn<(key: RunKey, messages: MessageInput[]) => Promise<void>>();
 const releaseRun = vi.fn<(key: Omit<RunKey, 'messageId'>) => Promise<void>>();
 
 beforeAll(async () => {
@@ -278,6 +279,71 @@ describe('handler', () => {
             },
           }),
         }),
+      );
+    });
+
+    it('collates multiple assistant messages into one with double-newline separators', async () => {
+      const events: BaseEvent[] = [
+        {
+          type: EventType.RUN_STARTED,
+          threadId: SYSTEM_THREAD_ID,
+          runId: VALID_RUN_ID,
+        },
+        {
+          type: EventType.TEXT_MESSAGE_START,
+          messageId: 'msg-1',
+          role: 'assistant',
+        },
+        {
+          type: EventType.TEXT_MESSAGE_CONTENT,
+          messageId: 'msg-1',
+          delta: 'Searching for SSP',
+        },
+        { type: EventType.TEXT_MESSAGE_END, messageId: 'msg-1' },
+        {
+          type: EventType.TEXT_MESSAGE_START,
+          messageId: 'msg-2',
+          role: 'assistant',
+        },
+        {
+          type: EventType.TEXT_MESSAGE_CONTENT,
+          messageId: 'msg-2',
+          delta: 'SSP is a weekly payment.',
+        },
+        { type: EventType.TEXT_MESSAGE_END, messageId: 'msg-2' },
+        {
+          type: EventType.RUN_FINISHED,
+          threadId: SYSTEM_THREAD_ID,
+          runId: VALID_RUN_ID,
+        },
+      ];
+      send.mockResolvedValueOnce({
+        response: aguiEventStream(events),
+      });
+
+      await runHandler(
+        apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+      );
+
+      expect(finishRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          systemThreadId: SYSTEM_THREAD_ID,
+          runId: VALID_RUN_ID,
+        }),
+        [
+          {
+            messageId: VALID_MESSAGES[0].id,
+            role: 'user',
+            content: 'Tell me about SSP',
+            createdAt: expect.any(String),
+          },
+          {
+            messageId: VALID_RUN_ID,
+            role: 'assistant',
+            content: 'Searching for SSP\n\nSSP is a weekly payment.',
+            createdAt: expect.any(String),
+          },
+        ],
       );
     });
   });

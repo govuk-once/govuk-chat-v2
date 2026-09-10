@@ -138,20 +138,31 @@ describe('beginRun', () => {
 });
 
 describe('finishRun', () => {
-  it('records the run and message and releases the lock in one transaction', async () => {
+  const ASSISTANT_MESSAGES = [
+    {
+      messageId: 'message-2',
+      role: 'assistant',
+      content: 'Hi there',
+      createdAt: '2026-09-08T12:00:01.000Z',
+    },
+  ];
+
+  it('records the run, assistant messages and releases the lock in one transaction', async () => {
     send.mockResolvedValueOnce({});
 
-    await testEnv.finishRun(KEY);
+    await testEnv.finishRun(KEY, ASSISTANT_MESSAGES);
 
-    const [run, message, lock] = transactItems();
+    const [run, assistantMessage, lock] = transactItems();
     expect(run.Put?.Item).toMatchObject({
       pk: THREAD_PK,
       sk: 'RUN#run-1',
       expiresAt: A_YEAR_AHEAD,
     });
-    expect(message.Put?.Item).toMatchObject({
+    expect(assistantMessage.Put?.Item).toMatchObject({
       pk: THREAD_PK,
-      sk: 'MESSAGE#message-1',
+      sk: 'MESSAGE#message-2',
+      role: 'assistant',
+      content: 'Hi there',
       runId: KEY.runId,
       expiresAt: A_YEAR_AHEAD,
     });
@@ -166,8 +177,8 @@ describe('finishRun', () => {
       transactionCancelled(['None', 'None', 'ConditionalCheckFailed']),
     );
 
-    await expect(testEnv.finishRun(KEY)).rejects.toThrow(
-      'Run completion was cancelled: None, None, ConditionalCheckFailed',
+    await expect(testEnv.finishRun(KEY, ASSISTANT_MESSAGES)).rejects.toThrow(
+      'Run completion was cancelled',
     );
   });
 });

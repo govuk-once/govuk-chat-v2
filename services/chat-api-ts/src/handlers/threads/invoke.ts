@@ -34,6 +34,7 @@ import {
   type RunClaim,
   type RunKey,
 } from '../../persistence/runs.ts';
+import { MessageAccumulator } from '../../streaming/message-accumulator.ts';
 import { relayAgentEventStream } from '../../streaming/agent-event-stream.ts';
 
 const agentRuntimeArn = process.env.AGENT_RUNTIME_ARN;
@@ -166,13 +167,39 @@ async function invokeAgent(
     return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
   }
 
+  const lastMessage = body.messages.at(-1)!;
+  const userMessage = {
+    messageId: lastMessage.id,
+    role: lastMessage.role,
+    content: lastMessage.content,
+    createdAt: new Date().toISOString(),
+  };
+
+  const accumulator = new MessageAccumulator();
   const agentEvents = relayAgentEventStream({
     source: response.response as AsyncIterable<Uint8Array>,
     userThreadId: body.threadId,
     systemThreadId,
     runId: body.runId,
-    onRunFinished: () => finishRun(runKey),
+    onRunFinished: () => {
+      const assistantContent = accumulator.getContent();
+
+      const messages = assistantContent
+        ? [
+            userMessage,
+            {
+              messageId: body.runId,
+              role: 'assistant',
+              content: assistantContent,
+              createdAt: new Date().toISOString(),
+            },
+          ]
+        : [userMessage];
+
+      return finishRun(runKey, messages);
+    },
     onRunFailed: () => releaseRun(runKey),
+    onEvent: (event) => accumulator.process(event),
   });
 
   return {

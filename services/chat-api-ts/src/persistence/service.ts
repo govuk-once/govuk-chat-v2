@@ -106,11 +106,13 @@ const Run = new Entity({
   },
 });
 
-const UserMessage = new Entity({
-  model: { service: 'chat-api', entity: 'userMessage', version: '1' },
+const Message = new Entity({
+  model: { service: 'chat-api', entity: 'message', version: '1' },
   attributes: {
     systemThreadId: { type: 'string', required: true },
     messageId: { type: 'string', required: true },
+    role: { type: 'string', required: true },
+    content: { type: 'string', required: true },
     runId: { type: 'string', required: true },
     createdAt: { type: 'string', required: true, readOnly: true },
     expiresAt: { type: 'number', required: true },
@@ -139,7 +141,7 @@ export const service = new Service(
     thread: Thread,
     runLock: RunLock,
     run: Run,
-    userMessage: UserMessage,
+    message: Message,
   },
   { table, client },
 );
