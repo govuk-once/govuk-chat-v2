@@ -111,6 +111,8 @@ const Message = new Entity({
   attributes: {
     systemThreadId: { type: 'string', required: true },
     messageId: { type: 'string', required: true },
+    role: { type: 'string', required: true },
+    content: { type: 'string', required: true },
     runId: { type: 'string', required: true },
     createdAt: { type: 'string', required: true, readOnly: true },
     expiresAt: { type: 'number', required: true },

@@ -17,6 +17,13 @@ export interface RunKey {
   messageId: string;
 }
 
+export interface MessageInput {
+  messageId: string;
+  role: string;
+  content: string;
+  createdAt: string;
+}
+
 export type RunClaim =
   | { status: 'claimed' }
   | { status: 'thread-busy' }
@@ -87,23 +94,39 @@ export async function beginRun(key: RunKey): Promise<RunClaim> {
   throw new Error(`Run claim was cancelled: ${codes.join(', ')}`);
 }
 
-export async function finishRun(key: RunKey): Promise<void> {
-  const now = new Date();
-  const nowSeconds = Math.floor(now.getTime() / 1000);
-  const createdAt = now.toISOString();
+export async function finishRun(
+  key: RunKey,
+  messages: MessageInput[],
+): Promise<void> {
+  const nowSeconds = Math.floor(Date.now() / 1000);
   const expiresAt = nowSeconds + RETENTION_PERIOD_IN_SECONDS;
-  const { systemThreadId, runId, messageId } = key;
+  const { systemThreadId, runId } = key;
 
   const result = await service.transaction
     .write(({ runLock, run, message }) => [
       run
-        .put({ systemThreadId, runId, createdAt, expiresAt })
+        .put({
+          systemThreadId,
+          runId,
+          createdAt: new Date().toISOString(),
+          expiresAt,
+        })
         .where(absentOrExpired(nowSeconds))
         .commit(),
-      message
-        .put({ systemThreadId, messageId, runId, createdAt, expiresAt })
-        .where(absentOrExpired(nowSeconds))
-        .commit(),
+      ...messages.map((input) =>
+        message
+          .put({
+            systemThreadId,
+            messageId: input.messageId,
+            role: input.role,
+            content: input.content,
+            runId,
+            createdAt: input.createdAt,
+            expiresAt,
+          })
+          .where(absentOrExpired(nowSeconds))
+          .commit(),
+      ),
       runLock.delete({ systemThreadId }).where(claimedBy(runId)).commit(),
     ])
     .go();
