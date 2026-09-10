@@ -3,6 +3,7 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 import { EventType, type BaseEvent } from '@ag-ui/core';
 import { logger } from '../../logging/logger.ts';
 import type { ResolvedThread, ThreadKey } from '../../persistence/threads.ts';
+import type { RunClaim, RunKey } from '../../persistence/runs.ts';
 import {
   send,
   encoder,
@@ -30,6 +31,10 @@ const testEnv = {} as {
 
 beforeEach(() => {
   testEnv.responseStream = createResponseStream();
+  resolveThread.mockResolvedValue({ systemThreadId: SYSTEM_THREAD_ID });
+  beginRun.mockResolvedValue({ status: 'claimed' });
+  finishRun.mockResolvedValue();
+  releaseRun.mockResolvedValue();
 });
 
 const VALID_THREAD_ID = crypto.randomUUID();
@@ -46,11 +51,19 @@ const VALID_MESSAGES = [
 const resolveThread = vi
   .fn<(key: ThreadKey) => Promise<ResolvedThread>>()
   .mockResolvedValue({ systemThreadId: SYSTEM_THREAD_ID });
+const beginRun = vi.fn<(key: RunKey) => Promise<RunClaim>>();
+const finishRun = vi.fn<(key: RunKey) => Promise<void>>();
+const releaseRun = vi.fn<(key: Omit<RunKey, 'messageId'>) => Promise<void>>();
 
 beforeAll(async () => {
   stubAwsLambdaGlobal();
   stubBedrockAgentCoreClient();
   vi.doMock('../../persistence/threads.ts', () => ({ resolveThread }));
+  vi.doMock('../../persistence/runs.ts', () => ({
+    beginRun,
+    finishRun,
+    releaseRun,
+  }));
   vi.stubEnv('AGENT_RUNTIME_ARN', AGENT_RUNTIME_ARN);
 
   const agentStreamModule = await import('./invoke.ts');
@@ -59,6 +72,14 @@ beforeAll(async () => {
 
 async function runHandler(event: APIGatewayProxyEvent): Promise<void> {
   await testEnv.handler(event, testEnv.responseStream, {});
+}
+
+function validRequest(): string {
+  return JSON.stringify({
+    threadId: VALID_THREAD_ID,
+    runId: VALID_RUN_ID,
+    messages: VALID_MESSAGES,
+  });
 }
 
 function fieldErrorResponse(error: string, fields: string[]): unknown {
@@ -256,6 +277,71 @@ describe('handler', () => {
               endUserId: VALID_USER_ID,
             },
           }),
+        }),
+      );
+    });
+  });
+
+  describe('run claims', () => {
+    it('claims the thread with the id of the last message in the request', async () => {
+      send.mockResolvedValueOnce({ response: aguiEventStream([]) });
+
+      await runHandler(
+        apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+      );
+
+      expect(beginRun).toHaveBeenCalledWith({
+        systemThreadId: SYSTEM_THREAD_ID,
+        runId: VALID_RUN_ID,
+        messageId: VALID_MESSAGES.at(-1)?.id,
+      });
+    });
+
+    it.each([
+      ['thread-busy', 'A run is already in progress on this thread'],
+      ['duplicate-run', 'This run id has already been used on this thread'],
+      [
+        'duplicate-message',
+        'This message id has already been used on this thread',
+      ],
+    ])(
+      'returns a 409 without invoking the runtime when the claim reports %s',
+      async (status, message) => {
+        beginRun.mockResolvedValueOnce({ status } as RunClaim);
+
+        await runHandler(
+          apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+        );
+
+        expectJsonHttpResponse(testEnv.responseStream, 409, { error: message });
+        expect(send).not.toHaveBeenCalled();
+      },
+    );
+
+    it('returns a 500 without invoking the runtime when the claim itself fails', async () => {
+      beginRun.mockRejectedValueOnce(new Error('Error from run store'));
+
+      await runHandler(
+        apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+      );
+
+      expectJsonHttpResponse(testEnv.responseStream, 500, {
+        error: 'Agent invocation error',
+      });
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('gives the thread back when the runtime cannot be invoked', async () => {
+      send.mockRejectedValueOnce(new Error('Error from agent runtime'));
+
+      await runHandler(
+        apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+      );
+
+      expect(releaseRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          systemThreadId: SYSTEM_THREAD_ID,
+          runId: VALID_RUN_ID,
         }),
       );
     });

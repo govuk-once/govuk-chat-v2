@@ -21,6 +21,10 @@ export interface ChatApiTsStackProps extends cdk.StackProps {
   environment: string;
 }
 
+// A run holds its thread until it finishes, so a lambda that dies without
+// releasing must not hold it longer than it could have run for.
+const LAMBDA_TIMEOUT = cdk.Duration.seconds(30);
+
 interface CognitoAuth {
   authorizer: apigateway.CognitoUserPoolsAuthorizer;
   scope: string;
@@ -36,8 +40,8 @@ export class ChatApiTsStack extends cdk.Stack {
     cdk.Tags.of(this).add('Environment', props.environment);
 
     const auth = this.cognitoAuth();
-    const threadTable = this.threadTable();
-    const apiGateway = this.apiGateway(props, auth, threadTable);
+    const table = this.table();
+    const apiGateway = this.apiGateway(props, auth, table);
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
       value: apiGateway.url,
@@ -125,8 +129,8 @@ export class ChatApiTsStack extends cdk.Stack {
     };
   }
 
-  threadTable(): dynamodb.Table {
-    const tableName = `${getResourceNamePrefix()}-chat-api-ts-threads`;
+  table(): dynamodb.Table {
+    const tableName = `${getResourceNamePrefix()}-chat-api-ts`;
 
     return new dynamodb.Table(this, tableName, {
       tableName,
@@ -143,7 +147,7 @@ export class ChatApiTsStack extends cdk.Stack {
   apiGateway(
     props: ChatApiTsStackProps,
     auth: CognitoAuth,
-    threadTable: dynamodb.Table,
+    table: dynamodb.Table,
   ): apigateway.RestApi {
     const api = new apigateway.RestApi(
       this,
@@ -163,10 +167,11 @@ export class ChatApiTsStack extends cdk.Stack {
 
     const agentStreamFunction = this.lambdaHandler('threads/invoke.ts', {
       AGENT_RUNTIME_ARN: props.agentRuntimeArn,
-      THREADS_TABLE_NAME: threadTable.tableName,
+      CHAT_API_TABLE_NAME: table.tableName,
+      RUN_LOCK_LEASE_SECONDS: LAMBDA_TIMEOUT.toSeconds().toString(),
     });
 
-    threadTable.grantReadWriteData(agentStreamFunction);
+    table.grantReadWriteData(agentStreamFunction);
 
     agentStreamFunction.addToRolePolicy(
       new iam.PolicyStatement({
@@ -207,7 +212,7 @@ export class ChatApiTsStack extends cdk.Stack {
       functionName: functionName,
       runtime: lambda.Runtime.NODEJS_24_X,
       architecture: lambda.Architecture.ARM_64,
-      timeout: cdk.Duration.seconds(30),
+      timeout: LAMBDA_TIMEOUT,
       environment: {
         POWERTOOLS_SERVICE_NAME: 'chat-api-ts',
         ...environment,
