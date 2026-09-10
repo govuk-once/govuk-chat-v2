@@ -42,7 +42,7 @@ export async function beginRun(key: RunKey): Promise<RunClaim> {
   const { systemThreadId, runId, messageId } = key;
 
   const result = await service.transaction
-    .write(({ runLock, run, userMessage }) => [
+    .write(({ runLock, run, message }) => [
       runLock
         .put({
           systemThreadId,
@@ -58,7 +58,7 @@ export async function beginRun(key: RunKey): Promise<RunClaim> {
         .check({ systemThreadId, runId })
         .where(absentOrExpired(nowSeconds))
         .commit(),
-      userMessage
+      message
         .check({ systemThreadId, messageId })
         .where(absentOrExpired(nowSeconds))
         .commit(),
@@ -95,12 +95,12 @@ export async function finishRun(key: RunKey): Promise<void> {
   const { systemThreadId, runId, messageId } = key;
 
   const result = await service.transaction
-    .write(({ runLock, run, userMessage }) => [
+    .write(({ runLock, run, message }) => [
       run
         .put({ systemThreadId, runId, createdAt, expiresAt })
         .where(absentOrExpired(nowSeconds))
         .commit(),
-      userMessage
+      message
         .put({ systemThreadId, messageId, runId, createdAt, expiresAt })
         .where(absentOrExpired(nowSeconds))
         .commit(),
