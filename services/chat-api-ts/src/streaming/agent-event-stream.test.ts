@@ -58,6 +58,37 @@ describe('relayAgentEventStream', () => {
     );
   });
 
+  it('calls onEvent for each parsed event', async () => {
+    const events: BaseEvent[] = [
+      {
+        type: EventType.RUN_STARTED,
+        threadId: SYSTEM_THREAD_ID,
+        runId: RUN_ID,
+      },
+      { type: EventType.TEXT_MESSAGE_CONTENT, messageId: 'msg-1', delta: 'Hi' },
+      {
+        type: EventType.RUN_FINISHED,
+        threadId: SYSTEM_THREAD_ID,
+        runId: RUN_ID,
+      },
+    ];
+
+    const onEvent = vi.fn();
+    const sseStream = relayAgentEventStream({
+      ...relayParameters(aguiEventStream(events)),
+      onEvent,
+    });
+
+    await collectStreamText(sseStream);
+
+    expect(onEvent).toHaveBeenCalledTimes(3);
+    expect(onEvent.mock.calls.map((call) => call[0].type)).toEqual([
+      EventType.RUN_STARTED,
+      EventType.TEXT_MESSAGE_CONTENT,
+      EventType.RUN_FINISHED,
+    ]);
+  });
+
   it('emits synthetic RUN_STARTED followed by RUN_ERROR when the source fails before RUN_STARTED', async () => {
     const logError = vi.spyOn(logger, 'error');
     const sseStream = relayAgentEventStream(

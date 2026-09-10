@@ -19,6 +19,7 @@ export interface RelayAgentEventStreamParameters {
   runId: string;
   onRunFinished: () => Promise<void>;
   onRunFailed: () => Promise<void>;
+  onEvent?: (event: RelayedEvent) => void;
 }
 
 export async function* relayAgentEventStream({
@@ -28,6 +29,7 @@ export async function* relayAgentEventStream({
   runId,
   onRunFinished,
   onRunFailed,
+  onEvent,
 }: RelayAgentEventStreamParameters): AsyncGenerator<string> {
   let isRunStarted = false;
   let isOutcomeReported = false;
@@ -77,6 +79,7 @@ export async function* relayAgentEventStream({
         if (event.type === EventType.RUN_ERROR) {
           await releaseThread();
         }
+        onEvent?.(event);
         yield encoder.encodeSSE(event);
       }
     }
