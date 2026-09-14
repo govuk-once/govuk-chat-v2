@@ -55,3 +55,20 @@ the thread for longer than it could have been running.
 Nothing is recorded for a run that ends in an error. A run and its message
 are stored as the run finishes, just before `RUN_FINISHED` reaches the
 client, and expire alongside the thread.
+
+## Rate limits
+
+Two limits apply at the API Gateway, before the lambda runs:
+
+- The whole stage accepts 15 requests a second, with a burst of 30.
+- Each end user, identified by the `end-user-id` header, can send 15
+  `POST /v1/threads/invoke` requests a minute.
+
+Requests over either limit receive `429` with the API's usual
+`{ "error": "..." }` body. The per-end-user limit is evaluated before
+authentication, so an unauthenticated flood is counted and blocked too.
+
+The per-end-user limit is a WAF rate rule. WAF checks the count about
+every ten seconds, so a burst can exceed the limit before blocking
+begins, and blocking lasts until the count for the last minute drops
+below the limit again.
