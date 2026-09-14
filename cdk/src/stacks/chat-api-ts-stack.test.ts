@@ -164,6 +164,27 @@ describe('ChatApiTsStack', () => {
 
       template.hasOutput('GatewayUrl', {});
     });
+
+    it('throttles the stage and answers with the API error body', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::Stage', {
+        MethodSettings: Match.arrayWith([
+          Match.objectLike({
+            HttpMethod: '*',
+            ResourcePath: '/*',
+            ThrottlingRateLimit: Match.anyValue(),
+            ThrottlingBurstLimit: Match.anyValue(),
+          }),
+        ]),
+      });
+      template.hasResourceProperties('AWS::ApiGateway::GatewayResponse', {
+        ResponseType: 'THROTTLED',
+        ResponseTemplates: {
+          'application/json': Match.stringLikeRegexp('"error"'),
+        },
+      });
+    });
   });
 
   describe('Cognito', () => {
