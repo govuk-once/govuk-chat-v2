@@ -25,6 +25,14 @@ export interface ChatApiTsStackProps extends cdk.StackProps {
 // releasing must not hold it longer than it could have run for.
 const LAMBDA_TIMEOUT = cdk.Duration.seconds(30);
 
+// V1's write limits (CHAT-968): 900 a minute per client.
+const RATE_LIMITS = {
+  stageRequestsPerSecond: 15,
+  stageBurst: 30,
+};
+
+const TOO_MANY_REQUESTS_BODY = JSON.stringify({ error: 'Too many requests' });
+
 interface CognitoAuth {
   authorizer: apigateway.CognitoUserPoolsAuthorizer;
   scope: string;
@@ -156,6 +164,8 @@ export class ChatApiTsStack extends cdk.Stack {
         restApiName: `${getResourceNamePrefix()}-chat-api-ts-gateway`,
         deployOptions: {
           stageName: props.environment,
+          throttlingRateLimit: RATE_LIMITS.stageRequestsPerSecond,
+          throttlingBurstLimit: RATE_LIMITS.stageBurst,
         },
         defaultMethodOptions: {
           authorizationType: apigateway.AuthorizationType.COGNITO,
@@ -164,6 +174,12 @@ export class ChatApiTsStack extends cdk.Stack {
         },
       },
     );
+
+    // API Gateway's default 429 body is { "message": ... }
+    api.addGatewayResponse('throttled', {
+      type: apigateway.ResponseType.THROTTLED,
+      templates: { 'application/json': TOO_MANY_REQUESTS_BODY },
+    });
 
     const agentStreamFunction = this.lambdaHandler('threads/invoke.ts', {
       AGENT_RUNTIME_ARN: props.agentRuntimeArn,
