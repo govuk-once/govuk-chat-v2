@@ -5,6 +5,7 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import path from 'node:path';
 import { Construct } from 'constructs';
 import {
@@ -25,10 +26,13 @@ export interface ChatApiTsStackProps extends cdk.StackProps {
 // releasing must not hold it longer than it could have run for.
 const LAMBDA_TIMEOUT = cdk.Duration.seconds(30);
 
-// V1's write limits (CHAT-968): 900 a minute per client.
+// V1's write limits (CHAT-968): 900 a minute per client, 15 a minute per
+// end user.
 const RATE_LIMITS = {
   stageRequestsPerSecond: 15,
   stageBurst: 30,
+  endUserInvokesPerWindow: 15,
+  endUserWindowSeconds: 60,
 };
 
 const TOO_MANY_REQUESTS_BODY = JSON.stringify({ error: 'Too many requests' });
@@ -50,6 +54,7 @@ export class ChatApiTsStack extends cdk.Stack {
     const auth = this.cognitoAuth();
     const table = this.table();
     const apiGateway = this.apiGateway(props, auth, table);
+    this.webAcl(apiGateway);
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
       value: apiGateway.url,
@@ -215,6 +220,92 @@ export class ChatApiTsStack extends cdk.Stack {
     agentStream.addMethod('POST', agentStreamLambda);
 
     return api;
+  }
+
+  webAcl(api: apigateway.RestApi): wafv2.CfnWebACL {
+    const name = `${getResourceNamePrefix()}-chat-api-ts-web-acl`;
+    const tooManyRequestsBodyKey = 'too-many-requests';
+
+    const endUserInvokeLimit: wafv2.CfnWebACL.RuleProperty = {
+      name: 'end-user-invoke-limit',
+      priority: 0,
+      statement: {
+        rateBasedStatement: {
+          aggregateKeyType: 'CUSTOM_KEYS',
+          customKeys: [
+            {
+              header: {
+                name: 'end-user-id',
+                textTransformations: [{ priority: 0, type: 'NONE' }],
+              },
+            },
+          ],
+          limit: RATE_LIMITS.endUserInvokesPerWindow,
+          evaluationWindowSec: RATE_LIMITS.endUserWindowSeconds,
+          scopeDownStatement: {
+            andStatement: {
+              statements: [
+                {
+                  byteMatchStatement: {
+                    fieldToMatch: { method: {} },
+                    positionalConstraint: 'EXACTLY',
+                    searchString: 'POST',
+                    textTransformations: [{ priority: 0, type: 'NONE' }],
+                  },
+                },
+                {
+                  // The stage name prefixes the path as WAF sees it
+                  byteMatchStatement: {
+                    fieldToMatch: { uriPath: {} },
+                    positionalConstraint: 'ENDS_WITH',
+                    searchString: '/v1/threads/invoke',
+                    textTransformations: [{ priority: 0, type: 'NONE' }],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      action: {
+        block: {
+          customResponse: {
+            responseCode: 429,
+            customResponseBodyKey: tooManyRequestsBodyKey,
+          },
+        },
+      },
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        sampledRequestsEnabled: true,
+        metricName: `${name}-end-user-invoke-limit`,
+      },
+    };
+
+    const webAcl = new wafv2.CfnWebACL(this, name, {
+      name,
+      scope: 'REGIONAL',
+      defaultAction: { allow: {} },
+      customResponseBodies: {
+        [tooManyRequestsBodyKey]: {
+          contentType: 'APPLICATION_JSON',
+          content: TOO_MANY_REQUESTS_BODY,
+        },
+      },
+      rules: [endUserInvokeLimit],
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        sampledRequestsEnabled: true,
+        metricName: name,
+      },
+    });
+
+    new wafv2.CfnWebACLAssociation(this, `${name}-association`, {
+      resourceArn: api.deploymentStage.stageArn,
+      webAclArn: webAcl.attrArn,
+    });
+
+    return webAcl;
   }
 
   lambdaHandler(
