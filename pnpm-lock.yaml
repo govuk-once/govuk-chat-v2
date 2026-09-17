@@ -63,8 +63,8 @@ importers:
   services/chat-api-ts:
     dependencies:
       '@ag-ui/core':
-        specifier: ^0.0.57
-        version: 0.0.57
+        specifier: ^0.0.59
+        version: 0.0.59
       '@ag-ui/encoder':
         specifier: ^0.0.58
         version: 0.0.58
@@ -108,11 +108,11 @@ packages:
   '@ag-ui/core@0.0.52':
     resolution: {integrity: sha512-Xo0bUaNV56EqylzcrAuhUkQX7et7+SZIrqZZtEByGwEq/I1EHny6ZMkWHLkKR7UNi0FJZwJyhKYmKJS3B2SEgA==}
 
-  '@ag-ui/core@0.0.57':
-    resolution: {integrity: sha512-gho1OWjNE6E3Rl7ZEZ1wr2CEpUHjLFU0FqzCZZk439TicLu+BfLCMkMokB07bMGlRmbJ60hM6LW60iOVauCx+Q==}
-
   '@ag-ui/core@0.0.58':
     resolution: {integrity: sha512-XgGb7YmhV+yMBaEmlrpsd5S+nUxq0JgSegss2t4gIFR1j7w3w0ibtKfRgcQHWeMvwZxcT5S28VEEarqtgxYYHw==}
+
+  '@ag-ui/core@0.0.59':
+    resolution: {integrity: sha512-hDgy4ipTqXieT8YG8Mr917Y+FD/f11VK1GefZ5CwTDCuNqS/oTwjJ5l/DZkicThgS8hQW/Y7wPylPBMBJ8BkUg==}
 
   '@ag-ui/encoder@0.0.58':
     resolution: {integrity: sha512-eMfjJbfAGTQECgNX3QO0Mt0V5OrIViowSPmGLzdO92q2x506K2hRs2VBlfEuAzpDFp6Eq23Q/vjNHFzv37StZw==}
@@ -3057,8 +3057,8 @@ packages:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
     engines: {node: '>= 0.4'}
 
-  postcss@8.5.26:
-    resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
+  postcss@8.5.28:
+    resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
     engines: {node: ^10 || ^12 || >=14}
 
   prelude-ls@1.2.1:
@@ -3709,11 +3709,11 @@ snapshots:
     dependencies:
       zod: 3.25.76
 
-  '@ag-ui/core@0.0.57':
+  '@ag-ui/core@0.0.58':
     dependencies:
       zod: 3.25.76
 
-  '@ag-ui/core@0.0.58':
+  '@ag-ui/core@0.0.59':
     dependencies:
       zod: 3.25.76
 
@@ -7508,7 +7508,7 @@ snapshots:
 
   possible-typed-array-names@1.1.0: {}
 
-  postcss@8.5.26:
+  postcss@8.5.28:
     dependencies:
       nanoid: 3.3.18
       picocolors: 1.1.1
@@ -8129,7 +8129,7 @@ snapshots:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
-      postcss: 8.5.26
+      postcss: 8.5.28
       rollup: 4.63.1
       tinyglobby: 0.2.17
     optionalDependencies:
