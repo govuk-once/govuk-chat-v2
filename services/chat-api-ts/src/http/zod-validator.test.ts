@@ -3,10 +3,17 @@ import middy from '@middy/core';
 import { z } from 'zod';
 import type { Context } from 'aws-lambda';
 import { logger } from '../logging/logger.ts';
-import { zodBodyValidator, zodHeadersValidator } from './zod-validator.ts';
+import {
+  zodBodyValidator,
+  zodHeadersValidator,
+  zodPathParametersValidator,
+  zodQueryValidator,
+} from './zod-validator.ts';
 
 const BODY_ERROR_MESSAGE = 'Test body rejected';
 const HEADERS_ERROR_MESSAGE = 'Test headers rejected';
+const PATH_PARAMS_ERROR_MESSAGE = 'Test path params rejected';
+const QUERY_ERROR_MESSAGE = 'Test query rejected';
 
 const TestBodySchema = z.object({
   name: z.string().min(1, 'name must not be empty'),
@@ -158,5 +165,135 @@ describe('zodHeadersValidator', () => {
     expect(response.statusCode).toBe(422);
     const parsed = JSON.parse(response.body);
     expect(parsed.details.fieldErrors).toHaveProperty('x-api-key');
+  });
+});
+
+const TestPathParametersSchema = z.object({
+  id: z.uuid({ message: 'id must be a valid UUID' }),
+});
+
+const TestQuerySchema = z.object({
+  limit: z.string().optional().default('10').transform(Number),
+});
+
+function buildPathParametersHandler() {
+  return middy()
+    .use(
+      zodPathParametersValidator(
+        TestPathParametersSchema,
+        PATH_PARAMS_ERROR_MESSAGE,
+      ),
+    )
+    .handler(async (event) => ({
+      statusCode: 200,
+      body: JSON.stringify({
+        received: { pathParameters: event.pathParameters },
+      }),
+    }));
+}
+
+function buildQueryHandler() {
+  return middy()
+    .use(zodQueryValidator(TestQuerySchema, QUERY_ERROR_MESSAGE))
+    .handler(async (event) => ({
+      statusCode: 200,
+      body: JSON.stringify({
+        received: { queryStringParameters: event.queryStringParameters },
+      }),
+    }));
+}
+
+type PathParametersEvent = Parameters<
+  ReturnType<typeof buildPathParametersHandler>
+>[0];
+type QueryEvent = Parameters<ReturnType<typeof buildQueryHandler>>[0];
+
+describe('zodPathParamsValidator', () => {
+  it('replaces event.pathParameters with the parsed data when valid', async () => {
+    const handler = buildPathParametersHandler();
+    const id = crypto.randomUUID();
+
+    const response = await handler(
+      { pathParameters: { id } } as unknown as PathParametersEvent,
+      {} as Context,
+    );
+
+    expect(response).toEqual({
+      statusCode: 200,
+      body: JSON.stringify({ received: { pathParameters: { id } } }),
+    });
+  });
+
+  it('short-circuits with a 422 when the path parameters are invalid', async () => {
+    const handler = buildPathParametersHandler();
+
+    const response = await handler(
+      {
+        pathParameters: { id: 'not-a-uuid' },
+      } as unknown as PathParametersEvent,
+      {} as Context,
+    );
+
+    expect(response.statusCode).toBe(422);
+    const parsed = JSON.parse(response.body);
+    expect(parsed.error).toBe(PATH_PARAMS_ERROR_MESSAGE);
+    expect(parsed.details.fieldErrors).toHaveProperty('id');
+  });
+
+  it('treats missing pathParameters as an empty object to validate against', async () => {
+    const handler = buildPathParametersHandler();
+
+    const response = await handler(
+      {} as unknown as PathParametersEvent,
+      {} as Context,
+    );
+
+    expect(response.statusCode).toBe(422);
+    const parsed = JSON.parse(response.body);
+    expect(parsed.details.fieldErrors).toHaveProperty('id');
+  });
+});
+
+describe('zodQueryValidator', () => {
+  it('replaces event.queryStringParameters with the parsed data when valid', async () => {
+    const handler = buildQueryHandler();
+
+    const response = await handler(
+      { queryStringParameters: { limit: '25' } } as unknown as QueryEvent,
+      {} as Context,
+    );
+
+    expect(response).toEqual({
+      statusCode: 200,
+      body: JSON.stringify({
+        received: { queryStringParameters: { limit: 25 } },
+      }),
+    });
+  });
+
+  it('applies defaults when query parameters are absent', async () => {
+    const handler = buildQueryHandler();
+
+    const response = await handler(
+      { queryStringParameters: {} } as unknown as QueryEvent,
+      {} as Context,
+    );
+
+    expect(response).toEqual({
+      statusCode: 200,
+      body: JSON.stringify({
+        received: { queryStringParameters: { limit: 10 } },
+      }),
+    });
+  });
+
+  it('treats missing queryStringParameters as an empty object to validate against', async () => {
+    const handler = buildQueryHandler();
+
+    const response = await handler({} as unknown as QueryEvent, {} as Context);
+
+    const parsed = JSON.parse(response.body);
+    expect(response.statusCode).toBe(200);
+    expect(parsed.received.queryStringParameters).toEqual({ limit: 10 });
   });
 });
