@@ -233,6 +233,84 @@ describe('ChatApiTsStack', () => {
 
       template.hasOutput('GatewayUrl', {});
     });
+
+    it('throttles the stage and answers with the API error body', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::Stage', {
+        MethodSettings: Match.arrayWith([
+          Match.objectLike({
+            HttpMethod: '*',
+            ResourcePath: '/*',
+            ThrottlingRateLimit: Match.anyValue(),
+            ThrottlingBurstLimit: Match.anyValue(),
+          }),
+        ]),
+      });
+      template.hasResourceProperties('AWS::ApiGateway::GatewayResponse', {
+        ResponseType: 'THROTTLED',
+        ResponseTemplates: {
+          'application/json': Match.stringLikeRegexp('"error"'),
+        },
+      });
+    });
+  });
+
+  describe('WAF', () => {
+    it('rate limits each end user on POST invoke requests with a 429', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::WAFv2::WebACL', {
+        Rules: [
+          Match.objectLike({
+            Statement: {
+              RateBasedStatement: Match.objectLike({
+                CustomKeys: [
+                  { Header: Match.objectLike({ Name: 'end-user-id' }) },
+                ],
+                ScopeDownStatement: {
+                  AndStatement: {
+                    Statements: [
+                      Match.objectLike({
+                        ByteMatchStatement: Match.objectLike({
+                          SearchString: 'POST',
+                        }),
+                      }),
+                      Match.objectLike({
+                        ByteMatchStatement: Match.objectLike({
+                          SearchString: '/v1/threads/invoke',
+                        }),
+                      }),
+                    ],
+                  },
+                },
+              }),
+            },
+            Action: {
+              Block: {
+                CustomResponse: Match.objectLike({ ResponseCode: 429 }),
+              },
+            },
+          }),
+        ],
+      });
+    });
+
+    it('associates the web ACL with the API stage', () => {
+      const template = stackTemplate();
+
+      const [stageId] = Object.keys(
+        template.findResources('AWS::ApiGateway::Stage'),
+      );
+
+      template.hasResourceProperties('AWS::WAFv2::WebACLAssociation', {
+        ResourceArn: Match.objectLike({
+          'Fn::Join': Match.arrayWith([
+            Match.arrayWith([Match.objectLike({ Ref: stageId })]),
+          ]),
+        }),
+      });
+    });
   });
 
   describe('Cognito', () => {
