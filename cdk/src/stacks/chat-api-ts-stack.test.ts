@@ -18,6 +18,7 @@ describe('ChatApiTsStack', () => {
     environment: 'testing',
     agentRuntimeArn:
       'arn:aws:bedrock-agentcore:eu-west-1:123456789012:runtime/test',
+    clients: ['app'],
   };
 
   function stackTemplate() {
@@ -208,23 +209,25 @@ describe('ChatApiTsStack', () => {
       });
     });
 
-    it('requires Cognito auth on POST requests', () => {
+    it('requires Cognito auth and an API key on POST requests', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::ApiGateway::Method', {
         HttpMethod: 'POST',
         AuthorizationType: 'COGNITO_USER_POOLS',
         AuthorizationScopes: ['chat-api/invoke'],
+        ApiKeyRequired: true,
       });
     });
 
-    it('requires Cognito auth on GET requests', () => {
+    it('requires Cognito auth and an API key on GET requests', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::ApiGateway::Method', {
         HttpMethod: 'GET',
         AuthorizationType: 'COGNITO_USER_POOLS',
         AuthorizationScopes: ['chat-api/invoke'],
+        ApiKeyRequired: true,
       });
     });
 
@@ -254,10 +257,55 @@ describe('ChatApiTsStack', () => {
         },
       });
     });
+
+    it('answers a missing or invalid API key with the API error body', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::GatewayResponse', {
+        ResponseType: 'INVALID_API_KEY',
+        ResponseTemplates: {
+          'application/json': Match.stringLikeRegexp('"error"'),
+        },
+      });
+    });
+  });
+
+  describe('Clients', () => {
+    it('throttles each client through a usage plan bound to its API key', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::UsagePlan', {
+        Throttle: {
+          RateLimit: Match.anyValue(),
+          BurstLimit: Match.anyValue(),
+        },
+      });
+      template.resourceCountIs('AWS::ApiGateway::ApiKey', 1);
+
+      const [apiKeyId] = Object.keys(
+        template.findResources('AWS::ApiGateway::ApiKey'),
+      );
+      const [usagePlanId] = Object.keys(
+        template.findResources('AWS::ApiGateway::UsagePlan'),
+      );
+
+      template.hasResourceProperties('AWS::ApiGateway::UsagePlanKey', {
+        KeyId: { Ref: apiKeyId },
+        KeyType: 'API_KEY',
+        UsagePlanId: { Ref: usagePlanId },
+      });
+    });
+
+    it('outputs the App Client ID and API key ID', () => {
+      const template = stackTemplate();
+
+      template.hasOutput('AppClientId', {});
+      template.hasOutput('AppApiKeyId', {});
+    });
   });
 
   describe('WAF', () => {
-    it('rate limits each end user on POST invoke requests with a 429', () => {
+    it('rate limits each client and end user on POST invoke requests with a 429', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::WAFv2::WebACL', {
@@ -267,6 +315,7 @@ describe('ChatApiTsStack', () => {
               RateBasedStatement: Match.objectLike({
                 CustomKeys: [
                   { Header: Match.objectLike({ Name: 'end-user-id' }) },
+                  { Header: Match.objectLike({ Name: 'x-api-key' }) },
                 ],
                 ScopeDownStatement: {
                   AndStatement: {
@@ -340,11 +389,10 @@ describe('ChatApiTsStack', () => {
       });
     });
 
-    it('outputs the User Pool ID and App Client ID', () => {
+    it('outputs the User Pool ID and token endpoint', () => {
       const template = stackTemplate();
 
       template.hasOutput('UserPoolId', {});
-      template.hasOutput('AppClientId', {});
       template.hasOutput('TokenEndpoint', {});
     });
   });

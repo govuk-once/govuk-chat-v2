@@ -43,6 +43,7 @@ new ChatApiTsStack(app, 'ChatApiTsStack', {
   env: env,
   environment: getEnvironment(),
   agentRuntimeArn: aguiAgentStack.agentRuntimeArn,
+  clients: ['app'],
   stackName: `${getResourceNamePrefix()}-ChatApiTsStack`,
   ...serviceMetadata,
 });

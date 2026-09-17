@@ -20,6 +20,7 @@ export interface ChatApiTsStackProps extends cdk.StackProps {
   agentRuntimeArn: string;
   repositoryUrl: string;
   environment: string;
+  clients: string[];
 }
 
 // A run holds its thread until it finishes, so a lambda that dies without
@@ -27,20 +28,33 @@ export interface ChatApiTsStackProps extends cdk.StackProps {
 const LAMBDA_TIMEOUT = cdk.Duration.seconds(30);
 
 // V1's write limits (CHAT-968): 900 a minute per client, 15 a minute per
-// end user.
+// end user. The stage limit is the ceiling over all clients together.
 const RATE_LIMITS = {
   stageRequestsPerSecond: 15,
   stageBurst: 30,
+  clientRequestsPerSecond: 15,
+  clientBurst: 30,
   endUserInvokesPerWindow: 15,
   endUserWindowSeconds: 60,
 };
 
 const TOO_MANY_REQUESTS_BODY = JSON.stringify({ error: 'Too many requests' });
+const FORBIDDEN_BODY = JSON.stringify({ error: 'Forbidden' });
 
 interface CognitoAuth {
+  userPool: cognito.UserPool;
   authorizer: apigateway.CognitoUserPoolsAuthorizer;
   scope: string;
+  // The same scope as `scope`, in the form an app client is granted it
+  oAuthScope: cognito.OAuthScope;
 }
+
+// Turns 'govuk-app' into 'GovukApp' for CloudFormation output names
+const pascalCase = (name: string): string =>
+  name
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
 
 export class ChatApiTsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ChatApiTsStackProps) {
@@ -54,6 +68,9 @@ export class ChatApiTsStack extends cdk.Stack {
     const auth = this.cognitoAuth();
     const table = this.table();
     const apiGateway = this.apiGateway(props, auth, table);
+    for (const name of props.clients) {
+      this.client(name, auth, apiGateway);
+    }
     this.webAcl(apiGateway);
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
@@ -87,25 +104,6 @@ export class ChatApiTsStack extends cdk.Stack {
       },
     );
 
-    const appClient = userPool.addClient(
-      `${getResourceNamePrefix()}-chat-api-ts-app-client`,
-      {
-        userPoolClientName: `${getResourceNamePrefix()}-chat-api-ts-app-client`,
-        generateSecret: true,
-        oAuth: {
-          flows: { clientCredentials: true },
-          scopes: [
-            cognito.OAuthScope.resourceServer(resourceServer, invokeScope),
-          ],
-        },
-        // Longer-lived tokens for ephermeral environments so refreshing
-        // doesn't need to happen so often
-        accessTokenValidity: cdk.Duration.hours(
-          isEphemeralEnvironment() ? 24 : 1,
-        ),
-      },
-    );
-
     const domain = userPool.addDomain(
       `${getResourceNamePrefix()}-chat-api-ts-domain`,
       {
@@ -128,18 +126,61 @@ export class ChatApiTsStack extends cdk.Stack {
       value: userPool.userPoolId,
     });
 
-    new cdk.CfnOutput(this, 'AppClientId', {
-      value: appClient.userPoolClientId,
-    });
-
     new cdk.CfnOutput(this, 'TokenEndpoint', {
       value: `https://${domain.domainName}.auth.${this.region}.amazoncognito.com/oauth2/token`,
     });
 
     return {
+      userPool,
       authorizer,
       scope: `chat-api/${invokeScope.scopeName}`,
+      oAuthScope: cognito.OAuthScope.resourceServer(
+        resourceServer,
+        invokeScope,
+      ),
     };
+  }
+
+  // A client authenticates with its Cognito app client and identifies itself
+  // to the usage plan with its API key, sent in the x-api-key header.
+  client(name: string, auth: CognitoAuth, api: apigateway.RestApi): void {
+    const prefix = `${getResourceNamePrefix()}-chat-api-ts-${name}`;
+
+    const appClient = auth.userPool.addClient(`${prefix}-client`, {
+      userPoolClientName: `${prefix}-client`,
+      generateSecret: true,
+      oAuth: {
+        flows: { clientCredentials: true },
+        scopes: [auth.oAuthScope],
+      },
+      // Longer-lived tokens for ephermeral environments so refreshing
+      // doesn't need to happen so often
+      accessTokenValidity: cdk.Duration.hours(
+        isEphemeralEnvironment() ? 24 : 1,
+      ),
+    });
+
+    const apiKey = new apigateway.ApiKey(this, `${prefix}-api-key`, {
+      apiKeyName: `${prefix}-api-key`,
+    });
+
+    const usagePlan = api.addUsagePlan(`${prefix}-usage-plan`, {
+      name: `${prefix}-usage-plan`,
+      throttle: {
+        rateLimit: RATE_LIMITS.clientRequestsPerSecond,
+        burstLimit: RATE_LIMITS.clientBurst,
+      },
+      apiStages: [{ api, stage: api.deploymentStage }],
+    });
+    usagePlan.addApiKey(apiKey);
+
+    new cdk.CfnOutput(this, `${pascalCase(name)}ClientId`, {
+      value: appClient.userPoolClientId,
+    });
+
+    new cdk.CfnOutput(this, `${pascalCase(name)}ApiKeyId`, {
+      value: apiKey.keyId,
+    });
   }
 
   table(): dynamodb.Table {
@@ -176,14 +217,19 @@ export class ChatApiTsStack extends cdk.Stack {
           authorizationType: apigateway.AuthorizationType.COGNITO,
           authorizer: auth.authorizer,
           authorizationScopes: [auth.scope],
+          apiKeyRequired: true,
         },
       },
     );
 
-    // API Gateway's default 429 body is { "message": ... }
+    // API Gateway's default 429 and 403 bodies are { "message": ... }
     api.addGatewayResponse('throttled', {
       type: apigateway.ResponseType.THROTTLED,
       templates: { 'application/json': TOO_MANY_REQUESTS_BODY },
+    });
+    api.addGatewayResponse('invalid-api-key', {
+      type: apigateway.ResponseType.INVALID_API_KEY,
+      templates: { 'application/json': FORBIDDEN_BODY },
     });
 
     const agentStreamFunction = this.lambdaHandler('threads/invoke.ts', {
@@ -252,6 +298,14 @@ export class ChatApiTsStack extends cdk.Stack {
               // WAF requires a text transformation even if no transformation is needed
               header: {
                 name: 'end-user-id',
+                textTransformations: [{ priority: 0, type: 'NONE' }],
+              },
+            },
+            {
+              // and for each client, so two clients sending the same end user
+              // ID have separate counts
+              header: {
+                name: 'x-api-key',
                 textTransformations: [{ priority: 0, type: 'NONE' }],
               },
             },
