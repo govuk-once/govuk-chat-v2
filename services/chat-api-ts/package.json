@@ -10,7 +10,7 @@
     "type-check": "scripts/type-check.sh"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.162"
+    "@types/aws-lambda": "^8.10.163"
   },
   "dependencies": {
     "@ag-ui/core": "^0.0.57",
