@@ -192,11 +192,25 @@ export class ChatApiTsStack extends cdk.Stack {
       },
     );
 
+    const messagesFunction = this.lambdaHandler('threads/messages.ts', {
+      CHAT_API_TABLE_NAME: table.tableName,
+    });
+
+    table.grantReadData(messagesFunction);
+
+    const messagesLambda = new apigateway.LambdaIntegration(messagesFunction);
+
     const v1 = api.root.addResource('v1');
+    const threads = v1.addResource('threads');
 
     // POST /v1/threads/invoke
-    const agentStream = v1.addResource('threads').addResource('invoke');
-    agentStream.addMethod('POST', agentStreamLambda);
+    const invoke = threads.addResource('invoke');
+    invoke.addMethod('POST', agentStreamLambda);
+
+    // GET /v1/threads/{threadId}/messages
+    const threadById = threads.addResource('{threadId}');
+    const messages = threadById.addResource('messages');
+    messages.addMethod('GET', messagesLambda);
 
     return api;
   }

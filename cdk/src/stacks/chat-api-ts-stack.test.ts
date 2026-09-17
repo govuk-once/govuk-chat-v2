@@ -69,6 +69,54 @@ describe('ChatApiTsStack', () => {
       });
     });
 
+    it('creates the messages lambda', () => {
+      const template = stackTemplate();
+
+      const [tableId] = Object.keys(
+        template.findResources('AWS::DynamoDB::Table'),
+      );
+
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: Match.stringLikeRegexp('chat-api-ts-threads-messages-ts'),
+        Environment: {
+          Variables: Match.objectLike({
+            POWERTOOLS_SERVICE_NAME: 'chat-api-ts',
+            CHAT_API_TABLE_NAME: { Ref: tableId },
+          }),
+        },
+      });
+    });
+
+    it('grants the messages lambda read-only access to the table', () => {
+      const template = stackTemplate();
+
+      const [tableId] = Object.keys(
+        template.findResources('AWS::DynamoDB::Table'),
+      );
+      const functions = template.findResources('AWS::Lambda::Function', {
+        Properties: {
+          FunctionName: Match.stringLikeRegexp(
+            'chat-api-ts-threads-messages-ts',
+          ),
+        },
+      });
+      const roleId =
+        Object.values(functions)[0].Properties.Role['Fn::GetAtt'][0];
+
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith(['dynamodb:Query']),
+              Effect: 'Allow',
+              Resource: Match.arrayWith([{ 'Fn::GetAtt': [tableId, 'Arn'] }]),
+            }),
+          ]),
+        },
+        Roles: Match.arrayWith([Match.objectLike({ Ref: roleId })]),
+      });
+    });
+
     it('grants the agent-stream lambda access to the table', () => {
       const template = stackTemplate();
 
@@ -149,11 +197,32 @@ describe('ChatApiTsStack', () => {
       });
     });
 
+    it('exposes a /v1/threads/{threadId}/messages resource path', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::Resource', {
+        PathPart: '{threadId}',
+      });
+      template.hasResourceProperties('AWS::ApiGateway::Resource', {
+        PathPart: 'messages',
+      });
+    });
+
     it('requires Cognito auth on POST requests', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::ApiGateway::Method', {
         HttpMethod: 'POST',
+        AuthorizationType: 'COGNITO_USER_POOLS',
+        AuthorizationScopes: ['chat-api/invoke'],
+      });
+    });
+
+    it('requires Cognito auth on GET requests', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::ApiGateway::Method', {
+        HttpMethod: 'GET',
         AuthorizationType: 'COGNITO_USER_POOLS',
         AuthorizationScopes: ['chat-api/invoke'],
       });
