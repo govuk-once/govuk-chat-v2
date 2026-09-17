@@ -40,3 +40,17 @@ export const ClientInputHeadersSchema = z.object({
 
 export type RunAgentInputBody = z.infer<typeof RunAgentInputSchema>;
 export type ClientInputHeaders = z.infer<typeof ClientInputHeadersSchema>;
+
+export const ThreadMessagesPathParametersSchema = z.object({
+  threadId: z.uuid({ message: 'threadId must be a valid UUID' }),
+});
+
+export type ThreadMessagesPathParameters = z.infer<
+  typeof ThreadMessagesPathParametersSchema
+>;
+
+export const ThreadMessagesQuerySchema = z.object({
+  before: z.uuid({ message: 'before must be a valid message UUID' }).optional(),
+});
+
+export type ThreadMessagesQuery = z.infer<typeof ThreadMessagesQuerySchema>;

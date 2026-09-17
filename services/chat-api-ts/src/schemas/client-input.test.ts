@@ -4,6 +4,8 @@ import {
   MessageSchema,
   RunAgentInputSchema,
   ClientInputHeadersSchema,
+  ThreadMessagesPathParametersSchema,
+  ThreadMessagesQuerySchema,
 } from './client-input.ts';
 
 const VALID_THREAD_ID = crypto.randomUUID();
@@ -267,5 +269,54 @@ describe('RunAgentInputSchema', () => {
         { messages: ['content must not be empty'] },
       );
     });
+  });
+});
+
+describe('ThreadMessagesPathParametersSchema', () => {
+  it('accepts a valid UUID threadId', () => {
+    expectInputSuccess(ThreadMessagesPathParametersSchema, {
+      threadId: crypto.randomUUID(),
+    });
+  });
+
+  it('rejects a missing threadId', () => {
+    expectInputFailure(
+      ThreadMessagesPathParametersSchema,
+      {},
+      {
+        threadId: ['threadId must be a valid UUID'],
+      },
+    );
+  });
+
+  it('rejects a threadId that is not a UUID', () => {
+    expectInputFailure(
+      ThreadMessagesPathParametersSchema,
+      { threadId: 'not-a-uuid' },
+      { threadId: ['threadId must be a valid UUID'] },
+    );
+  });
+});
+
+describe('ThreadMessagesQuerySchema', () => {
+  it('accepts an empty object', () => {
+    const result = ThreadMessagesQuerySchema.safeParse({});
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({});
+  });
+
+  it('accepts an optional before as a UUID', () => {
+    const id = crypto.randomUUID();
+    const result = ThreadMessagesQuerySchema.safeParse({ before: id });
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ before: id });
+  });
+
+  it('rejects a before that is not a UUID', () => {
+    expectInputFailure(
+      ThreadMessagesQuerySchema,
+      { before: 'not-a-uuid' },
+      { before: ['before must be a valid message UUID'] },
+    );
   });
 });
