@@ -18,6 +18,7 @@ GATEWAY_URL=$(scripts/fetch-cdk-output.sh ChatApiTsStack GatewayUrl)
 export TOKEN_ENDPOINT=$(scripts/fetch-cdk-output.sh ChatApiTsStack TokenEndpoint)
 export USER_POOL_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack UserPoolId)
 export APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack AppClientId)
+export API_KEY_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack AppApiKeyId)
 
 ./scripts/api-curl.sh -X POST "${GATEWAY_URL%/}/v1/threads/invoke" \
   -H "Content-Type: application/json" \
@@ -56,17 +57,34 @@ Nothing is recorded for a run that ends in an error. A run and its message
 are stored as the run finishes, just before `RUN_FINISHED` reaches the
 client, and expire alongside the thread.
 
+## Clients
+
+A client is a Cognito app client paired with an API Gateway API key. Each
+request carries the app client's bearer token and the key in an
+`x-api-key` header. A request without a valid key gets `403` with the
+API's usual `{ "error": "..." }` body.
+
+To add a client, add a name to the stack's `clients` list and deploy.
+Then hand its client secret and API key to the client out of band.
+
 ## Rate limits
 
-Two limits apply at the API Gateway, before the lambda runs:
+Three limits apply at the API Gateway, before the lambda runs:
 
-- The whole stage accepts 15 requests a second, with a burst of 30.
-- Each end user, identified by the `end-user-id` header, can send 15
-  `POST /v1/threads/invoke` requests a minute.
+- The whole stage accepts 15 requests a second, with a burst of 30. This
+  is the ceiling over all clients together.
+- Each client, identified by the `x-api-key` header, can send 15 requests
+  a second, with a burst of 30.
+- Each end user, identified by the `end-user-id` and `x-api-key` headers
+  together, can send 15 `POST /v1/threads/invoke` requests a minute. The
+  same end user sent by two clients has a separate count for each.
 
-Requests over either limit receive `429` with the API's usual
+Requests over any limit receive `429` with the API's usual
 `{ "error": "..." }` body. The per-end-user limit is evaluated before
 authentication, so an unauthenticated flood is counted and blocked too.
+It does not count a request missing either header, because a WAF rate
+rule only evaluates requests that carry every one of its keys. The
+gateway's key check or the lambda refuses such a request instead.
 
 The per-end-user limit is a WAF rate rule. WAF checks the count about
 every ten seconds, so a burst can exceed the limit before blocking
