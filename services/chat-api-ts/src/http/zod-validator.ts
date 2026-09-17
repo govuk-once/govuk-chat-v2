@@ -16,7 +16,7 @@ function validateAgainstSchema<S extends z.ZodType>(
   value: unknown,
   schema: S,
   errorMessage: string,
-  target: 'body' | 'headers',
+  target: string,
 ): { data: z.infer<S> } | { response: JsonErrorResponse } {
   const result = schema.safeParse(value);
   if (!result.success) {
@@ -71,6 +71,58 @@ export function zodHeadersValidator<
       if ('response' in result) return result.response;
 
       request.event.headers = { ...request.event.headers, ...result.data };
+    },
+  };
+}
+
+export type ValidatedPathParametersEvent<T> = Omit<
+  APIGatewayProxyEvent,
+  'pathParameters'
+> & {
+  pathParameters: T;
+};
+
+export function zodPathParametersValidator<T extends z.ZodType>(
+  schema: T,
+  errorMessage: string,
+): MiddlewareObj<ValidatedPathParametersEvent<z.infer<T>>> {
+  return {
+    before: (request: Request<ValidatedPathParametersEvent<z.infer<T>>>) => {
+      const result = validateAgainstSchema(
+        request.event.pathParameters ?? {},
+        schema,
+        errorMessage,
+        'pathParameters',
+      );
+      if ('response' in result) return result.response;
+
+      request.event.pathParameters = result.data;
+    },
+  };
+}
+
+export type ValidatedQueryEvent<T> = Omit<
+  APIGatewayProxyEvent,
+  'queryStringParameters'
+> & {
+  queryStringParameters: T;
+};
+
+export function zodQueryValidator<T extends z.ZodType>(
+  schema: T,
+  errorMessage: string,
+): MiddlewareObj<ValidatedQueryEvent<z.infer<T>>> {
+  return {
+    before: (request: Request<ValidatedQueryEvent<z.infer<T>>>) => {
+      const result = validateAgainstSchema(
+        request.event.queryStringParameters ?? {},
+        schema,
+        errorMessage,
+        'queryStringParameters',
+      );
+      if ('response' in result) return result.response;
+
+      request.event.queryStringParameters = result.data;
     },
   };
 }

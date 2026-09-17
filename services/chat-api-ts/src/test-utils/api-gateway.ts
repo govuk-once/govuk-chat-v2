@@ -73,10 +73,24 @@ const BASE_EVENT: Omit<APIGatewayProxyEvent, 'body' | 'headers'> = {
 export function apiGatewayProxyEventFixture(
   body: string | null = null,
   headerOverrides: APIGatewayProxyEventHeaders = {},
+  options?: {
+    pathParameters?: Record<string, string> | null;
+    queryStringParameters?: Record<string, string> | null;
+    httpMethod?: string;
+  },
 ): APIGatewayProxyEvent {
   return {
     ...BASE_EVENT,
     body,
     headers: { ...DEFAULT_HEADERS, ...headerOverrides },
+    ...(options?.pathParameters !== undefined && {
+      pathParameters: options.pathParameters,
+    }),
+    ...(options?.queryStringParameters !== undefined && {
+      queryStringParameters: options.queryStringParameters,
+    }),
+    ...(options?.httpMethod !== undefined && {
+      httpMethod: options.httpMethod,
+    }),
   };
 }
