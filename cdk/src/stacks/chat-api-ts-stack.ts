@@ -27,11 +27,9 @@ export interface ChatApiTsStackProps extends cdk.StackProps {
 // releasing must not hold it longer than it could have run for.
 const LAMBDA_TIMEOUT = cdk.Duration.seconds(30);
 
-// V1's write limits (CHAT-968): 900 a minute per client, 15 a minute per
-// end user. The stage limit is the ceiling over all clients together.
+// Based on V1's write limits (CHAT-968). The client allowance is shared
+// by reads and writes; the end-user limit applies only to invokes.
 const RATE_LIMITS = {
-  stageRequestsPerSecond: 15,
-  stageBurst: 30,
   clientRequestsPerSecond: 15,
   clientBurst: 30,
   endUserInvokesPerWindow: 15,
@@ -68,8 +66,9 @@ export class ChatApiTsStack extends cdk.Stack {
     const auth = this.cognitoAuth();
     const table = this.table();
     const apiGateway = this.apiGateway(props, auth, table);
+    const usagePlan = this.usagePlan(apiGateway);
     for (const name of props.clients) {
-      this.client(name, auth, apiGateway);
+      this.client(name, auth, usagePlan);
     }
     this.webAcl(apiGateway);
 
@@ -143,7 +142,11 @@ export class ChatApiTsStack extends cdk.Stack {
 
   // A client authenticates with its Cognito app client and identifies itself
   // to the usage plan with its API key, sent in the x-api-key header.
-  client(name: string, auth: CognitoAuth, api: apigateway.RestApi): void {
+  client(
+    name: string,
+    auth: CognitoAuth,
+    usagePlan: apigateway.UsagePlan,
+  ): void {
     const prefix = `${getResourceNamePrefix()}-chat-api-ts-${name}`;
 
     const appClient = auth.userPool.addClient(`${prefix}-client`, {
@@ -153,7 +156,7 @@ export class ChatApiTsStack extends cdk.Stack {
         flows: { clientCredentials: true },
         scopes: [auth.oAuthScope],
       },
-      // Longer-lived tokens for ephermeral environments so refreshing
+      // Longer-lived tokens for ephemeral environments so refreshing
       // doesn't need to happen so often
       accessTokenValidity: cdk.Duration.hours(
         isEphemeralEnvironment() ? 24 : 1,
@@ -164,14 +167,6 @@ export class ChatApiTsStack extends cdk.Stack {
       apiKeyName: `${prefix}-api-key`,
     });
 
-    const usagePlan = api.addUsagePlan(`${prefix}-usage-plan`, {
-      name: `${prefix}-usage-plan`,
-      throttle: {
-        rateLimit: RATE_LIMITS.clientRequestsPerSecond,
-        burstLimit: RATE_LIMITS.clientBurst,
-      },
-      apiStages: [{ api, stage: api.deploymentStage }],
-    });
     usagePlan.addApiKey(apiKey);
 
     new cdk.CfnOutput(this, `${pascalCase(name)}ClientId`, {
@@ -180,6 +175,19 @@ export class ChatApiTsStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, `${pascalCase(name)}ApiKeyId`, {
       value: apiKey.keyId,
+    });
+  }
+
+  usagePlan(api: apigateway.RestApi): apigateway.UsagePlan {
+    const name = `${getResourceNamePrefix()}-chat-api-ts-usage-plan`;
+
+    return api.addUsagePlan(name, {
+      name,
+      throttle: {
+        rateLimit: RATE_LIMITS.clientRequestsPerSecond,
+        burstLimit: RATE_LIMITS.clientBurst,
+      },
+      apiStages: [{ api, stage: api.deploymentStage }],
     });
   }
 
@@ -210,8 +218,11 @@ export class ChatApiTsStack extends cdk.Stack {
         restApiName: `${getResourceNamePrefix()}-chat-api-ts-gateway`,
         deployOptions: {
           stageName: props.environment,
-          throttlingRateLimit: RATE_LIMITS.stageRequestsPerSecond,
-          throttlingBurstLimit: RATE_LIMITS.stageBurst,
+          // Each method has a shared target large enough for all clients'
+          // allowances. Review downstream capacity when adding clients.
+          throttlingRateLimit:
+            RATE_LIMITS.clientRequestsPerSecond * props.clients.length,
+          throttlingBurstLimit: RATE_LIMITS.clientBurst * props.clients.length,
         },
         defaultMethodOptions: {
           authorizationType: apigateway.AuthorizationType.COGNITO,

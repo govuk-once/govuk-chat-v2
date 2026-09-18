@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import baseContext from '../../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
-import { vi, describe, it, afterEach } from 'vitest';
+import { vi, describe, it, afterEach, expect } from 'vitest';
 import { ChatApiTsStack } from './chat-api-ts-stack.ts';
 
 const context = {
@@ -21,9 +21,12 @@ describe('ChatApiTsStack', () => {
     clients: ['app'],
   };
 
-  function stackTemplate() {
+  function stackTemplate(clients = baseProps.clients) {
     const app = new cdk.App({ context });
-    const stack = new ChatApiTsStack(app, 'TestStack', baseProps);
+    const stack = new ChatApiTsStack(app, 'TestStack', {
+      ...baseProps,
+      clients,
+    });
     return Template.fromStack(stack);
   }
 
@@ -237,19 +240,8 @@ describe('ChatApiTsStack', () => {
       template.hasOutput('GatewayUrl', {});
     });
 
-    it('throttles the stage and answers with the API error body', () => {
+    it('answers throttled requests with the API error body', () => {
       const template = stackTemplate();
-
-      template.hasResourceProperties('AWS::ApiGateway::Stage', {
-        MethodSettings: Match.arrayWith([
-          Match.objectLike({
-            HttpMethod: '*',
-            ResourcePath: '/*',
-            ThrottlingRateLimit: Match.anyValue(),
-            ThrottlingBurstLimit: Match.anyValue(),
-          }),
-        ]),
-      });
       template.hasResourceProperties('AWS::ApiGateway::GatewayResponse', {
         ResponseType: 'THROTTLED',
         ResponseTemplates: {
@@ -271,29 +263,71 @@ describe('ChatApiTsStack', () => {
   });
 
   describe('Clients', () => {
-    it('throttles each client through a usage plan bound to its API key', () => {
-      const template = stackTemplate();
+    it.each([{ clients: ['app'] }, { clients: ['app', 'second'] }])(
+      'allows the combined client allowances on each method for $clients',
+      ({ clients }) => {
+        const template = stackTemplate(clients);
+        const [usagePlan] = Object.values(
+          template.findResources('AWS::ApiGateway::UsagePlan'),
+        );
+        const { RateLimit, BurstLimit } = usagePlan.Properties.Throttle;
 
+        expect(RateLimit).toBeGreaterThan(0);
+        expect(BurstLimit).toBeGreaterThan(0);
+        template.hasResourceProperties('AWS::ApiGateway::Stage', {
+          MethodSettings: Match.arrayWith([
+            Match.objectLike({
+              HttpMethod: '*',
+              ResourcePath: '/*',
+              ThrottlingRateLimit: RateLimit * clients.length,
+              ThrottlingBurstLimit: BurstLimit * clients.length,
+            }),
+          ]),
+        });
+      },
+    );
+
+    it('gives two clients distinct keys attached to the same stage and usage plan', () => {
+      const template = stackTemplate(['app', 'second']);
+
+      const [stageId] = Object.keys(
+        template.findResources('AWS::ApiGateway::Stage'),
+      );
+      const [apiId] = Object.keys(
+        template.findResources('AWS::ApiGateway::RestApi'),
+      );
+
+      template.resourceCountIs('AWS::ApiGateway::UsagePlan', 1);
       template.hasResourceProperties('AWS::ApiGateway::UsagePlan', {
+        ApiStages: Match.arrayWith([
+          Match.objectLike({
+            ApiId: { Ref: apiId },
+            Stage: { Ref: stageId },
+          }),
+        ]),
         Throttle: {
           RateLimit: Match.anyValue(),
           BurstLimit: Match.anyValue(),
         },
       });
-      template.resourceCountIs('AWS::ApiGateway::ApiKey', 1);
+      template.resourceCountIs('AWS::ApiGateway::ApiKey', 2);
+      template.resourceCountIs('AWS::ApiGateway::UsagePlanKey', 2);
+      template.resourceCountIs('AWS::Cognito::UserPoolClient', 2);
 
-      const [apiKeyId] = Object.keys(
+      const apiKeyIds = Object.keys(
         template.findResources('AWS::ApiGateway::ApiKey'),
       );
       const [usagePlanId] = Object.keys(
         template.findResources('AWS::ApiGateway::UsagePlan'),
       );
 
-      template.hasResourceProperties('AWS::ApiGateway::UsagePlanKey', {
-        KeyId: { Ref: apiKeyId },
-        KeyType: 'API_KEY',
-        UsagePlanId: { Ref: usagePlanId },
-      });
+      for (const apiKeyId of apiKeyIds) {
+        template.hasResourceProperties('AWS::ApiGateway::UsagePlanKey', {
+          KeyId: { Ref: apiKeyId },
+          KeyType: 'API_KEY',
+          UsagePlanId: { Ref: usagePlanId },
+        });
+      }
     });
 
     it('outputs the App Client ID and API key ID', () => {

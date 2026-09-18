@@ -59,32 +59,52 @@ client, and expire alongside the thread.
 
 ## Clients
 
-A client is a Cognito app client paired with an API Gateway API key. Each
-request carries the app client's bearer token and the key in an
-`x-api-key` header. A request without a valid key gets `403` with the
-API's usual `{ "error": "..." }` body.
+Each client receives Cognito credentials for authentication and an API
+Gateway API key for throttling. Requests carry a bearer token and the key
+in an `x-api-key` header. A missing or invalid key is rejected with `403`
+and the API's usual `{ "error": "..." }` body.
+
+API Gateway validates the token and key independently. It does not check
+that they were issued to the same client. A caller with another client's
+key can use that client's allowance with its own valid token.
 
 To add a client, add a name to the stack's `clients` list and deploy.
 Then hand its client secret and API key to the client out of band.
+
+Thread identity uses only `end-user-id` and `threadId`. Clients with the
+same values access the same thread, regardless of their API keys.
 
 ## Rate limits
 
 Three limits apply at the API Gateway, before the lambda runs:
 
-- The whole stage accepts 15 requests a second, with a burst of 30. This
-  is the ceiling over all clients together.
-- Each client, identified by the `x-api-key` header, can send 15 requests
-  a second, with a burst of 30.
+- Each method has a shared target of 15 requests a second and burst 30
+  multiplied by the number of configured clients. Two clients give each
+  method a shared target of 30 requests a second and burst 60. GET and
+  POST have separate shared targets.
+- Each API key has an allowance of 15 requests a second and a burst
+  allowance of 30. GET and POST requests share it. This uses V1's write
+  rate for all operations; separate read limits are not configured.
 - Each end user, identified by the `end-user-id` and `x-api-key` headers
   together, can send 15 `POST /v1/threads/invoke` requests a minute. The
   same end user sent by two clients has a separate count for each.
 
-Requests over any limit receive `429` with the API's usual
-`{ "error": "..." }` body. The per-end-user limit is evaluated before
-authentication, so an unauthenticated flood is counted and blocked too.
-It does not count a request missing either header, because a WAF rate
-rule only evaluates requests that carry every one of its keys. The
-gateway's key check or the lambda refuses such a request instead.
+All API keys use one usage plan, which defines their throttling policy.
+API Gateway keeps a separate allowance for each key in the plan.
+The shared method targets grow with the client list to accommodate each
+client's allowance. They do not represent measured downstream capacity.
+Review that capacity before adding clients.
+
+Throttled requests receive `429` with the API's usual
+`{ "error": "..." }` body.
+[API Gateway throttles are best effort](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-usage-plans.html),
+so requests can exceed these targets. They are not guaranteed cost caps.
+
+The per-end-user WAF rule runs before authentication and counts requests
+with the same pair of header values even if authentication fails. It
+does not count requests missing either header, because
+[WAF requires every aggregation key to be present](https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-statement-type-rate-based-aggregation-options.html).
+The gateway's key check or the lambda refuses such a request instead.
 
 The per-end-user limit is a WAF rate rule. WAF checks the count about
 every ten seconds, so a burst can exceed the limit before blocking
