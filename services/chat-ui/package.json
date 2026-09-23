@@ -1,0 +1,22 @@
+{
+  "name": "@govuk-chat-v2/chat-ui",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "scripts/dev.sh",
+    "dev-checks": "scripts/dev-checks.sh",
+    "format": "scripts/format.sh",
+    "lint": "scripts/lint.sh",
+    "test": "scripts/test.sh",
+    "type-check": "scripts/type-check.sh"
+  },
+  "dependencies": {
+    "next": "^16.3.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0"
+  }
+}

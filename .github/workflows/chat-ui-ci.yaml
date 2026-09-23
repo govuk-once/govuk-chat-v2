@@ -1,0 +1,65 @@
+name: Chat UI CI
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/chat-ui-ci.yaml'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.json'
+      - 'services/chat-ui/**'
+  pull_request:
+    paths:
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/chat-ui-ci.yaml'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.json'
+      - 'services/chat-ui/**'
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run tests
+        run: services/chat-ui/scripts/test.sh
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run linter
+        run: services/chat-ui/scripts/lint.sh
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run formatter
+        run: services/chat-ui/scripts/format.sh
+
+  typing:
+    name: Type checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run type checks
+        run: services/chat-ui/scripts/type-check.sh
