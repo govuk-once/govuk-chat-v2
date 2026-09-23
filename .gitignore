@@ -8,6 +8,11 @@ wheels/
 
 # NodeJS files
 node_modules
+*.tsbuildinfo
+
+# Next.js files
+.next
+next-env.d.ts
 
 # CDK files
 cdk.out

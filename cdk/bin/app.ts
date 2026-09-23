@@ -8,6 +8,7 @@ import {
 import { AguiAgentStack } from '../src/stacks/agui-agent-stack.ts';
 import { ChatApiTsStack } from '../src/stacks/chat-api-ts-stack.ts';
 import { ChatApiFastapiStack } from '../src/stacks/chat-api-fastapi-stack.ts';
+import { ChatUiStack } from '../src/stacks/chat-ui-stack.ts';
 import { ExampleAgentStack } from '../src/stacks/example-agent-stack.ts';
 
 const app = new cdk.App();
@@ -52,5 +53,12 @@ new ChatApiFastapiStack(app, 'ChatApiFastapiStack', {
   environment: getEnvironment(),
   agentRuntimeArn: exampleAgentStack.agentRuntimeArn,
   stackName: `${getResourceNamePrefix()}-ChatApiFastapiStack`,
+  ...serviceMetadata,
+});
+
+new ChatUiStack(app, 'ChatUiStack', {
+  env: env,
+  environment: getEnvironment(),
+  stackName: `${getResourceNamePrefix()}-ChatUiStack`,
   ...serviceMetadata,
 });
