@@ -1,0 +1,12 @@
+# Docker and CDK's DockerImageAsset only read the .dockerignore at the build
+# context root. The chat-ui image builds from the repo root so pnpm can see the
+# lockfile. This is an allowlist so new packages stay out of the context.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!.pnpmrc
+!tsconfig.json
+!services/chat-ui
+services/chat-ui/node_modules
+services/chat-ui/.next
