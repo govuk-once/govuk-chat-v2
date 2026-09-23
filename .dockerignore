@@ -10,3 +10,5 @@
 !services/chat-ui
 services/chat-ui/node_modules
 services/chat-ui/.next
+services/chat-ui/README.md
+services/chat-ui/scripts
