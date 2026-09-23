@@ -25,3 +25,29 @@ docker run --rm -p 3000:3000 chat-ui
 ```
 
 `next build` runs only inside this Docker build.
+
+## Deploying
+
+To deploy to ECS Express Mode:
+
+```
+./scripts/cdk-deploy.sh
+```
+
+The app is at the stack's `EndpointUrl`:
+
+```
+./scripts/fetch-cdk-output.sh ChatUiStack EndpointUrl
+```
+
+The container gets one config value, `ENVIRONMENT`, the deployment
+environment name. `/api/health` reports it.
+
+Each stack runs a Fargate task and a load balancer all the time, so destroy
+it when you are finished. `aws-stack-cleanup` will not remove it, because it
+matches on a tag key named after its environment and Chat stacks tag
+`Environment=<name>`. To destroy it, from the `cdk` directory:
+
+```
+pnpm exec cdk destroy ChatUiStack
+```
