@@ -75,6 +75,14 @@ fi
 echo "== Installing pnpm dependencies =="
 pnpm install || return 1
 
+echo "== Checking Docker is installed =="
+if command -v docker >/dev/null 2>&1; then
+    docker --version || return 1
+else
+    echo "Error: 'docker' is not installed, go to https://docs.docker.com/get-started/get-docker/ to install"
+    return 1
+fi
+
 echo "== Checking GDS CLI is installed =="
 if command -v gds >/dev/null 2>&1; then
     gds --version || return 1
