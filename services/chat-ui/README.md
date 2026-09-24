@@ -56,8 +56,10 @@ The app is at the stack's `EndpointUrl`:
 ./scripts/fetch-cdk-output.sh ChatUiStack EndpointUrl
 ```
 
-The container gets one config value, `ENVIRONMENT`, the deployment
-environment name. `/api/health` reports it.
+The container gets `ENVIRONMENT`, the deployment environment name.
+`/api/health` reports it. It also gets the Chat API values above from the
+`ChatApiTsStack` in the same environment, which the deploy script deploys
+first.
 
 A deployed stack has no access gate until CHAT-932 adds sign-in. Anyone with
 its URL can chat using the team's Chat API credentials, so destroy it as soon
