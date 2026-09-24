@@ -1,8 +1,9 @@
 # Chat UI
 
-A Next.js web app for trying out the Chat API in a browser. For now it serves
-a placeholder page and a `/api/health` route. It has a server-side client for
-the Chat API, which the page does not use yet.
+A Next.js web app for trying out the Chat API in a browser. Its page is a
+chat that sends each message to the Chat API through a server-side route and
+streams the answer back. Refreshing the page starts a new conversation. It
+also serves a `/api/health` route.
 
 ## Usage
 
@@ -57,6 +58,10 @@ The app is at the stack's `EndpointUrl`:
 
 The container gets one config value, `ENVIRONMENT`, the deployment
 environment name. `/api/health` reports it.
+
+A deployed stack has no access gate until CHAT-932 adds sign-in. Anyone with
+its URL can chat using the team's Chat API credentials, so destroy it as soon
+as you are finished.
 
 Each stack runs a Fargate task and a load balancer all the time, so destroy
 it when you are finished. `aws-stack-cleanup` will not remove it, because it
