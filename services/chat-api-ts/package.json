@@ -22,7 +22,7 @@
     "electrodb": "^3.9.3",
     "eventsource-parser": "^4.0.0",
     "@middy/core": "^7.8.0",
-    "@middy/http-header-normalizer": "^7.8.0",
+    "@middy/http-header-normalizer": "^7.9.2",
     "@middy/http-json-body-parser": "^7.8.0",
     "zod": "^4.4.3"
   }
