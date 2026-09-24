@@ -16,6 +16,12 @@ describe('ChatUiStack', () => {
     teamName: 'chat',
     repositoryUrl: 'https://example.com/repo',
     environment: 'testing',
+    chatApiUrl: 'https://api.example.com/testing/',
+    cognitoTokenEndpoint: 'https://auth.example.com/oauth2/token',
+    cognitoUserPoolId: 'eu-west-1_example',
+    cognitoUserPoolArn:
+      'arn:aws:cognito-idp:eu-west-1:123456789012:userpool/eu-west-1_example',
+    cognitoAppClientId: 'example-client-id',
   };
 
   function createStack() {
@@ -63,13 +69,51 @@ describe('ChatUiStack', () => {
       });
     });
 
-    it('passes the environment name to the container', () => {
+    it('passes the environment name and Chat API values to the container', () => {
       const template = Template.fromStack(createStack());
 
       template.hasResourceProperties('AWS::ECS::ExpressGatewayService', {
         PrimaryContainer: Match.objectLike({
-          Environment: [{ Name: 'ENVIRONMENT', Value: baseProps.environment }],
+          Environment: [
+            { Name: 'ENVIRONMENT', Value: baseProps.environment },
+            { Name: 'CHAT_API_URL', Value: baseProps.chatApiUrl },
+            {
+              Name: 'COGNITO_TOKEN_ENDPOINT',
+              Value: baseProps.cognitoTokenEndpoint,
+            },
+            {
+              Name: 'COGNITO_USER_POOL_ID',
+              Value: baseProps.cognitoUserPoolId,
+            },
+            {
+              Name: 'COGNITO_APP_CLIENT_ID',
+              Value: baseProps.cognitoAppClientId,
+            },
+          ],
         }),
+      });
+    });
+
+    it('lets the task role describe the Chat API user pool client', () => {
+      const template = Template.fromStack(createStack());
+
+      const services = template.findResources(
+        'AWS::ECS::ExpressGatewayService',
+      );
+      const taskRoleId =
+        Object.values(services)[0].Properties.TaskRoleArn['Fn::GetAtt'][0];
+
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: [
+            {
+              Action: 'cognito-idp:DescribeUserPoolClient',
+              Effect: 'Allow',
+              Resource: baseProps.cognitoUserPoolArn,
+            },
+          ],
+        },
+        Roles: [{ Ref: taskRoleId }],
       });
     });
 

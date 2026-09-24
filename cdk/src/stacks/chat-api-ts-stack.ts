@@ -40,9 +40,18 @@ const TOO_MANY_REQUESTS_BODY = JSON.stringify({ error: 'Too many requests' });
 interface CognitoAuth {
   authorizer: apigateway.CognitoUserPoolsAuthorizer;
   scope: string;
+  userPool: cognito.UserPool;
+  appClient: cognito.UserPoolClient;
+  tokenEndpoint: string;
 }
 
 export class ChatApiTsStack extends cdk.Stack {
+  public readonly gatewayUrl: string;
+  public readonly tokenEndpoint: string;
+  public readonly userPoolId: string;
+  public readonly userPoolArn: string;
+  public readonly appClientId: string;
+
   constructor(scope: Construct, id: string, props: ChatApiTsStackProps) {
     super(scope, id, props);
 
@@ -55,6 +64,12 @@ export class ChatApiTsStack extends cdk.Stack {
     const table = this.table();
     const apiGateway = this.apiGateway(props, auth, table);
     this.webAcl(apiGateway);
+
+    this.gatewayUrl = apiGateway.url;
+    this.tokenEndpoint = auth.tokenEndpoint;
+    this.userPoolId = auth.userPool.userPoolId;
+    this.userPoolArn = auth.userPool.userPoolArn;
+    this.appClientId = auth.appClient.userPoolClientId;
 
     new cdk.CfnOutput(this, 'GatewayUrl', {
       value: apiGateway.url,
@@ -124,6 +139,8 @@ export class ChatApiTsStack extends cdk.Stack {
       },
     );
 
+    const tokenEndpoint = `https://${domain.domainName}.auth.${this.region}.amazoncognito.com/oauth2/token`;
+
     new cdk.CfnOutput(this, 'UserPoolId', {
       value: userPool.userPoolId,
     });
@@ -133,12 +150,15 @@ export class ChatApiTsStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'TokenEndpoint', {
-      value: `https://${domain.domainName}.auth.${this.region}.amazoncognito.com/oauth2/token`,
+      value: tokenEndpoint,
     });
 
     return {
       authorizer,
       scope: `chat-api/${invokeScope.scopeName}`,
+      userPool,
+      appClient,
+      tokenEndpoint,
     };
   }
 

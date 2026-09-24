@@ -40,7 +40,7 @@ const exampleAgentStack = new ExampleAgentStack(app, 'ExampleAgentStack', {
   ...serviceMetadata,
 });
 
-new ChatApiTsStack(app, 'ChatApiTsStack', {
+const chatApiTsStack = new ChatApiTsStack(app, 'ChatApiTsStack', {
   env: env,
   environment: getEnvironment(),
   agentRuntimeArn: aguiAgentStack.agentRuntimeArn,
@@ -59,6 +59,11 @@ new ChatApiFastapiStack(app, 'ChatApiFastapiStack', {
 new ChatUiStack(app, 'ChatUiStack', {
   env: env,
   environment: getEnvironment(),
+  chatApiUrl: chatApiTsStack.gatewayUrl,
+  cognitoTokenEndpoint: chatApiTsStack.tokenEndpoint,
+  cognitoUserPoolId: chatApiTsStack.userPoolId,
+  cognitoUserPoolArn: chatApiTsStack.userPoolArn,
+  cognitoAppClientId: chatApiTsStack.appClientId,
   stackName: `${getResourceNamePrefix()}-ChatUiStack`,
   ...serviceMetadata,
 });
