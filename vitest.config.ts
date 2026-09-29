@@ -2,7 +2,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    exclude: [...configDefaults.exclude, 'cdk/cdk.out/**'],
+    exclude: [...configDefaults.exclude, '**/cdk.out/**'],
     // Remove once chat-ui has its first test
     passWithNoTests: true,
     clearMocks: true,
