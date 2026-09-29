@@ -202,6 +202,8 @@ For code itself, prefer making it self-documenting over describing it:
   new package must be registered in `pnpm-workspace.yaml`.
 - No build step. We run TypeScript directly and use `tsc` only for type checking
   (`--noEmit`) — **don't introduce a compile/bundle step or emit JavaScript**.
+  Bundling at deploy time by CDK or Docker is fine, as nothing built is
+  committed.
 - `src/` layout. Package code lives in a `src/` directory.
 - Tests sit next to the code they cover, using a `.test.ts` extension (e.g.
   `thing.ts` and `thing.test.ts`), and run with `vitest`.
