@@ -16,6 +16,11 @@ export interface ChatUiStackProps extends cdk.StackProps {
   teamName: string;
   repositoryUrl: string;
   environment: string;
+  chatApiUrl: string;
+  cognitoTokenEndpoint: string;
+  cognitoUserPoolId: string;
+  cognitoUserPoolArn: string;
+  cognitoAppClientId: string;
 }
 
 const CONTAINER_PORT = 3000;
@@ -108,6 +113,15 @@ export class ChatUiStack extends cdk.Stack {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
     });
 
+    // The app reads the Chat API client secret from Cognito, rather than
+    // holding a copy of it.
+    taskRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ['cognito-idp:DescribeUserPoolClient'],
+        resources: [props.cognitoUserPoolArn],
+      }),
+    );
+
     const service = new ecs.CfnExpressGatewayService(this, serviceName, {
       serviceName,
       cpu: '512',
@@ -122,7 +136,13 @@ export class ChatUiStack extends cdk.Stack {
       primaryContainer: {
         image: image.imageUri,
         containerPort: CONTAINER_PORT,
-        environment: [{ name: 'ENVIRONMENT', value: props.environment }],
+        environment: [
+          { name: 'ENVIRONMENT', value: props.environment },
+          { name: 'CHAT_API_URL', value: props.chatApiUrl },
+          { name: 'COGNITO_TOKEN_ENDPOINT', value: props.cognitoTokenEndpoint },
+          { name: 'COGNITO_USER_POOL_ID', value: props.cognitoUserPoolId },
+          { name: 'COGNITO_APP_CLIENT_ID', value: props.cognitoAppClientId },
+        ],
         awsLogsConfiguration: {
           logGroup: logGroup.logGroupName,
           logStreamPrefix: 'chat-ui',

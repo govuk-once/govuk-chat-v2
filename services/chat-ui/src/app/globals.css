@@ -1,0 +1,124 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: #0b0c0c;
+  background: #f3f2f1;
+}
+
+.thread {
+  height: 100dvh;
+}
+
+.thread-viewport {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: 1.5rem 1rem 0;
+}
+
+.thread-welcome,
+.message,
+.thread-footer {
+  width: 100%;
+  max-width: 44rem;
+  margin-inline: auto;
+}
+
+.thread-welcome {
+  margin-block: auto;
+  font-size: 1.5rem;
+}
+
+.message {
+  margin-block: 0.5rem;
+  overflow-wrap: break-word;
+}
+
+.message-user {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.message-user-text {
+  max-width: 80%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  color: #fff;
+  background: #1d70b8;
+}
+
+.message-assistant {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.message p:first-child {
+  margin-top: 0;
+}
+
+.message p:last-child {
+  margin-bottom: 0;
+}
+
+/* Streamdown renders bold as a span with a Tailwind class, which this app
+   does not load. */
+[data-streamdown='strong'] {
+  font-weight: bold;
+}
+
+.message-thinking {
+  margin: 0;
+  color: #505a5f;
+}
+
+.message-error {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 4px solid #d4351c;
+  color: #d4351c;
+  background: #fdf1ef;
+}
+
+.thread-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding-block: 1rem;
+  background: #f3f2f1;
+}
+
+.composer {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.composer-input {
+  flex: 1;
+  max-height: 8rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #0b0c0c;
+  font: inherit;
+  resize: none;
+}
+
+.composer-button {
+  padding: 0.5rem 1rem;
+  border: 0;
+  font: inherit;
+  color: #fff;
+  background: #00703c;
+  cursor: pointer;
+}
+
+.composer-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
