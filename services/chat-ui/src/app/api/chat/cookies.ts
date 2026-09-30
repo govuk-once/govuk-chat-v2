@@ -38,6 +38,10 @@ export function setThreadId(response: NextResponse, threadId: string): void {
   setCookie(response, THREAD_ID_COOKIE, threadId);
 }
 
+export function clearThreadId(response: NextResponse): void {
+  response.cookies.delete(THREAD_ID_COOKIE);
+}
+
 export function readEndUserId(cookies: RequestCookies): string | undefined {
   return readUuidCookie(cookies, END_USER_ID_COOKIE);
 }

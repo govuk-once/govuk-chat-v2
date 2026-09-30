@@ -10,6 +10,14 @@ import { StreamdownTextPrimitive } from '@assistant-ui/react-streamdown';
 export function Thread() {
   return (
     <ThreadPrimitive.Root className="thread">
+      <header className="thread-header">
+        <form className="new-conversation" method="post" action="/api/chat/new">
+          <button type="submit" className="new-conversation-button">
+            New conversation
+          </button>
+        </form>
+      </header>
+
       <ThreadPrimitive.Viewport className="thread-viewport">
         <AuiIf condition={(state) => state.thread.isEmpty}>
           <p className="thread-welcome">

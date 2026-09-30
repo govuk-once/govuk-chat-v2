@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  clearThreadId,
   readEndUserId,
   readThreadId,
   setEndUserId,
@@ -47,6 +48,16 @@ describe('setThreadId', () => {
     setThreadId(response, THREAD_ID);
 
     expect(response.cookies.get('thread_id')?.secure).toBe(true);
+  });
+});
+
+describe('clearThreadId', () => {
+  it('clears the thread cookie', () => {
+    const response = new NextResponse();
+
+    clearThreadId(response);
+
+    expect(response.cookies.get('thread_id')?.value).toBe('');
   });
 });
 
