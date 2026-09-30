@@ -34,6 +34,13 @@ export interface InvokeThreadInput extends ThreadInput {
   content: string;
 }
 
+export interface ThreadMessage {
+  id: string;
+  role: string;
+  content: string;
+  createdAt: string;
+}
+
 const cognitoClient = new CognitoIdentityProviderClient({});
 
 // A property rather than a top-level `let`, which unicorn's lint rules reject.
