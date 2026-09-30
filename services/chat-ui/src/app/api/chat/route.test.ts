@@ -1,8 +1,11 @@
+import { NextRequest, type NextResponse } from 'next/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { InvokeThreadInput } from '../../../chat-api/client.ts';
 
 const THREAD_ID = crypto.randomUUID();
 const END_USER_ID = crypto.randomUUID();
+const UUID_PATTERN =
+  /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/;
 const SSE_EVENTS = [
   'data: {"type":"RUN_STARTED"}\n\n',
   'data: {"type":"RUN_FINISHED"}\n\n',
@@ -11,7 +14,7 @@ const SSE_EVENTS = [
 const invokeThread = vi.fn<(input: InvokeThreadInput) => Promise<Response>>();
 
 const testEnv = {} as {
-  POST: (request: Request) => Promise<Response>;
+  POST: (request: NextRequest) => Promise<NextResponse>;
 };
 
 beforeAll(async () => {
@@ -52,10 +55,13 @@ function runAgentInput(overrides: Record<string, unknown> = {}): unknown {
   };
 }
 
-function chatRequest(body: unknown, headers?: Record<string, string>): Request {
-  return new Request('http://localhost/api/chat', {
+function chatRequest(
+  body: unknown,
+  cookie = `end_user_id=${END_USER_ID}`,
+): NextRequest {
+  return new NextRequest('http://localhost/api/chat', {
     method: 'POST',
-    headers: headers ?? { 'end-user-id': END_USER_ID },
+    headers: { cookie },
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
 }
@@ -68,9 +74,7 @@ describe('POST', () => {
 
     expect(invokeThread).toHaveBeenCalledWith({
       threadId: THREAD_ID,
-      runId: expect.stringMatching(
-        /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/,
-      ),
+      runId: expect.stringMatching(UUID_PATTERN),
       endUserId: END_USER_ID,
       content: 'Who pays it?',
       signal: request.signal,
@@ -86,22 +90,34 @@ describe('POST', () => {
     expect(await response.text()).toBe(SSE_EVENTS.join(''));
   });
 
-  it('returns the API status with a generic error when the API rejects the request', async () => {
+  it('keeps the thread in a cookie and renews the end user cookie', async () => {
+    const response = await testEnv.POST(chatRequest(runAgentInput()));
+
+    expect(response.cookies.get('thread_id')?.value).toBe(THREAD_ID);
+    expect(response.cookies.get('end_user_id')?.value).toBe(END_USER_ID);
+  });
+
+  it('creates an end user when there is no end user cookie', async () => {
+    const response = await testEnv.POST(chatRequest(runAgentInput(), ''));
+
+    const [input] = invokeThread.mock.lastCall!;
+    expect(input.endUserId).toMatch(UUID_PATTERN);
+    expect(response.cookies.get('end_user_id')?.value).toBe(input.endUserId);
+  });
+
+  it('returns the API status with a generic error and sets no cookies when the API rejects the request', async () => {
     invokeThread.mockResolvedValueOnce(
       Response.json({ error: 'Thread is busy' }, { status: 409 }),
     );
 
-    const response = await testEnv.POST(chatRequest(runAgentInput()));
+    const response = await testEnv.POST(chatRequest(runAgentInput(), ''));
 
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ error: 'Chat API request failed' });
+    expect(response.cookies.getAll()).toEqual([]);
   });
 
   it.each([
-    [
-      'the end-user-id header is not a UUID',
-      chatRequest(runAgentInput(), { 'end-user-id': 'not-a-uuid' }),
-    ],
     ['the body is not JSON', chatRequest('not json')],
     [
       'the body is not a RunAgentInput',

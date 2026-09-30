@@ -2,8 +2,9 @@
 
 A Next.js web app for trying out the Chat API in a browser. Its page is a
 chat that sends each message to the Chat API through a server-side route and
-streams the answer back. Refreshing the page starts a new conversation. It
-also serves a `/api/health` route.
+streams the answer back. The server keeps the conversation's thread in a
+cookie, so refreshing the page carries on the same conversation. It also
+serves a `/api/health` route.
 
 ## Usage
 
