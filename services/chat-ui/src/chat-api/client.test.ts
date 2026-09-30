@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { InvokeThreadInput } from './client.ts';
+import type { InvokeThreadInput, ThreadInput } from './client.ts';
 
 const CHAT_API_URL = 'https://api.example.com/dev/';
 const TOKEN_ENDPOINT = 'https://auth.example.com/oauth2/token';
@@ -15,6 +15,7 @@ const fetchMock = vi.fn<typeof fetch>();
 
 const testEnv = {} as {
   invokeThread: (input: InvokeThreadInput) => Promise<Response>;
+  listThreadMessages: (input: ThreadInput) => Promise<Response>;
 };
 
 function invokeInput(): InvokeThreadInput {
@@ -67,6 +68,7 @@ beforeEach(async () => {
   }));
   const clientModule = await import('./client.ts');
   testEnv.invokeThread = clientModule.invokeThread;
+  testEnv.listThreadMessages = clientModule.listThreadMessages;
 });
 
 afterAll(() => {
@@ -153,6 +155,27 @@ describe('invokeThread', () => {
           content: input.content,
         },
       ],
+    });
+    expect(await response.text()).toBe('upstream');
+  });
+});
+
+describe('listThreadMessages', () => {
+  it('gets the thread messages endpoint and returns the response', async () => {
+    const input = {
+      threadId: crypto.randomUUID(),
+      endUserId: crypto.randomUUID(),
+      signal: new AbortController().signal,
+    };
+
+    const response = await testEnv.listThreadMessages(input);
+
+    const [url, init] = fetchMock.mock.calls.at(-1)!;
+    expect(url).toBe(`${CHAT_API_URL}v1/threads/${input.threadId}/messages`);
+    expect(init?.signal).toBe(input.signal);
+    expect(init?.headers).toEqual({
+      Authorization: `Bearer ${ACCESS_TOKEN}`,
+      'end-user-id': input.endUserId,
     });
     expect(await response.text()).toBe('upstream');
   });
