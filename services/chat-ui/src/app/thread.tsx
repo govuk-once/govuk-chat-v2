@@ -7,7 +7,7 @@ import {
 } from '@assistant-ui/react';
 import { StreamdownTextPrimitive } from '@assistant-ui/react-streamdown';
 
-export function Thread() {
+export function Thread({ isNewConversation }: { isNewConversation: boolean }) {
   return (
     <ThreadPrimitive.Root className="thread">
       <header className="thread-header">
@@ -19,7 +19,7 @@ export function Thread() {
       </header>
 
       <ThreadPrimitive.Viewport className="thread-viewport">
-        <AuiIf condition={(state) => state.thread.isEmpty}>
+        <AuiIf condition={(state) => isNewConversation && state.thread.isEmpty}>
           <p className="thread-welcome">
             Ask a question to start a conversation.
           </p>
