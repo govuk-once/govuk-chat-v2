@@ -1,4 +1,6 @@
+import * as crypto from 'node:crypto';
 import * as cdk from 'aws-cdk-lib';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
@@ -36,10 +38,22 @@ export class ChatUiStack extends cdk.Stack {
 
     const subnets = this.publicSubnets();
     const logGroup = this.logGroup();
-    const service = this.expressService(props, subnets, logGroup);
+    const sessionSecret = crypto.randomUUID();
+    const signInClient = this.signInClient(props);
+    const service = this.expressService(
+      props,
+      subnets,
+      logGroup,
+      signInClient.ref,
+      sessionSecret,
+    );
 
     new cdk.CfnOutput(this, 'EndpointUrl', {
       value: service.attrEndpoint,
+    });
+
+    new cdk.CfnOutput(this, 'SignInClientId', {
+      value: signInClient.ref,
     });
   }
 
@@ -72,10 +86,34 @@ export class ChatUiStack extends cdk.Stack {
     });
   }
 
+  signInClient(props: ChatUiStackProps): cognito.CfnUserPoolClient {
+    const clientName = `${getResourceNamePrefix()}-chat-ui-sign-in-client`;
+
+    // Only localhost for now; the deployed endpoint's callback URL is
+    // added by the deploy script after the service is created. A
+    // CloudFormation-level circular reference prevents wiring the
+    // endpoint URL here.
+    return new cognito.CfnUserPoolClient(this, clientName, {
+      userPoolId: props.cognitoUserPoolId,
+      clientName,
+      generateSecret: true,
+      allowedOAuthFlows: ['code'],
+      allowedOAuthFlowsUserPoolClient: true,
+      allowedOAuthScopes: ['openid'],
+      supportedIdentityProviders: ['COGNITO'],
+      callbackUrLs: ['http://localhost:3000/api/auth/callback'],
+      logoutUrLs: ['http://localhost:3000/'],
+      idTokenValidity: isEphemeralEnvironment() ? 1440 : 60,
+      tokenValidityUnits: { idToken: 'minutes' },
+    });
+  }
+
   expressService(
     props: ChatUiStackProps,
     subnets: ec2.ISubnet[],
     logGroup: logs.LogGroup,
+    signInClientId: string,
+    sessionSecret: string,
   ): ecs.CfnExpressGatewayService {
     const serviceName = `${getResourceNamePrefix()}-chat-ui`;
 
@@ -142,6 +180,8 @@ export class ChatUiStack extends cdk.Stack {
           { name: 'COGNITO_TOKEN_ENDPOINT', value: props.cognitoTokenEndpoint },
           { name: 'COGNITO_USER_POOL_ID', value: props.cognitoUserPoolId },
           { name: 'COGNITO_APP_CLIENT_ID', value: props.cognitoAppClientId },
+          { name: 'COGNITO_SIGN_IN_CLIENT_ID', value: signInClientId },
+          { name: 'SESSION_SECRET', value: sessionSecret },
         ],
         awsLogsConfiguration: {
           logGroup: logGroup.logGroupName,

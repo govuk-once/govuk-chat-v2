@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import baseContext from '../../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
-import { vi, describe, it } from 'vitest';
+import { vi, describe, it, afterEach } from 'vitest';
 import { ChatUiStack } from './chat-ui-stack.ts';
 
 const context = {
@@ -70,7 +70,7 @@ describe('ChatUiStack', () => {
 
       template.hasResourceProperties('AWS::ECS::ExpressGatewayService', {
         PrimaryContainer: Match.objectLike({
-          Environment: [
+          Environment: Match.arrayWith([
             { Name: 'ENVIRONMENT', Value: baseProps.environment },
             { Name: 'CHAT_API_URL', Value: baseProps.chatApiUrl },
             {
@@ -85,7 +85,9 @@ describe('ChatUiStack', () => {
               Name: 'COGNITO_APP_CLIENT_ID',
               Value: baseProps.cognitoAppClientId,
             },
-          ],
+            { Name: 'COGNITO_SIGN_IN_CLIENT_ID', Value: Match.anyValue() },
+            { Name: 'SESSION_SECRET', Value: Match.anyValue() },
+          ]),
         }),
       });
     });
@@ -117,6 +119,33 @@ describe('ChatUiStack', () => {
       const template = Template.fromStack(createStack());
 
       template.hasOutput('EndpointUrl', {});
+    });
+
+    it('outputs the sign-in client ID', () => {
+      const template = Template.fromStack(createStack());
+
+      template.hasOutput('SignInClientId', {});
+    });
+  });
+
+  describe('Sign-in client', () => {
+    it('creates an authorization code grant client on the user pool', () => {
+      const template = Template.fromStack(createStack());
+
+      template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+        AllowedOAuthFlows: ['code'],
+        AllowedOAuthScopes: ['openid'],
+        GenerateSecret: true,
+      });
+    });
+
+    it('sets callback and logout URLs for local development', () => {
+      const template = Template.fromStack(createStack());
+
+      template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+        CallbackURLs: ['http://localhost:3000/api/auth/callback'],
+        LogoutURLs: ['http://localhost:3000/'],
+      });
     });
   });
 
