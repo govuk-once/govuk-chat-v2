@@ -3,7 +3,14 @@ import { readThreadId } from './api/chat/cookies.ts';
 import { Chat } from './chat.tsx';
 
 export default async function Home() {
-  const threadId = readThreadId(await cookies()) ?? crypto.randomUUID();
+  // The thread cookie is only set once a message has been sent, and "New
+  // conversation" clears it, so without one there is no history to load.
+  const savedThreadId = readThreadId(await cookies());
 
-  return <Chat threadId={threadId} />;
+  return (
+    <Chat
+      threadId={savedThreadId ?? crypto.randomUUID()}
+      isNewConversation={savedThreadId === undefined}
+    />
+  );
 }

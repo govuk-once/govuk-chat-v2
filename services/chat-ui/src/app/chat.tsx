@@ -11,16 +11,21 @@ function createAgent(threadId: string): HttpAgent {
   return new HttpAgent({ url: '/api/chat', threadId });
 }
 
-export function Chat({ threadId }: { threadId: string }) {
+interface ChatProps {
+  threadId: string;
+  isNewConversation: boolean;
+}
+
+export function Chat({ threadId, isNewConversation }: ChatProps) {
   const [agent] = useState(() => createAgent(threadId));
   const runtime = useAgUiRuntime({
     agent,
-    adapters: { history: threadHistory },
+    adapters: isNewConversation ? {} : { history: threadHistory },
   });
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <Thread />
+      <Thread isNewConversation={isNewConversation} />
     </AssistantRuntimeProvider>
   );
 }
