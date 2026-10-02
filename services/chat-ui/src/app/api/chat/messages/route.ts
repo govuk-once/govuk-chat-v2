@@ -1,14 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { verifySession, SESSION_COOKIE } from '../../../../auth/session.ts';
 import {
   listThreadMessages,
   type ThreadMessage,
 } from '../../../../chat-api/client.ts';
-import {
-  readEndUserId,
-  readThreadId,
-  setEndUserId,
-  setThreadId,
-} from '../cookies.ts';
+import { readThreadId, setThreadId } from '../cookies.ts';
 
 export const runtime = 'nodejs';
 
@@ -18,14 +14,14 @@ interface ThreadMessagesBody {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const threadId = readThreadId(request.cookies);
-  const endUserId = readEndUserId(request.cookies);
-  if (!threadId || !endUserId) {
+  const session = verifySession(request.cookies.get(SESSION_COOKIE)?.value);
+  if (!threadId || !session) {
     return NextResponse.json({ messages: [] });
   }
 
   const upstream = await listThreadMessages({
     threadId,
-    endUserId,
+    endUserId: session.sub,
     signal: request.signal,
   });
 
@@ -47,6 +43,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     { headers: { 'Cache-Control': 'no-store' } },
   );
   setThreadId(response, threadId);
-  setEndUserId(response, endUserId);
   return response;
 }
