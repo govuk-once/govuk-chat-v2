@@ -23,12 +23,22 @@ interface TokenResponse {
   expires_in: number;
 }
 
-export interface InvokeThreadInput {
+export interface ThreadInput {
   threadId: string;
-  runId: string;
   endUserId: string;
-  content: string;
   signal: AbortSignal;
+}
+
+export interface InvokeThreadInput extends ThreadInput {
+  runId: string;
+  content: string;
+}
+
+export interface ThreadMessage {
+  id: string;
+  role: string;
+  content: string;
+  createdAt: string;
 }
 
 const cognitoClient = new CognitoIdentityProviderClient({});
@@ -106,17 +116,30 @@ async function getAccessToken(config: ChatApiConfig): Promise<string> {
   return tokenCache.token.value;
 }
 
-export async function invokeThread(
-  input: InvokeThreadInput,
+async function requestChatApi(
+  path: string,
+  endUserId: string,
+  init: RequestInit & { headers?: Record<string, string> },
 ): Promise<Response> {
   const config = readConfig();
   const accessToken = await getAccessToken(config);
 
-  return fetch(`${config.chatApiUrl.replace(/\/$/, '')}/v1/threads/invoke`, {
-    method: 'POST',
+  return fetch(`${config.chatApiUrl.replace(/\/$/, '')}${path}`, {
+    ...init,
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'end-user-id': input.endUserId,
+      'end-user-id': endUserId,
+      ...init.headers,
+    },
+  });
+}
+
+export async function invokeThread(
+  input: InvokeThreadInput,
+): Promise<Response> {
+  return requestChatApi('/v1/threads/invoke', input.endUserId, {
+    method: 'POST',
+    headers: {
       'Content-Type': 'application/json',
       Accept: 'text/event-stream',
     },
@@ -129,4 +152,14 @@ export async function invokeThread(
     }),
     signal: input.signal,
   });
+}
+
+export async function listThreadMessages(
+  input: ThreadInput,
+): Promise<Response> {
+  return requestChatApi(
+    `/v1/threads/${input.threadId}/messages`,
+    input.endUserId,
+    { signal: input.signal },
+  );
 }

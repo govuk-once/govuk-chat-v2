@@ -11,17 +11,39 @@ body {
 }
 
 .thread {
+  display: flex;
+  flex-direction: column;
   height: 100dvh;
+}
+
+.thread-header {
+  padding: 1rem 1rem 0;
+}
+
+.new-conversation {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.new-conversation-button {
+  padding: 0.5rem 1rem;
+  border: 2px solid #0b0c0c;
+  font: inherit;
+  color: #0b0c0c;
+  background: #fff;
+  cursor: pointer;
 }
 
 .thread-viewport {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 1.5rem 1rem 0;
 }
 
+.new-conversation,
 .thread-welcome,
 .message,
 .thread-footer {
