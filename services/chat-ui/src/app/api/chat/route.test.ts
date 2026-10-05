@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { InvokeThreadInput } from '../../../chat-api/client.ts';
 
 const THREAD_ID = crypto.randomUUID();
-const END_USER_ID = crypto.randomUUID();
+const USER_SUB = crypto.randomUUID();
 const UUID_PATTERN =
   /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/;
 const SSE_EVENTS = [
@@ -11,6 +11,8 @@ const SSE_EVENTS = [
   'data: {"type":"RUN_FINISHED"}\n\n',
 ];
 
+const verifySession =
+  vi.fn<(cookie: string | undefined) => { sub: string } | undefined>();
 const invokeThread = vi.fn<(input: InvokeThreadInput) => Promise<Response>>();
 
 const testEnv = {} as {
@@ -18,12 +20,17 @@ const testEnv = {} as {
 };
 
 beforeAll(async () => {
+  vi.doMock('../../../auth/session.ts', () => ({
+    verifySession,
+    SESSION_COOKIE: 'session',
+  }));
   vi.doMock('../../../chat-api/client.ts', () => ({ invokeThread }));
   const routeModule = await import('./route.ts');
   testEnv.POST = routeModule.POST;
 });
 
 beforeEach(() => {
+  verifySession.mockReturnValue({ sub: USER_SUB });
   invokeThread.mockResolvedValue(new Response(sseStream()));
 });
 
@@ -55,19 +62,16 @@ function runAgentInput(overrides: Record<string, unknown> = {}): unknown {
   };
 }
 
-function chatRequest(
-  body: unknown,
-  cookie = `end_user_id=${END_USER_ID}`,
-): NextRequest {
+function chatRequest(body: unknown): NextRequest {
   return new NextRequest('http://localhost/api/chat', {
     method: 'POST',
-    headers: { cookie },
+    headers: { cookie: 'session=valid-session' },
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
 }
 
 describe('POST', () => {
-  it('invokes the thread with a fresh run id and the last user message', async () => {
+  it('invokes the thread with the signed-in user sub and a fresh run id', async () => {
     const request = chatRequest(runAgentInput());
 
     await testEnv.POST(request);
@@ -75,7 +79,7 @@ describe('POST', () => {
     expect(invokeThread).toHaveBeenCalledWith({
       threadId: THREAD_ID,
       runId: expect.stringMatching(UUID_PATTERN),
-      endUserId: END_USER_ID,
+      endUserId: USER_SUB,
       content: 'Who pays it?',
       signal: request.signal,
     });
@@ -90,19 +94,19 @@ describe('POST', () => {
     expect(await response.text()).toBe(SSE_EVENTS.join(''));
   });
 
-  it('keeps the thread in a cookie and renews the end user cookie', async () => {
+  it('keeps the thread in a cookie', async () => {
     const response = await testEnv.POST(chatRequest(runAgentInput()));
 
     expect(response.cookies.get('thread_id')?.value).toBe(THREAD_ID);
-    expect(response.cookies.get('end_user_id')?.value).toBe(END_USER_ID);
   });
 
-  it('creates an end user when there is no end user cookie', async () => {
-    const response = await testEnv.POST(chatRequest(runAgentInput(), ''));
+  it('returns 401 when the session is invalid', async () => {
+    verifySession.mockReturnValue(undefined);
 
-    const [input] = invokeThread.mock.lastCall!;
-    expect(input.endUserId).toMatch(UUID_PATTERN);
-    expect(response.cookies.get('end_user_id')?.value).toBe(input.endUserId);
+    const response = await testEnv.POST(chatRequest(runAgentInput()));
+
+    expect(response.status).toBe(401);
+    expect(invokeThread).not.toHaveBeenCalled();
   });
 
   it('returns the API status with a generic error and sets no cookies when the API rejects the request', async () => {
@@ -110,7 +114,7 @@ describe('POST', () => {
       Response.json({ error: 'Thread is busy' }, { status: 409 }),
     );
 
-    const response = await testEnv.POST(chatRequest(runAgentInput(), ''));
+    const response = await testEnv.POST(chatRequest(runAgentInput()));
 
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ error: 'Chat API request failed' });
