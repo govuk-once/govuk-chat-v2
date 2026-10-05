@@ -1,9 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as cr from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
 import {
   getResourceNamePrefix,
@@ -24,6 +27,7 @@ export interface ChatUiStackProps extends cdk.StackProps {
 }
 
 const CONTAINER_PORT = 3000;
+const LOCAL_DEV_ORIGIN = 'http://localhost:3000';
 
 export class ChatUiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ChatUiStackProps) {
@@ -36,10 +40,23 @@ export class ChatUiStack extends cdk.Stack {
 
     const subnets = this.publicSubnets();
     const logGroup = this.logGroup();
-    const service = this.expressService(props, subnets, logGroup);
+    const sessionSecret = this.sessionSecret();
+    const signInClient = this.signInClient(props);
+    const service = this.expressService(
+      props,
+      subnets,
+      logGroup,
+      signInClient.ref,
+      sessionSecret,
+    );
+    this.applySignInClientSettings(props, signInClient, service);
 
     new cdk.CfnOutput(this, 'EndpointUrl', {
       value: service.attrEndpoint,
+    });
+
+    new cdk.CfnOutput(this, 'SignInClientId', {
+      value: signInClient.ref,
     });
   }
 
@@ -72,10 +89,90 @@ export class ChatUiStack extends cdk.Stack {
     });
   }
 
+  sessionSecret(): secretsmanager.Secret {
+    const secretName = `${getResourceNamePrefix()}-chat-ui-session-secret`;
+
+    return new secretsmanager.Secret(this, secretName, {
+      secretName,
+      generateSecretString: { excludePunctuation: true, passwordLength: 64 },
+      removalPolicy: isEphemeralEnvironment()
+        ? cdk.RemovalPolicy.DESTROY
+        : cdk.RemovalPolicy.RETAIN,
+    });
+  }
+
+  // Its settings are applied by applySignInClientSettings, not here.
+  signInClient(props: ChatUiStackProps): cognito.CfnUserPoolClient {
+    const clientName = `${getResourceNamePrefix()}-chat-ui-sign-in-client`;
+
+    return new cognito.CfnUserPoolClient(this, clientName, {
+      userPoolId: props.cognitoUserPoolId,
+      clientName,
+      generateSecret: true,
+    });
+  }
+
+  // The sign-in client needs the service's endpoint as a callback URL, and the
+  // service needs the client's ID, which would be a circular dependency. So
+  // this custom resource applies the client's settings once the service
+  // exists.
+  //
+  // UpdateUserPoolClient resets any setting it isn't given, as would
+  // CloudFormation updating the client, so every setting lives here rather
+  // than on the client. Any change CloudFormation can make to the client
+  // either replaces it or renames it, and both change this call, so it runs
+  // again.
+  applySignInClientSettings(
+    props: ChatUiStackProps,
+    signInClient: cognito.CfnUserPoolClient,
+    service: ecs.CfnExpressGatewayService,
+  ): void {
+    const origins = [
+      ...(isEphemeralEnvironment() ? [LOCAL_DEV_ORIGIN] : []),
+      `https://${service.attrEndpoint}`,
+    ];
+
+    const updateSignInClient: cr.AwsSdkCall = {
+      service: 'CognitoIdentityServiceProvider',
+      action: 'updateUserPoolClient',
+      parameters: {
+        UserPoolId: props.cognitoUserPoolId,
+        ClientId: signInClient.ref,
+        ClientName: signInClient.clientName,
+        AllowedOAuthFlows: ['code'],
+        AllowedOAuthFlowsUserPoolClient: true,
+        AllowedOAuthScopes: ['openid'],
+        SupportedIdentityProviders: ['COGNITO'],
+        CallbackURLs: origins.map((origin) => `${origin}/api/auth/callback`),
+        LogoutURLs: origins.map((origin) => `${origin}/`),
+        PreventUserExistenceErrors: 'ENABLED',
+      },
+      physicalResourceId: cr.PhysicalResourceId.of('sign-in-client-settings'),
+      // The response includes the client secret, so keep it out of the
+      // custom resource's logs and the data it returns to CloudFormation.
+      logging: cr.Logging.withDataHidden(),
+      outputPaths: ['UserPoolClient.ClientId'],
+    };
+
+    new cr.AwsCustomResource(this, 'SignInClientSettings', {
+      onCreate: updateSignInClient,
+      onUpdate: updateSignInClient,
+      installLatestAwsSdk: false,
+      policy: cr.AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          actions: ['cognito-idp:UpdateUserPoolClient'],
+          resources: [props.cognitoUserPoolArn],
+        }),
+      ]),
+    });
+  }
+
   expressService(
     props: ChatUiStackProps,
     subnets: ec2.ISubnet[],
     logGroup: logs.LogGroup,
+    signInClientId: string,
+    sessionSecret: secretsmanager.ISecret,
   ): ecs.CfnExpressGatewayService {
     const serviceName = `${getResourceNamePrefix()}-chat-ui`;
 
@@ -95,6 +192,8 @@ export class ChatUiStack extends cdk.Stack {
         ),
       ],
     });
+
+    sessionSecret.grantRead(executionRole);
 
     const infrastructureRole = new iam.Role(
       this,
@@ -142,6 +241,10 @@ export class ChatUiStack extends cdk.Stack {
           { name: 'COGNITO_TOKEN_ENDPOINT', value: props.cognitoTokenEndpoint },
           { name: 'COGNITO_USER_POOL_ID', value: props.cognitoUserPoolId },
           { name: 'COGNITO_APP_CLIENT_ID', value: props.cognitoAppClientId },
+          { name: 'COGNITO_SIGN_IN_CLIENT_ID', value: signInClientId },
+        ],
+        secrets: [
+          { name: 'SESSION_SECRET', valueFrom: sessionSecret.secretArn },
         ],
         awsLogsConfiguration: {
           logGroup: logGroup.logGroupName,

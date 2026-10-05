@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import baseContext from '../../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
-import { vi, describe, it } from 'vitest';
+import { vi, describe, expect, it } from 'vitest';
 import { ChatUiStack } from './chat-ui-stack.ts';
 
 const context = {
@@ -27,6 +27,20 @@ describe('ChatUiStack', () => {
   function createStack() {
     const app = new cdk.App({ context });
     return new ChatUiStack(app, 'TestStack', baseProps);
+  }
+
+  // The custom resource's SDK call, as JSON text without its CloudFormation
+  // references.
+  function signInClientSettings(): string {
+    const template = Template.fromStack(createStack());
+    const [customResource] = Object.values(
+      template.findResources('Custom::AWS'),
+    );
+    const [, parts] = customResource.Properties.Update['Fn::Join'] as [
+      string,
+      unknown[],
+    ];
+    return parts.filter((part) => typeof part === 'string').join('');
   }
 
   describe('Stack tags', () => {
@@ -70,7 +84,7 @@ describe('ChatUiStack', () => {
 
       template.hasResourceProperties('AWS::ECS::ExpressGatewayService', {
         PrimaryContainer: Match.objectLike({
-          Environment: [
+          Environment: Match.arrayWith([
             { Name: 'ENVIRONMENT', Value: baseProps.environment },
             { Name: 'CHAT_API_URL', Value: baseProps.chatApiUrl },
             {
@@ -85,7 +99,8 @@ describe('ChatUiStack', () => {
               Name: 'COGNITO_APP_CLIENT_ID',
               Value: baseProps.cognitoAppClientId,
             },
-          ],
+            { Name: 'COGNITO_SIGN_IN_CLIENT_ID', Value: Match.anyValue() },
+          ]),
         }),
       });
     });
@@ -117,6 +132,54 @@ describe('ChatUiStack', () => {
       const template = Template.fromStack(createStack());
 
       template.hasOutput('EndpointUrl', {});
+    });
+
+    it('outputs the sign-in client ID', () => {
+      const template = Template.fromStack(createStack());
+
+      template.hasOutput('SignInClientId', {});
+    });
+  });
+
+  describe('Session secret', () => {
+    it('passes a generated secret to the container', () => {
+      const template = Template.fromStack(createStack());
+
+      template.resourceCountIs('AWS::SecretsManager::Secret', 1);
+      template.hasResourceProperties('AWS::ECS::ExpressGatewayService', {
+        PrimaryContainer: Match.objectLike({
+          Secrets: [{ Name: 'SESSION_SECRET', ValueFrom: Match.anyValue() }],
+        }),
+      });
+    });
+  });
+
+  describe('Sign-in client', () => {
+    it('creates a client with a secret on the user pool', () => {
+      const template = Template.fromStack(createStack());
+
+      template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+        GenerateSecret: true,
+        UserPoolId: baseProps.cognitoUserPoolId,
+      });
+    });
+
+    it('applies the authorization code grant once the service exists', () => {
+      expect(signInClientSettings()).toContain('"AllowedOAuthFlows":["code"]');
+    });
+
+    it('allows a localhost callback in ephemeral environments', () => {
+      expect(signInClientSettings()).toContain('http://localhost:3000');
+    });
+
+    it('allows no localhost callback in non-ephemeral environments', () => {
+      vi.stubEnv('ENVIRONMENT', 'prod');
+
+      expect(signInClientSettings()).not.toContain('localhost');
+    });
+
+    it('keeps the client secret out of the custom resource logs', () => {
+      expect(signInClientSettings()).toContain('"logApiResponseData":false');
     });
   });
 
