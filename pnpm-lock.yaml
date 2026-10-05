@@ -123,6 +123,9 @@ importers:
       '@aws-sdk/client-cognito-identity-provider':
         specifier: ^3.1139.0
         version: 3.1142.0
+      aws-jwt-verify:
+        specifier: ^5.2.1
+        version: 5.2.1
       next:
         specifier: ^16.3.6
         version: 16.3.7(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -2967,6 +2970,10 @@ packages:
     resolution: {integrity: sha512-n6kCL9R9uuvb7WXEwiSs3rYGwnTy9AHHmxOT5Pj5/++E4PYz2bLDXIxzoiOMIj5maoyC52PTe/0GezFV+O0ILQ==}
     engines: {node: '>= 18.0.0'}
     hasBin: true
+
+  aws-jwt-verify@5.2.1:
+    resolution: {integrity: sha512-J+buA4M+qvQDk58WXFBLkDodkEX3DDL1ac5XFQPW3opxAsaLXYu5hYnlSHsaBRDBUXBAn695kE/cw/mdyJKwJg==}
+    engines: {node: '>=18.0.0'}
 
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
@@ -8525,6 +8532,8 @@ snapshots:
       constructs: 10.8.1
 
   aws-cdk@2.1136.0: {}
+
+  aws-jwt-verify@5.2.1: {}
 
   bail@2.0.2: {}
 
