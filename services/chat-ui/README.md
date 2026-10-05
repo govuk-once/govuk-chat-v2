@@ -34,6 +34,26 @@ export COGNITO_USER_POOL_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack UserPoo
 export COGNITO_APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack AppClientId)
 ```
 
+## Sign-in
+
+The app requires Cognito sign-in. Unauthenticated requests are redirected
+to the Cognito Hosted UI; `/api/health` is exempt so that health checks
+and CI smoke tests still pass.
+
+Users are created by an admin in the Cognito console or CLI. Sessions last
+24 hours and are stored in a signed cookie.
+
+For local development, deploy your `ChatUiStack` to create the sign-in
+client, then export its ID and a session secret:
+
+```
+export COGNITO_SIGN_IN_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatUiStack SignInClientId)
+export SESSION_SECRET=any-local-secret
+```
+
+For a deployed stack, the CDK passes these values to the container and
+registers the endpoint's callback URL automatically via a custom resource.
+
 ## Building the image
 
 The image builds from the repo root, because pnpm keeps the lockfile there:
@@ -63,10 +83,6 @@ The container gets `ENVIRONMENT`, the deployment environment name.
 `/api/health` reports it. It also gets the Chat API values above from the
 `ChatApiTsStack` in the same environment, which the deploy script deploys
 first.
-
-A deployed stack has no access gate until CHAT-932 adds sign-in. Anyone with
-its URL can chat using the team's Chat API credentials, so destroy it as soon
-as you are finished.
 
 Each stack runs a Fargate task and a load balancer all the time, so destroy
 it when you are finished. `aws-stack-cleanup` will not remove it, because it
