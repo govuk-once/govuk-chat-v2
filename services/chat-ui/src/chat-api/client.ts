@@ -2,6 +2,7 @@ import {
   CognitoIdentityProviderClient,
   DescribeUserPoolClientCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { requireEnv } from '../lib/env.ts';
 
 const TOKEN_SCOPE = 'chat-api/invoke';
 const TOKEN_EXPIRY_MARGIN_MS = 60_000;
@@ -45,14 +46,6 @@ const cognitoClient = new CognitoIdentityProviderClient({});
 
 // A property rather than a top-level `let`, which unicorn's lint rules reject.
 const tokenCache: { token?: AccessToken } = {};
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} is not configured`);
-  }
-  return value;
-}
 
 // Read on use rather than at import, unlike chat-api-ts, because `next build`
 // imports route modules inside the Docker build, where none of this is set.
