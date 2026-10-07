@@ -1,9 +1,9 @@
 import { NextRequest, type NextResponse } from 'next/server';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ThreadInput } from '../../../../chat-api/client.ts';
 
 const THREAD_ID = crypto.randomUUID();
-const END_USER_ID = crypto.randomUUID();
+const USER_SUB = 'cognito-user-sub-123';
 const MESSAGES = [
   {
     id: crypto.randomUUID(),
@@ -13,6 +13,8 @@ const MESSAGES = [
   },
 ];
 
+const verifySession =
+  vi.fn<(cookie: string | undefined) => { sub: string } | undefined>();
 const listThreadMessages = vi.fn<(input: ThreadInput) => Promise<Response>>();
 
 const testEnv = {} as {
@@ -20,13 +22,21 @@ const testEnv = {} as {
 };
 
 beforeAll(async () => {
+  vi.doMock('../../../../auth/session.ts', () => ({
+    verifySession,
+    SESSION_COOKIE: 'session',
+  }));
   vi.doMock('../../../../chat-api/client.ts', () => ({ listThreadMessages }));
   const routeModule = await import('./route.ts');
   testEnv.GET = routeModule.GET;
 });
 
+beforeEach(() => {
+  verifySession.mockReturnValue({ sub: USER_SUB });
+});
+
 function messagesRequest(
-  cookie = `thread_id=${THREAD_ID}; end_user_id=${END_USER_ID}`,
+  cookie = `thread_id=${THREAD_ID}; session=valid-session`,
 ): NextRequest {
   return new NextRequest('http://localhost/api/chat/messages', {
     headers: { cookie },
@@ -34,7 +44,7 @@ function messagesRequest(
 }
 
 describe('GET', () => {
-  it('returns the messages of the thread in the cookies and renews the cookies', async () => {
+  it('returns the messages using the signed-in user sub and renews the thread cookie', async () => {
     listThreadMessages.mockResolvedValueOnce(
       Response.json({
         messages: MESSAGES,
@@ -47,19 +57,26 @@ describe('GET', () => {
 
     expect(listThreadMessages).toHaveBeenCalledWith({
       threadId: THREAD_ID,
-      endUserId: END_USER_ID,
+      endUserId: USER_SUB,
       signal: request.signal,
     });
     expect(await response.json()).toEqual({ messages: MESSAGES });
     expect(response.cookies.get('thread_id')?.value).toBe(THREAD_ID);
-    expect(response.cookies.get('end_user_id')?.value).toBe(END_USER_ID);
   });
 
-  it.each([
-    ['there is no thread cookie', `end_user_id=${END_USER_ID}`],
-    ['there is no end user cookie', `thread_id=${THREAD_ID}`],
-  ])('returns no messages when %s', async (_case, cookie) => {
-    const response = await testEnv.GET(messagesRequest(cookie));
+  it('returns no messages when there is no thread cookie', async () => {
+    const response = await testEnv.GET(
+      messagesRequest('session=valid-session'),
+    );
+
+    expect(await response.json()).toEqual({ messages: [] });
+    expect(listThreadMessages).not.toHaveBeenCalled();
+  });
+
+  it('returns no messages when the session is invalid', async () => {
+    verifySession.mockReturnValue(undefined);
+
+    const response = await testEnv.GET(messagesRequest());
 
     expect(await response.json()).toEqual({ messages: [] });
     expect(listThreadMessages).not.toHaveBeenCalled();
@@ -84,6 +101,8 @@ describe('GET', () => {
     const response = await testEnv.GET(messagesRequest());
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ error: 'Chat API request failed' });
+    expect(await response.json()).toEqual({
+      error: 'Chat API request failed',
+    });
   });
 });
