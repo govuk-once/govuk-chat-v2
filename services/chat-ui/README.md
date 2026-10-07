@@ -40,8 +40,15 @@ The app requires Cognito sign-in. Unauthenticated requests are redirected
 to the Cognito Hosted UI; `/api/health` is exempt so that health checks
 and CI smoke tests still pass.
 
-Users are created by an admin in the Cognito console or CLI. Sessions last
-24 hours and are stored in a signed cookie.
+Sessions last 24 hours and are stored in a signed cookie. Self sign-up is
+off, so to sign in to your dev stack, create yourself a user (named
+`$USER` unless you pass a username) in your `ChatApiTsStack` user pool:
+
+```
+scripts/create-dev-user.sh
+```
+
+Run it again if you forget the password, and it sets a new one.
 
 For local development, deploy your `ChatUiStack` to create the sign-in
 client, then export its ID and a session secret:
