@@ -44,8 +44,17 @@ pass.
 Sign-in uses [openid-client](https://github.com/panva/openid-client),
 which finds Cognito's endpoints from its published configuration.
 Sessions last 24 hours and are kept in a cookie encrypted with
-[iron-session](https://github.com/vvo/iron-session). Users are created by
-an admin in the Cognito console or CLI.
+[iron-session](https://github.com/vvo/iron-session).
+
+Self sign-up is off, so to sign in to your dev stack, create yourself a
+user (named `$USER` unless you pass a username) in your `ChatApiTsStack`
+user pool:
+
+```
+scripts/create-dev-user.sh
+```
+
+Run it again if you forget the password, and it sets a new one.
 
 For local development, deploy your `ChatUiStack` to create the sign-in
 client, then export its ID and a session secret of at least 32
