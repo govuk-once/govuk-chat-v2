@@ -87,8 +87,8 @@ importers:
         specifier: ^7.9.2
         version: 7.9.2
       '@middy/http-json-body-parser':
-        specifier: ^7.8.0
-        version: 7.8.0
+        specifier: ^7.9.2
+        version: 7.9.2
       electrodb:
         specifier: ^3.9.3
         version: 3.9.3(@aws-sdk/client-dynamodb@3.1134.0)
@@ -1424,8 +1424,8 @@ packages:
     resolution: {integrity: sha512-er/x7UGiDPO4tYiyZx2Hi4Qh99SQbj5/aa1m15OKhOZFiaOlrnfbyzMiPNAeSIgBZ2clJVrxL74RTL4BSAjqLA==}
     engines: {node: '>=22'}
 
-  '@middy/http-json-body-parser@7.8.0':
-    resolution: {integrity: sha512-2uEi6mRSea+jhCWSmVxvMTdFeYeqfBR+EdE868dFfhCxjmNc0dAM6/7zsKmt3IlrHJdTE3u/fJTIb1i4tOxvNQ==}
+  '@middy/http-json-body-parser@7.9.2':
+    resolution: {integrity: sha512-pS+irP7AUNOs3EXaFleknlzINAfLeseHn9U19rQ7qy0gVR0xtYqgzqBWlqEELVkUSlbokCu9dOyS1vxXiIn0BQ==}
     engines: {node: '>=22'}
 
   '@middy/util@7.8.0':
@@ -6968,9 +6968,9 @@ snapshots:
     dependencies:
       '@middy/util': 7.9.2
 
-  '@middy/http-json-body-parser@7.8.0':
+  '@middy/http-json-body-parser@7.9.2':
     dependencies:
-      '@middy/util': 7.8.0
+      '@middy/util': 7.9.2
 
   '@middy/util@7.8.0': {}
 
