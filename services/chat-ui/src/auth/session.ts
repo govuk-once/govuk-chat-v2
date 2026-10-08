@@ -1,60 +1,33 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { sealData, unsealData } from 'iron-session';
 import { requireEnv } from '../lib/env.ts';
 
 export const SESSION_COOKIE = 'session';
 export const SESSION_MAX_AGE_SECONDS = 24 * 60 * 60;
 
-interface SessionPayload {
-  sub: string;
-  exp: number;
+// iron-session encrypts and signs the cookie, and checks its age when it's
+// opened; anything tampered with or expired opens as empty.
+function seal(data: object, ttl: number): Promise<string> {
+  return sealData(data, { password: requireEnv('SESSION_SECRET'), ttl });
 }
 
-function sign(payload: string, secret: string): string {
-  return createHmac('sha256', secret).update(payload).digest('base64url');
+function unseal<T>(cookie: string, ttl: number): Promise<Partial<T>> {
+  return unsealData<Partial<T>>(cookie, {
+    password: requireEnv('SESSION_SECRET'),
+    ttl,
+  });
 }
 
-export function createSessionCookie(sub: string): string {
-  const secret = requireEnv('SESSION_SECRET');
-  const payload: SessionPayload = {
-    sub,
-    exp: Date.now() + SESSION_MAX_AGE_SECONDS * 1000,
-  };
-  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = sign(encoded, secret);
-  return `${encoded}.${signature}`;
+export function createSessionCookie(sub: string): Promise<string> {
+  return seal({ sub }, SESSION_MAX_AGE_SECONDS);
 }
 
-export function verifySession(
+export async function verifySession(
   cookie: string | undefined,
-): { sub: string } | undefined {
+): Promise<{ sub: string } | undefined> {
   if (!cookie) return undefined;
-
-  const secret = requireEnv('SESSION_SECRET');
-  const dotIndex = cookie.indexOf('.');
-  if (dotIndex === -1) return undefined;
-
-  const encoded = cookie.slice(0, dotIndex);
-  const providedSignature = cookie.slice(dotIndex + 1);
-
-  const expectedSignature = sign(encoded, secret);
-  if (providedSignature.length !== expectedSignature.length) return undefined;
-
-  const signaturesMatch = timingSafeEqual(
-    Buffer.from(providedSignature),
-    Buffer.from(expectedSignature),
+  const { sub } = await unseal<{ sub: string }>(
+    cookie,
+    SESSION_MAX_AGE_SECONDS,
   );
-  if (!signaturesMatch) return undefined;
-
-  try {
-    const payload = JSON.parse(
-      Buffer.from(encoded, 'base64url').toString(),
-    ) as SessionPayload;
-    if (typeof payload.sub !== 'string' || typeof payload.exp !== 'number') {
-      return undefined;
-    }
-    if (Date.now() >= payload.exp) return undefined;
-    return { sub: payload.sub };
-  } catch {
-    return undefined;
-  }
+  return sub ? { sub } : undefined;
 }

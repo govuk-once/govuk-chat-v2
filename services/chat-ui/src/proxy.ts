@@ -26,9 +26,9 @@ function buildAuthorizeUrl(request: NextRequest): string {
   return `${authorizeUrl}?${parameters}`;
 }
 
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const sessionCookie = request.cookies.get(SESSION_COOKIE)?.value;
-  const session = verifySession(sessionCookie);
+  const session = await verifySession(sessionCookie);
 
   if (session) {
     return NextResponse.next();

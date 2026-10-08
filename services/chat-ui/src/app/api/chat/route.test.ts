@@ -12,7 +12,7 @@ const SSE_EVENTS = [
 ];
 
 const verifySession =
-  vi.fn<(cookie: string | undefined) => { sub: string } | undefined>();
+  vi.fn<(cookie: string | undefined) => Promise<{ sub: string } | undefined>>();
 const invokeThread = vi.fn<(input: InvokeThreadInput) => Promise<Response>>();
 
 const testEnv = {} as {
@@ -30,7 +30,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  verifySession.mockReturnValue({ sub: USER_SUB });
+  verifySession.mockResolvedValue({ sub: USER_SUB });
   invokeThread.mockResolvedValue(new Response(sseStream()));
 });
 
@@ -101,7 +101,7 @@ describe('POST', () => {
   });
 
   it('returns 401 when the session is invalid', async () => {
-    verifySession.mockReturnValue(undefined);
+    verifySession.mockResolvedValue(undefined);
 
     const response = await testEnv.POST(chatRequest(runAgentInput()));
 

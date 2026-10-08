@@ -126,7 +126,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!uuidSchema.safeParse(sub).success) {
     throw new Error('Cognito sub is not a UUID');
   }
-  const sessionCookie = createSessionCookie(sub);
+  const sessionCookie = await createSessionCookie(sub);
 
   const returnPath = safeReturnPath(request.nextUrl.searchParams.get('state'));
   const response = NextResponse.redirect(

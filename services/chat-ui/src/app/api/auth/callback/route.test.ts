@@ -1,7 +1,7 @@
 import { NextRequest, type NextResponse } from 'next/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const createSessionCookie = vi.fn<(sub: string) => string>();
+const createSessionCookie = vi.fn<(sub: string) => Promise<string>>();
 
 const USER_SUB = crypto.randomUUID();
 
@@ -45,7 +45,7 @@ beforeEach(() => {
     UserPoolClient: { ClientSecret: 'test-client-secret' },
   });
 
-  createSessionCookie.mockReturnValue('signed-session-cookie');
+  createSessionCookie.mockResolvedValue('signed-session-cookie');
 
   verifyIdToken.mockResolvedValue({ sub: USER_SUB });
 
