@@ -23,7 +23,7 @@
     "eventsource-parser": "^4.1.1",
     "@middy/core": "^7.8.0",
     "@middy/http-header-normalizer": "^7.9.2",
-    "@middy/http-json-body-parser": "^7.8.0",
+    "@middy/http-json-body-parser": "^7.9.2",
     "zod": "^4.4.3"
   }
 }
