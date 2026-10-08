@@ -112,7 +112,7 @@ export class ChatUiStack extends cdk.Stack {
       allowedOAuthFlowsUserPoolClient: true,
       allowedOAuthScopes: ['openid'],
       supportedIdentityProviders: ['COGNITO'],
-      callbackUrLs: ['http://localhost:3000/api/auth/callback'],
+      callbackUrLs: ['http://localhost:3000/api/auth/callback/cognito'],
       logoutUrLs: ['http://localhost:3000/'],
     });
   }
@@ -143,8 +143,8 @@ export class ChatUiStack extends cdk.Stack {
         AllowedOAuthScopes: ['openid'],
         SupportedIdentityProviders: ['COGNITO'],
         CallbackURLs: [
-          'http://localhost:3000/api/auth/callback',
-          endpointUrl('/api/auth/callback'),
+          'http://localhost:3000/api/auth/callback/cognito',
+          endpointUrl('/api/auth/callback/cognito'),
         ],
         LogoutURLs: ['http://localhost:3000/', endpointUrl('/')],
       },

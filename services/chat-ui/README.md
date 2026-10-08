@@ -36,11 +36,14 @@ export COGNITO_APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack AppCli
 
 ## Sign-in
 
-The app requires Cognito sign-in. Unauthenticated requests are redirected
-to the Cognito Hosted UI; `/api/health` is exempt so that health checks
-and CI smoke tests still pass.
+The app requires Cognito sign-in, handled by
+[Better Auth](https://www.better-auth.com/) under `/api/auth`.
+Unauthenticated pages are redirected to the Cognito Hosted UI, and
+unauthenticated API requests get a 401; `/api/health` is exempt so that
+health checks and CI smoke tests still pass.
 
-Sessions last 24 hours and are stored in a signed cookie. Self sign-up is
+Sessions last 24 hours and are stored in an encrypted cookie, with no
+database. Self sign-up is
 off, so to sign in to your dev stack, create yourself a user (named
 `$USER` unless you pass a username) in your `ChatApiTsStack` user pool:
 
@@ -51,11 +54,13 @@ scripts/create-dev-user.sh
 Run it again if you forget the password, and it sets a new one.
 
 For local development, deploy your `ChatUiStack` to create the sign-in
-client, then export its ID and a session secret:
+client, then export its ID, your Cognito domain and a session secret of at
+least 32 characters:
 
 ```
 export COGNITO_SIGN_IN_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatUiStack SignInClientId)
-export SESSION_SECRET=any-local-secret
+export COGNITO_DOMAIN=$(scripts/fetch-cdk-output.sh ChatApiTsStack CognitoDomain)
+export SESSION_SECRET=$(openssl rand -base64 32)
 ```
 
 For a deployed stack, the CDK passes these values to the container and

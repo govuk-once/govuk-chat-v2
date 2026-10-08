@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { verifySession, SESSION_COOKIE } from '../../../../auth/session.ts';
+import { signedInSub } from '../../../../auth/auth.ts';
 import {
   listThreadMessages,
   type ThreadMessage,
@@ -12,14 +12,14 @@ interface ThreadMessagesBody {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const threadId = readThreadId(request.cookies);
-  const session = verifySession(request.cookies.get(SESSION_COOKIE)?.value);
-  if (!threadId || !session) {
+  const endUserId = await signedInSub(request.headers);
+  if (!threadId || !endUserId) {
     return NextResponse.json({ messages: [] });
   }
 
   const upstream = await listThreadMessages({
     threadId,
-    endUserId: session.sub,
+    endUserId,
     signal: request.signal,
   });
 

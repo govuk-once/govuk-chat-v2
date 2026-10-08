@@ -13,8 +13,7 @@ const MESSAGES = [
   },
 ];
 
-const verifySession =
-  vi.fn<(cookie: string | undefined) => { sub: string } | undefined>();
+const signedInSub = vi.fn<(headers: Headers) => Promise<string | undefined>>();
 const listThreadMessages = vi.fn<(input: ThreadInput) => Promise<Response>>();
 
 const testEnv = {} as {
@@ -22,17 +21,14 @@ const testEnv = {} as {
 };
 
 beforeAll(async () => {
-  vi.doMock('../../../../auth/session.ts', () => ({
-    verifySession,
-    SESSION_COOKIE: 'session',
-  }));
+  vi.doMock('../../../../auth/auth.ts', () => ({ signedInSub }));
   vi.doMock('../../../../chat-api/client.ts', () => ({ listThreadMessages }));
   const routeModule = await import('./route.ts');
   testEnv.GET = routeModule.GET;
 });
 
 beforeEach(() => {
-  verifySession.mockReturnValue({ sub: USER_SUB });
+  signedInSub.mockResolvedValue(USER_SUB);
 });
 
 function messagesRequest(
@@ -74,7 +70,7 @@ describe('GET', () => {
   });
 
   it('returns no messages when the session is invalid', async () => {
-    verifySession.mockReturnValue(undefined);
+    signedInSub.mockResolvedValue(undefined);
 
     const response = await testEnv.GET(messagesRequest());
 

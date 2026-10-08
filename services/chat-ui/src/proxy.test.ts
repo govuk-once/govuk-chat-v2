@@ -1,8 +1,17 @@
 import { NextRequest } from 'next/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const verifySession =
-  vi.fn<(cookie: string | undefined) => { sub: string } | undefined>();
+const AUTHORIZE_URL =
+  'https://auth.example.com/oauth2/authorize?client_id=sign-in-client-id';
+
+interface SignInSocialResult {
+  headers: Headers;
+  response: { url?: string };
+}
+
+const signedInSub = vi.fn<(headers: Headers) => Promise<string | undefined>>();
+const signInSocial =
+  vi.fn<(input: { body: { callbackURL: string } }) => SignInSocialResult>();
 
 const testEnv = {} as {
   proxy: (
@@ -11,9 +20,9 @@ const testEnv = {} as {
 };
 
 beforeAll(async () => {
-  vi.doMock('./auth/session.ts', () => ({
-    verifySession,
-    SESSION_COOKIE: 'session',
+  vi.doMock('./auth/auth.ts', () => ({
+    signedInSub,
+    getAuth: () => Promise.resolve({ api: { signInSocial } }),
   }));
 
   const proxyModule = await import('./proxy.ts');
@@ -21,67 +30,48 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  vi.stubEnv('COGNITO_TOKEN_ENDPOINT', 'https://auth.example.com/oauth2/token');
-  vi.stubEnv('COGNITO_SIGN_IN_CLIENT_ID', 'sign-in-client-id');
-  vi.stubEnv('SESSION_SECRET', 'test-secret');
+  signedInSub.mockResolvedValue(undefined);
+  signInSocial.mockReturnValue({
+    headers: new Headers({ 'Set-Cookie': 'state=abc; Path=/; HttpOnly' }),
+    response: { url: AUTHORIZE_URL },
+  });
 });
 
-function request(path: string, sessionCookie?: string): NextRequest {
-  const url = `http://localhost:3000${path}`;
-  const headers: Record<string, string> = {};
-  if (sessionCookie) {
-    headers.cookie = `session=${sessionCookie}`;
-  }
-  return new NextRequest(url, { headers });
+function request(path: string): NextRequest {
+  return new NextRequest(`http://localhost:3000${path}`);
 }
 
 describe('proxy', () => {
-  it('allows a request with a valid session', () => {
-    verifySession.mockReturnValue({ sub: 'user-sub-123' });
+  it('allows a request with a session', async () => {
+    signedInSub.mockResolvedValue(crypto.randomUUID());
 
-    const response = testEnv.proxy(request('/', 'valid-session'));
+    const response = await testEnv.proxy(request('/'));
 
     expect(response.status).toBe(200);
-    expect(verifySession).toHaveBeenCalledWith('valid-session');
   });
 
-  it('redirects to the Cognito authorize URL when there is no session', () => {
-    verifySession.mockReturnValue(undefined);
-
-    const response = testEnv.proxy(request('/'));
+  it('redirects a page request without a session to Cognito', async () => {
+    const response = await testEnv.proxy(request('/some/page?q=1'));
 
     expect(response.status).toBe(307);
-    const location = new URL(response.headers.get('location')!);
-    expect(location.origin + location.pathname).toBe(
-      'https://auth.example.com/oauth2/authorize',
+    expect(response.headers.get('location')).toBe(AUTHORIZE_URL);
+    expect(signInSocial.mock.calls[0][0].body.callbackURL).toBe(
+      '/some/page?q=1',
     );
-    expect(location.searchParams.get('response_type')).toBe('code');
-    expect(location.searchParams.get('client_id')).toBe('sign-in-client-id');
-    expect(location.searchParams.get('scope')).toBe('openid');
   });
 
-  it('includes the current path and query as the state parameter', () => {
-    verifySession.mockReturnValue(undefined);
+  it('passes on the sign-in state cookie with the redirect', async () => {
+    const response = await testEnv.proxy(request('/'));
 
-    const response = testEnv.proxy(request('/some/page?q=1'));
-
-    const location = new URL(response.headers.get('location')!);
-    expect(location.searchParams.get('state')).toBe('/some/page?q=1');
+    expect(response.headers.getSetCookie()).toContain(
+      'state=abc; Path=/; HttpOnly',
+    );
   });
 
-  it('returns 401 for an API request without a session', () => {
-    verifySession.mockReturnValue(undefined);
-
-    const response = testEnv.proxy(request('/api/chat'));
+  it('returns 401 for an API request without a session', async () => {
+    const response = await testEnv.proxy(request('/api/chat'));
 
     expect(response.status).toBe(401);
-  });
-
-  it('redirects when the session cookie is invalid', () => {
-    verifySession.mockReturnValue(undefined);
-
-    const response = testEnv.proxy(request('/', 'invalid'));
-
-    expect(response.status).toBe(307);
+    expect(signInSocial).not.toHaveBeenCalled();
   });
 });
