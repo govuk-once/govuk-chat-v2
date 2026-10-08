@@ -345,6 +345,7 @@ describe('ChatApiTsStack', () => {
 
       template.hasOutput('UserPoolId', {});
       template.hasOutput('AppClientId', {});
+      template.hasOutput('CognitoDomain', {});
       template.hasOutput('TokenEndpoint', {});
     });
   });

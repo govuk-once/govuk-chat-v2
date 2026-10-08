@@ -42,11 +42,13 @@ interface CognitoAuth {
   scope: string;
   userPool: cognito.UserPool;
   appClient: cognito.UserPoolClient;
+  domain: string;
   tokenEndpoint: string;
 }
 
 export class ChatApiTsStack extends cdk.Stack {
   public readonly gatewayUrl: string;
+  public readonly cognitoDomain: string;
   public readonly tokenEndpoint: string;
   public readonly userPoolId: string;
   public readonly userPoolArn: string;
@@ -66,6 +68,7 @@ export class ChatApiTsStack extends cdk.Stack {
     this.webAcl(apiGateway);
 
     this.gatewayUrl = apiGateway.url;
+    this.cognitoDomain = auth.domain;
     this.tokenEndpoint = auth.tokenEndpoint;
     this.userPoolId = auth.userPool.userPoolId;
     this.userPoolArn = auth.userPool.userPoolArn;
@@ -139,7 +142,8 @@ export class ChatApiTsStack extends cdk.Stack {
       },
     );
 
-    const tokenEndpoint = `https://${domain.domainName}.auth.${this.region}.amazoncognito.com/oauth2/token`;
+    const domainHost = `${domain.domainName}.auth.${this.region}.amazoncognito.com`;
+    const tokenEndpoint = `https://${domainHost}/oauth2/token`;
 
     new cdk.CfnOutput(this, 'UserPoolId', {
       value: userPool.userPoolId,
@@ -147,6 +151,10 @@ export class ChatApiTsStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'AppClientId', {
       value: appClient.userPoolClientId,
+    });
+
+    new cdk.CfnOutput(this, 'CognitoDomain', {
+      value: domainHost,
     });
 
     new cdk.CfnOutput(this, 'TokenEndpoint', {
@@ -158,6 +166,7 @@ export class ChatApiTsStack extends cdk.Stack {
       scope: `chat-api/${invokeScope.scopeName}`,
       userPool,
       appClient,
+      domain: domainHost,
       tokenEndpoint,
     };
   }
