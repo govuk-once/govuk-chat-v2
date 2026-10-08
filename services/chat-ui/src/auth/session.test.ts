@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSessionCookie, verifySession } from './session.ts';
+import {
+  createSessionCookie,
+  openSignInFlow,
+  sealSignInFlow,
+  verifySession,
+} from './session.ts';
 
 const SUB = crypto.randomUUID();
+const FLOW = { codeVerifier: 'verifier', state: 'state', returnPath: '/chat' };
 
 beforeEach(() => {
   vi.stubEnv('SESSION_SECRET', 'a'.repeat(64));
@@ -35,5 +41,27 @@ describe('verifySession', () => {
     vi.setSystemTime(Date.now() + 25 * 60 * 60 * 1000);
 
     expect(await verifySession(cookie)).toBeUndefined();
+  });
+});
+
+describe('openSignInFlow', () => {
+  it('returns the flow from a sign-in flow cookie', async () => {
+    const cookie = await sealSignInFlow(FLOW);
+
+    expect(await openSignInFlow(cookie)).toEqual(FLOW);
+  });
+
+  it('returns undefined once the sign-in has taken too long', async () => {
+    const cookie = await sealSignInFlow(FLOW);
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+
+    expect(await openSignInFlow(cookie)).toBeUndefined();
+  });
+
+  it('returns undefined for a session cookie', async () => {
+    const cookie = await createSessionCookie(SUB);
+
+    expect(await openSignInFlow(cookie)).toBeUndefined();
   });
 });

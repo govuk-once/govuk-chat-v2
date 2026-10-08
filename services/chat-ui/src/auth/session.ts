@@ -1,8 +1,14 @@
 import { sealData, unsealData } from 'iron-session';
 import { requireEnv } from '../lib/env.ts';
+import type { SignInFlow } from './oidc.ts';
 
 export const SESSION_COOKIE = 'session';
 export const SESSION_MAX_AGE_SECONDS = 24 * 60 * 60;
+
+export const SIGN_IN_FLOW_COOKIE = 'sign_in_flow';
+// Long enough to sign in at the Hosted UI, short enough that an abandoned
+// sign-in doesn't linger.
+export const SIGN_IN_FLOW_MAX_AGE_SECONDS = 10 * 60;
 
 // iron-session encrypts and signs the cookie, and checks its age when it's
 // opened; anything tampered with or expired opens as empty.
@@ -30,4 +36,19 @@ export async function verifySession(
     SESSION_MAX_AGE_SECONDS,
   );
   return sub ? { sub } : undefined;
+}
+
+export function sealSignInFlow(flow: SignInFlow): Promise<string> {
+  return seal(flow, SIGN_IN_FLOW_MAX_AGE_SECONDS);
+}
+
+export async function openSignInFlow(
+  cookie: string | undefined,
+): Promise<SignInFlow | undefined> {
+  if (!cookie) return undefined;
+  const flow = await unseal<SignInFlow>(cookie, SIGN_IN_FLOW_MAX_AGE_SECONDS);
+  const { codeVerifier, state, returnPath } = flow;
+  return codeVerifier && state && returnPath
+    ? { codeVerifier, state, returnPath }
+    : undefined;
 }
