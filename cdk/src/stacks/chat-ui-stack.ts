@@ -20,6 +20,7 @@ export interface ChatUiStackProps extends cdk.StackProps {
   repositoryUrl: string;
   environment: string;
   chatApiUrl: string;
+  cognitoDomain: string;
   cognitoTokenEndpoint: string;
   cognitoUserPoolId: string;
   cognitoUserPoolArn: string;
@@ -111,7 +112,7 @@ export class ChatUiStack extends cdk.Stack {
       allowedOAuthFlowsUserPoolClient: true,
       allowedOAuthScopes: ['openid'],
       supportedIdentityProviders: ['COGNITO'],
-      callbackUrLs: ['http://localhost:3000/api/auth/callback'],
+      callbackUrLs: ['http://localhost:3000/api/auth/callback/cognito'],
       logoutUrLs: ['http://localhost:3000/'],
     });
   }
@@ -142,8 +143,8 @@ export class ChatUiStack extends cdk.Stack {
         AllowedOAuthScopes: ['openid'],
         SupportedIdentityProviders: ['COGNITO'],
         CallbackURLs: [
-          'http://localhost:3000/api/auth/callback',
-          endpointUrl('/api/auth/callback'),
+          'http://localhost:3000/api/auth/callback/cognito',
+          endpointUrl('/api/auth/callback/cognito'),
         ],
         LogoutURLs: ['http://localhost:3000/', endpointUrl('/')],
       },
@@ -235,6 +236,7 @@ export class ChatUiStack extends cdk.Stack {
         environment: [
           { name: 'ENVIRONMENT', value: props.environment },
           { name: 'CHAT_API_URL', value: props.chatApiUrl },
+          { name: 'COGNITO_DOMAIN', value: props.cognitoDomain },
           { name: 'COGNITO_TOKEN_ENDPOINT', value: props.cognitoTokenEndpoint },
           { name: 'COGNITO_USER_POOL_ID', value: props.cognitoUserPoolId },
           { name: 'COGNITO_APP_CLIENT_ID', value: props.cognitoAppClientId },

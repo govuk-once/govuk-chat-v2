@@ -1,36 +1,40 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { verifySession, SESSION_COOKIE } from './auth/session.ts';
-import { callbackUrl } from './auth/urls.ts';
-import { requireEnv } from './lib/env.ts';
+import { getAuth, signedInSub } from './auth/auth.ts';
 
 export const config = {
   matcher: [
     // eslint-disable-next-line unicorn/prefer-string-raw -- Next.js requires a plain string literal for static analysis
-    '/((?!api/health|api/auth/callback|_next/static|_next/image|favicon\\.ico).*)',
+    '/((?!api/health|api/auth/|_next/static|_next/image|favicon\\.ico).*)',
   ],
 };
 
-function buildAuthorizeUrl(request: NextRequest): string {
-  const authorizeUrl = requireEnv('COGNITO_TOKEN_ENDPOINT').replace(
-    '/oauth2/token',
-    '/oauth2/authorize',
-  );
-  const parameters = new URLSearchParams({
-    response_type: 'code',
-    client_id: requireEnv('COGNITO_SIGN_IN_CLIENT_ID'),
-    redirect_uri: callbackUrl(request),
-    scope: 'openid',
-    state: request.nextUrl.pathname + request.nextUrl.search,
+// Sign-in is started here rather than from the page, so a signed-out user is
+// sent straight to the Hosted UI. Better Auth sets a state cookie that the
+// callback checks, which has to travel with the redirect.
+async function redirectToSignIn(request: NextRequest): Promise<NextResponse> {
+  const auth = await getAuth();
+  const { headers, response } = await auth.api.signInSocial({
+    body: {
+      provider: 'cognito',
+      callbackURL: request.nextUrl.pathname + request.nextUrl.search,
+      disableRedirect: true,
+    },
+    headers: request.headers,
+    returnHeaders: true,
   });
+  if (!response.url) {
+    throw new Error('Better Auth returned no sign-in URL');
+  }
 
-  return `${authorizeUrl}?${parameters}`;
+  const redirect = NextResponse.redirect(response.url);
+  for (const cookie of headers.getSetCookie()) {
+    redirect.headers.append('Set-Cookie', cookie);
+  }
+  return redirect;
 }
 
-export function proxy(request: NextRequest): NextResponse {
-  const sessionCookie = request.cookies.get(SESSION_COOKIE)?.value;
-  const session = verifySession(sessionCookie);
-
-  if (session) {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  if (await signedInSub(request.headers)) {
     return NextResponse.next();
   }
 
@@ -40,5 +44,5 @@ export function proxy(request: NextRequest): NextResponse {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  return NextResponse.redirect(buildAuthorizeUrl(request));
+  return redirectToSignIn(request);
 }

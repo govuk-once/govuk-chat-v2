@@ -1,7 +1,7 @@
 import { RunAgentInputSchema } from '@ag-ui/core';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { verifySession, SESSION_COOKIE } from '../../../auth/session.ts';
+import { signedInSub } from '../../../auth/auth.ts';
 import { invokeThread } from '../../../chat-api/client.ts';
 import { setThreadId } from './cookies.ts';
 
@@ -34,13 +34,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return errorResponse(422, 'Invalid request body');
   }
 
-  const session = verifySession(request.cookies.get(SESSION_COOKIE)?.value);
-  if (!session) {
+  const endUserId = await signedInSub(request.headers);
+  if (!endUserId) {
     return errorResponse(401, 'Not authenticated');
   }
 
   const { threadId } = body.data;
-  const endUserId = session.sub;
 
   // assistant-ui's ids and fields fail the API's strict schema, so the route
   // builds the request rather than forwarding the body. Only the last message
