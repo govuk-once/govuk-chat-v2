@@ -14,7 +14,7 @@ const MESSAGES = [
 ];
 
 const verifySession =
-  vi.fn<(cookie: string | undefined) => { sub: string } | undefined>();
+  vi.fn<(cookie: string | undefined) => Promise<{ sub: string } | undefined>>();
 const listThreadMessages = vi.fn<(input: ThreadInput) => Promise<Response>>();
 
 const testEnv = {} as {
@@ -32,7 +32,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  verifySession.mockReturnValue({ sub: USER_SUB });
+  verifySession.mockResolvedValue({ sub: USER_SUB });
 });
 
 function messagesRequest(
@@ -74,7 +74,7 @@ describe('GET', () => {
   });
 
   it('returns no messages when the session is invalid', async () => {
-    verifySession.mockReturnValue(undefined);
+    verifySession.mockResolvedValue(undefined);
 
     const response = await testEnv.GET(messagesRequest());
 

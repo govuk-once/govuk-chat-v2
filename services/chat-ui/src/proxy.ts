@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { verifySession, SESSION_COOKIE } from './auth/session.ts';
+import { startSignIn } from './auth/oidc.ts';
+import {
+  sealSignInFlow,
+  SESSION_COOKIE,
+  SIGN_IN_FLOW_COOKIE,
+  SIGN_IN_FLOW_MAX_AGE_SECONDS,
+  verifySession,
+} from './auth/session.ts';
 import { callbackUrl } from './auth/urls.ts';
-import { requireEnv } from './lib/env.ts';
 
 export const config = {
   matcher: [
@@ -10,26 +16,29 @@ export const config = {
   ],
 };
 
-function buildAuthorizeUrl(request: NextRequest): string {
-  const authorizeUrl = requireEnv('COGNITO_TOKEN_ENDPOINT').replace(
-    '/oauth2/token',
-    '/oauth2/authorize',
+// The PKCE verifier and state the callback checks travel in a sealed cookie,
+// along with the page to return to.
+async function redirectToSignIn(request: NextRequest): Promise<NextResponse> {
+  const { url, flow } = await startSignIn(
+    callbackUrl(request),
+    request.nextUrl.pathname + request.nextUrl.search,
   );
-  const parameters = new URLSearchParams({
-    response_type: 'code',
-    client_id: requireEnv('COGNITO_SIGN_IN_CLIENT_ID'),
-    redirect_uri: callbackUrl(request),
-    scope: 'openid',
-    state: request.nextUrl.pathname + request.nextUrl.search,
-  });
 
-  return `${authorizeUrl}?${parameters}`;
+  const response = NextResponse.redirect(url);
+  response.cookies.set(SIGN_IN_FLOW_COOKIE, await sealSignInFlow(flow), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/api/auth/callback',
+    maxAge: SIGN_IN_FLOW_MAX_AGE_SECONDS,
+  });
+  return response;
 }
 
-export function proxy(request: NextRequest): NextResponse {
-  const sessionCookie = request.cookies.get(SESSION_COOKIE)?.value;
-  const session = verifySession(sessionCookie);
-
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const session = await verifySession(
+    request.cookies.get(SESSION_COOKIE)?.value,
+  );
   if (session) {
     return NextResponse.next();
   }
@@ -40,5 +49,5 @@ export function proxy(request: NextRequest): NextResponse {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  return NextResponse.redirect(buildAuthorizeUrl(request));
+  return redirectToSignIn(request);
 }

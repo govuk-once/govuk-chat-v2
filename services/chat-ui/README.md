@@ -40,7 +40,11 @@ The app requires Cognito sign-in. Unauthenticated requests are redirected
 to the Cognito Hosted UI; `/api/health` is exempt so that health checks
 and CI smoke tests still pass.
 
-Sessions last 24 hours and are stored in a signed cookie. Self sign-up is
+Sign-in uses [openid-client](https://github.com/panva/openid-client),
+which finds Cognito's endpoints from its published configuration, and
+sessions are kept in a cookie encrypted with
+[iron-session](https://github.com/vvo/iron-session). Sessions last 24
+hours. Self sign-up is
 off, so to sign in to your dev stack, create yourself a user (named
 `$USER` unless you pass a username) in your `ChatApiTsStack` user pool:
 
@@ -51,11 +55,12 @@ scripts/create-dev-user.sh
 Run it again if you forget the password, and it sets a new one.
 
 For local development, deploy your `ChatUiStack` to create the sign-in
-client, then export its ID and a session secret:
+client, then export its ID and a session secret of at least 32
+characters:
 
 ```
 export COGNITO_SIGN_IN_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatUiStack SignInClientId)
-export SESSION_SECRET=any-local-secret
+export SESSION_SECRET=$(openssl rand -base64 32)
 ```
 
 For a deployed stack, the CDK passes these values to the container and

@@ -1,143 +1,90 @@
 import { NextRequest, type NextResponse } from 'next/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-
-const createSessionCookie = vi.fn<(sub: string) => string>();
+import type { SignInFlow } from '../../../../auth/oidc.ts';
+import { sealSignInFlow, verifySession } from '../../../../auth/session.ts';
 
 const USER_SUB = crypto.randomUUID();
+const FLOW: SignInFlow = {
+  codeVerifier: 'verifier',
+  state: 'state',
+  returnPath: '/chat',
+};
 
-const verifyIdToken = vi.fn<(idToken: string) => Promise<{ sub: string }>>();
-const describeUserPoolClientMock = vi.fn();
-const cognitoSendMock = vi.fn();
+const finishSignIn = vi.fn<(url: URL, flow: SignInFlow) => Promise<string>>();
 
 const testEnv = {} as {
   GET: (request: NextRequest) => Promise<NextResponse>;
 };
 
 beforeAll(async () => {
-  vi.doMock('../../../../auth/session.ts', () => ({
-    createSessionCookie,
-    SESSION_COOKIE: 'session',
-    SESSION_MAX_AGE_SECONDS: 86_400,
-  }));
-
-  vi.doMock('aws-jwt-verify', () => ({
-    CognitoJwtVerifier: { create: () => ({ verify: verifyIdToken }) },
-  }));
-
-  vi.doMock('@aws-sdk/client-cognito-identity-provider', () => ({
-    CognitoIdentityProviderClient: class {
-      send = cognitoSendMock;
-    },
-    DescribeUserPoolClientCommand: describeUserPoolClientMock,
-  }));
+  vi.doMock('../../../../auth/oidc.ts', () => ({ finishSignIn }));
 
   const routeModule = await import('./route.ts');
   testEnv.GET = routeModule.GET;
 });
 
 beforeEach(() => {
-  vi.stubEnv('COGNITO_TOKEN_ENDPOINT', 'https://auth.example.com/oauth2/token');
-  vi.stubEnv('COGNITO_USER_POOL_ID', 'eu-west-1_example');
-  vi.stubEnv('COGNITO_SIGN_IN_CLIENT_ID', 'sign-in-client-id');
-  vi.stubEnv('SESSION_SECRET', 'test-secret');
-
-  cognitoSendMock.mockResolvedValue({
-    UserPoolClient: { ClientSecret: 'test-client-secret' },
-  });
-
-  createSessionCookie.mockReturnValue('signed-session-cookie');
-
-  verifyIdToken.mockResolvedValue({ sub: USER_SUB });
-
-  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    Response.json({ id_token: 'id-token' }),
-  );
+  vi.stubEnv('SESSION_SECRET', 'a'.repeat(64));
+  finishSignIn.mockResolvedValue(USER_SUB);
 });
 
-const defaultParameters: Record<string, string> = {
-  code: 'auth-code',
-  state: '/',
-};
-
-function callbackRequest(
-  parameters: Record<string, string> = defaultParameters,
-): NextRequest {
-  const url = new URL('http://localhost:3000/api/auth/callback');
-  for (const [key, value] of Object.entries(parameters)) {
-    url.searchParams.set(key, value);
+async function callbackRequest(flow?: SignInFlow): Promise<NextRequest> {
+  const headers: Record<string, string> = {
+    host: 'localhost:3000',
+    'x-forwarded-host': 'chat.example.com',
+    'x-forwarded-proto': 'https',
+  };
+  if (flow) {
+    headers.cookie = `sign_in_flow=${await sealSignInFlow(flow)}`;
   }
-  return new NextRequest(url);
+  return new NextRequest(
+    'http://10.0.0.1:3000/api/auth/callback?code=code&state=state',
+    { headers },
+  );
 }
 
 describe('GET', () => {
-  it('exchanges the code for tokens and sets a session cookie', async () => {
-    const response = await testEnv.GET(callbackRequest());
+  it('signs the user in and returns them to the page they asked for', async () => {
+    const response = await testEnv.GET(await callbackRequest(FLOW));
 
-    expect(createSessionCookie).toHaveBeenCalledWith(USER_SUB);
-    expect(response.cookies.get('session')?.value).toBe(
-      'signed-session-cookie',
+    const session = response.cookies.get('session')?.value;
+    expect(await verifySession(session)).toEqual({ sub: USER_SUB });
+    expect(response.headers.get('location')).toBe(
+      'https://chat.example.com/chat',
     );
   });
 
-  it('redirects to the state parameter', async () => {
+  it('finishes the sign-in on the public callback URL', async () => {
+    await testEnv.GET(await callbackRequest(FLOW));
+
+    expect(finishSignIn).toHaveBeenCalledWith(
+      new URL(
+        'https://chat.example.com/api/auth/callback?code=code&state=state',
+      ),
+      FLOW,
+    );
+  });
+
+  it('returns to / when the return path is another site', async () => {
     const response = await testEnv.GET(
-      callbackRequest({ code: 'auth-code', state: '/chat' }),
+      await callbackRequest({ ...FLOW, returnPath: '//evil.example/' }),
     );
 
-    expect(response.status).toBe(307);
-    expect(new URL(response.headers.get('location')!).pathname).toBe('/chat');
+    expect(response.headers.get('location')).toBe('https://chat.example.com/');
   });
 
-  it('redirects to / when state is absent', async () => {
-    const response = await testEnv.GET(callbackRequest({ code: 'auth-code' }));
+  it('returns 400 without a sign-in in progress', async () => {
+    const response = await testEnv.GET(await callbackRequest());
 
-    expect(response.status).toBe(307);
-    expect(new URL(response.headers.get('location')!).pathname).toBe('/');
-  });
-
-  it('redirects to / when state is not a same-origin path', async () => {
-    const response = await testEnv.GET(
-      callbackRequest({ code: 'auth-code', state: '//evil.example/' }),
-    );
-
-    const location = new URL(response.headers.get('location')!);
-    expect(location.hostname).not.toBe('evil.example');
-    expect(location.pathname).toBe('/');
-  });
-
-  it('returns 401 when the ID token fails verification', async () => {
-    verifyIdToken.mockRejectedValue(new Error('Invalid signature'));
-
-    const response = await testEnv.GET(callbackRequest());
-
-    expect(response.status).toBe(401);
-    expect(createSessionCookie).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    expect(finishSignIn).not.toHaveBeenCalled();
   });
 
   it('fails without a session when the sub is not a UUID', async () => {
-    verifyIdToken.mockResolvedValue({ sub: 'not-a-uuid' });
+    finishSignIn.mockResolvedValue('not-a-uuid');
 
-    await expect(testEnv.GET(callbackRequest())).rejects.toThrow(
+    await expect(testEnv.GET(await callbackRequest(FLOW))).rejects.toThrow(
       'Cognito sub is not a UUID',
     );
-    expect(createSessionCookie).not.toHaveBeenCalled();
-  });
-
-  it('returns 400 when the code parameter is missing', async () => {
-    const response = await testEnv.GET(callbackRequest({}));
-
-    expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: 'Missing code parameter' });
-  });
-
-  it('returns 500 when the token exchange fails', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(undefined, { status: 400 }),
-    );
-
-    const response = await testEnv.GET(callbackRequest());
-
-    expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ error: 'Token exchange failed' });
   });
 });

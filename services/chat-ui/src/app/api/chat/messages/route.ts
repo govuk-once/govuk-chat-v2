@@ -12,7 +12,9 @@ interface ThreadMessagesBody {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const threadId = readThreadId(request.cookies);
-  const session = verifySession(request.cookies.get(SESSION_COOKIE)?.value);
+  const session = await verifySession(
+    request.cookies.get(SESSION_COOKIE)?.value,
+  );
   if (!threadId || !session) {
     return NextResponse.json({ messages: [] });
   }

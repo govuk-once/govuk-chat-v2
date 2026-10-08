@@ -34,7 +34,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return errorResponse(422, 'Invalid request body');
   }
 
-  const session = verifySession(request.cookies.get(SESSION_COOKIE)?.value);
+  const session = await verifySession(
+    request.cookies.get(SESSION_COOKIE)?.value,
+  );
   if (!session) {
     return errorResponse(401, 'Not authenticated');
   }
