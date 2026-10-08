@@ -60,6 +60,7 @@ new ChatUiStack(app, 'ChatUiStack', {
   env: env,
   environment: getEnvironment(),
   chatApiUrl: chatApiTsStack.gatewayUrl,
+  cognitoDomain: chatApiTsStack.cognitoDomain,
   cognitoTokenEndpoint: chatApiTsStack.tokenEndpoint,
   cognitoUserPoolId: chatApiTsStack.userPoolId,
   cognitoUserPoolArn: chatApiTsStack.userPoolArn,

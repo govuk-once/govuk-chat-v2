@@ -17,6 +17,7 @@ describe('ChatUiStack', () => {
     repositoryUrl: 'https://example.com/repo',
     environment: 'testing',
     chatApiUrl: 'https://api.example.com/testing/',
+    cognitoDomain: 'example.auth.eu-west-1.amazoncognito.com',
     cognitoTokenEndpoint: 'https://auth.example.com/oauth2/token',
     cognitoUserPoolId: 'eu-west-1_example',
     cognitoUserPoolArn:
@@ -73,6 +74,7 @@ describe('ChatUiStack', () => {
           Environment: Match.arrayWith([
             { Name: 'ENVIRONMENT', Value: baseProps.environment },
             { Name: 'CHAT_API_URL', Value: baseProps.chatApiUrl },
+            { Name: 'COGNITO_DOMAIN', Value: baseProps.cognitoDomain },
             {
               Name: 'COGNITO_TOKEN_ENDPOINT',
               Value: baseProps.cognitoTokenEndpoint,

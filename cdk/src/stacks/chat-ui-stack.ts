@@ -20,6 +20,7 @@ export interface ChatUiStackProps extends cdk.StackProps {
   repositoryUrl: string;
   environment: string;
   chatApiUrl: string;
+  cognitoDomain: string;
   cognitoTokenEndpoint: string;
   cognitoUserPoolId: string;
   cognitoUserPoolArn: string;
@@ -235,6 +236,7 @@ export class ChatUiStack extends cdk.Stack {
         environment: [
           { name: 'ENVIRONMENT', value: props.environment },
           { name: 'CHAT_API_URL', value: props.chatApiUrl },
+          { name: 'COGNITO_DOMAIN', value: props.cognitoDomain },
           { name: 'COGNITO_TOKEN_ENDPOINT', value: props.cognitoTokenEndpoint },
           { name: 'COGNITO_USER_POOL_ID', value: props.cognitoUserPoolId },
           { name: 'COGNITO_APP_CLIENT_ID', value: props.cognitoAppClientId },
