@@ -121,8 +121,8 @@ importers:
         specifier: 0.3.17
         version: 0.3.17(@assistant-ui/react@0.15.22(@opentelemetry/api@1.9.1)(@opentelemetry/sdk-trace-base@2.7.0(@opentelemetry/api@1.9.1))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@aws-sdk/client-cognito-identity-provider':
-        specifier: ^3.1139.0
-        version: 3.1142.0
+        specifier: ^3.1145.0
+        version: 3.1145.0
       next:
         specifier: ^16.3.8
         version: 16.3.8(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -425,8 +425,8 @@ packages:
     resolution: {integrity: sha512-/AFjU8XxMD7o9gm0U3Ub7vNdwle9UI5DsTi2DwYuZSJcOZZZFJzQZyVdptIMfSrs0TIKddveCduJBXJ00LwJjw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cognito-identity-provider@3.1142.0':
-    resolution: {integrity: sha512-dyn+mkDjNTFrUV79p2XHcFQGUz2dBX86ilVbrWYGkUGg2WPP4qEdCwbV7VS7laKXiFEj5h5Yz98O+98NoLCDCA==}
+  '@aws-sdk/client-cognito-identity-provider@3.1145.0':
+    resolution: {integrity: sha512-vGNoZXsJqPwXkzfnP7C0W/L95501uZG2MYt5Oa6UClv6w12V7lBRTqRqdOgwJFBOgQYL2xIadAO0wLs4jYyigg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-dynamodb@3.1134.0':
@@ -2552,10 +2552,6 @@ packages:
 
   '@smithy/core@3.34.1':
     resolution: {integrity: sha512-dLcOUxz8YCv1RZUMKq6GbyUf95pLbrqh34bPvpCZ1+CByFF31BEAFewZjsGCnVsZTKdThNENfGyAgk2TJqVwSw==}
-    engines: {node: '>=18.0.0'}
-
-  '@smithy/core@3.35.0':
-    resolution: {integrity: sha512-zRMhfkByhT2snNdr1si24vJitU6Cr9ix2MikUfWmkAgp4jrNP0GcKSP5YvwQ+TlI8AZXER5QOGJn3JsVtSD9/A==}
     engines: {node: '>=18.0.0'}
 
   '@smithy/core@3.35.1':
@@ -5613,12 +5609,12 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cognito-identity-provider@3.1142.0':
+  '@aws-sdk/client-cognito-identity-provider@3.1145.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
       '@aws-sdk/types': 3.974.6
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.1
       '@smithy/fetch-http-handler': 5.8.0
       '@smithy/node-http-handler': 4.12.1
       '@smithy/types': 4.19.0
@@ -7925,11 +7921,6 @@ snapshots:
       tslib: 2.8.1
 
   '@smithy/core@3.34.1':
-    dependencies:
-      '@smithy/types': 4.19.0
-      tslib: 2.8.1
-
-  '@smithy/core@3.35.0':
     dependencies:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
