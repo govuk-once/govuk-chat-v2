@@ -2,11 +2,12 @@ version: 2
 registries:
   govuk-once:
     type: git
-    url: https://github.com/govuk-once
+    url: https://github.com
     username: x-access-token
     password: ${{secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN}}
 updates:
   - package-ecosystem: uv
+    registries: '*'
     directory: /
     schedule:
       interval: weekly
