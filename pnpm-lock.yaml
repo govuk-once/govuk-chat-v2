@@ -10,7 +10,7 @@ importers:
     devDependencies:
       '@aws/agentcore':
         specifier: ~0.30.0
-        version: 0.30.0(@aws-cdk/cli-plugin-contract@2.182.2)(@types/react@19.3.0)(@typescript-eslint/parser@8.69.0(eslint@10.11.0)(typescript@6.0.3))(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.6)(typescript@6.0.3)
+        version: 0.30.0(@aws-cdk/cli-plugin-contract@2.182.2)(@types/react@19.3.0)(@typescript-eslint/parser@8.69.0(eslint@10.11.0)(typescript@6.0.3))(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.9)(typescript@6.0.3)
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.11.0)
@@ -33,8 +33,8 @@ importers:
         specifier: ^73.0.0
         version: 73.0.0(eslint@10.11.0)
       prettier:
-        specifier: ^3.9.6
-        version: 3.9.6
+        specifier: ^3.9.9
+        version: 3.9.9
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -4324,8 +4324,8 @@ packages:
     resolution: {integrity: sha512-SxToR7P8Y2lWmv/kTzVLC1t/GDI2WGjMwNhLLE9qtH8Q13C+aEmuRlzDst4Up4s0Wc8sF2M+J57iB3cMLqftfg==}
     engines: {node: '>=6.0.0'}
 
-  prettier@3.9.6:
-    resolution: {integrity: sha512-OpN0zzVdiaiAhxpuuj5efpIS4sY9j7bY6uR5mnj5yPzGkdkjNKSJeUThPb60Jw29QuAZgA4o+/iB49kFiaBX6g==}
+  prettier@3.9.9:
+    resolution: {integrity: sha512-Z/CJHIkdujO/OtN7nXUii0Rf3VT5SRuhjBA82Xvu2XhBUgX3nhP67T0LHceBdQLex7OOFGTox+Q5Yg8Jk2Qivg==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -6246,11 +6246,11 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws/agent-inspector@0.6.1(@types/react@19.3.0)(@typescript-eslint/parser@8.69.0(eslint@10.11.0)(typescript@6.0.3))(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.6)(typescript@6.0.3)':
+  '@aws/agent-inspector@0.6.1(@types/react@19.3.0)(@typescript-eslint/parser@8.69.0(eslint@10.11.0)(typescript@6.0.3))(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.9)(typescript@6.0.3)':
     dependencies:
       '@ag-ui/core': 0.0.52
       eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.69.0(eslint@10.11.0)(typescript@6.0.3))(eslint@10.11.0)
-      eslint-plugin-prettier: 5.5.6(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.6)
+      eslint-plugin-prettier: 5.5.6(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.9)
       eslint-plugin-react: 7.37.5(eslint@10.11.0)
       eslint-plugin-react-hooks: 7.1.1(eslint@10.11.0)
       eslint-plugin-testing-library: 7.16.2(eslint@10.11.0)(typescript@6.0.3)
@@ -6271,7 +6271,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@aws/agentcore@0.30.0(@aws-cdk/cli-plugin-contract@2.182.2)(@types/react@19.3.0)(@typescript-eslint/parser@8.69.0(eslint@10.11.0)(typescript@6.0.3))(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.6)(typescript@6.0.3)':
+  '@aws/agentcore@0.30.0(@aws-cdk/cli-plugin-contract@2.182.2)(@types/react@19.3.0)(@typescript-eslint/parser@8.69.0(eslint@10.11.0)(typescript@6.0.3))(aws-cdk-lib@2.266.0(constructs@10.8.1))(constructs@10.8.1)(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.9)(typescript@6.0.3)':
     dependencies:
       '@aws-cdk/cdk-assets-lib': 1.5.0
       '@aws-cdk/toolkit-lib': 1.41.1(@aws-cdk/cli-plugin-contract@2.182.2)
@@ -6291,7 +6291,7 @@ snapshots:
       '@aws-sdk/client-xray': 3.1134.0
       '@aws-sdk/credential-providers': 3.1134.0
       '@aws-sdk/region-config-resolver': 3.972.49
-      '@aws/agent-inspector': 0.6.1(@types/react@19.3.0)(@typescript-eslint/parser@8.69.0(eslint@10.11.0)(typescript@6.0.3))(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.6)(typescript@6.0.3)
+      '@aws/agent-inspector': 0.6.1(@types/react@19.3.0)(@typescript-eslint/parser@8.69.0(eslint@10.11.0)(typescript@6.0.3))(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.9)(typescript@6.0.3)
       '@commander-js/extra-typings': 14.0.0(commander@14.0.3)
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/exporter-metrics-otlp-http': 0.215.0(@opentelemetry/api@1.9.1)
@@ -8890,10 +8890,10 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-prettier@5.5.6(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.6):
+  eslint-plugin-prettier@5.5.6(eslint-config-prettier@10.1.8(eslint@10.11.0))(eslint@10.11.0)(prettier@3.9.9):
     dependencies:
       eslint: 10.11.0
-      prettier: 3.9.6
+      prettier: 3.9.9
       prettier-linter-helpers: 1.0.1
       synckit: 0.11.13
     optionalDependencies:
@@ -10168,7 +10168,7 @@ snapshots:
     dependencies:
       fast-diff: 1.3.0
 
-  prettier@3.9.6: {}
+  prettier@3.9.9: {}
 
   prop-types@15.8.1:
     dependencies:
