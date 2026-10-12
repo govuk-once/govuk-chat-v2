@@ -63,8 +63,8 @@ importers:
   services/chat-api-ts:
     dependencies:
       '@ag-ui/core':
-        specifier: ^0.0.57
-        version: 0.0.57
+        specifier: ^1.0.1
+        version: 1.0.1(zod@4.4.3)
       '@ag-ui/encoder':
         specifier: ^1.0.1
         version: 1.0.1(zod@4.4.3)
@@ -150,9 +150,6 @@ packages:
 
   '@ag-ui/core@0.0.52':
     resolution: {integrity: sha512-Xo0bUaNV56EqylzcrAuhUkQX7et7+SZIrqZZtEByGwEq/I1EHny6ZMkWHLkKR7UNi0FJZwJyhKYmKJS3B2SEgA==}
-
-  '@ag-ui/core@0.0.57':
-    resolution: {integrity: sha512-gho1OWjNE6E3Rl7ZEZ1wr2CEpUHjLFU0FqzCZZk439TicLu+BfLCMkMokB07bMGlRmbJ60hM6LW60iOVauCx+Q==}
 
   '@ag-ui/core@0.0.59':
     resolution: {integrity: sha512-hDgy4ipTqXieT8YG8Mr917Y+FD/f11VK1GefZ5CwTDCuNqS/oTwjJ5l/DZkicThgS8hQW/Y7wPylPBMBJ8BkUg==}
@@ -5242,10 +5239,6 @@ snapshots:
       zod: 3.25.76
 
   '@ag-ui/core@0.0.52':
-    dependencies:
-      zod: 3.25.76
-
-  '@ag-ui/core@0.0.57':
     dependencies:
       zod: 3.25.76
 
