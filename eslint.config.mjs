@@ -2,6 +2,7 @@
 
 import eslint from '@eslint/js';
 import { defineConfig, includeIgnoreFile } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals';
 import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
 import path from 'node:path';
@@ -33,6 +34,13 @@ export default defineConfig(
           destructuredArrayIgnorePattern: '^_',
         },
       ],
+    },
+  },
+  {
+    files: ['services/chat-ui/**/*.{ts,tsx}'],
+    extends: [nextVitals],
+    settings: {
+      next: { rootDir: path.join(import.meta.dirname, 'services/chat-ui') },
     },
   },
   {
