@@ -7,8 +7,6 @@ import {
 import { endUserIdFor } from '../../../../chat-api/end-user-id.ts';
 import { readThreadId, setThreadId } from '../cookies.ts';
 
-export const runtime = 'nodejs';
-
 interface ThreadMessagesBody {
   messages: ThreadMessage[];
 }

@@ -6,8 +6,6 @@ import { invokeThread } from '../../../chat-api/client.ts';
 import { endUserIdFor } from '../../../chat-api/end-user-id.ts';
 import { setThreadId } from './cookies.ts';
 
-export const runtime = 'nodejs';
-
 const uuidSchema = z.uuid();
 
 function errorResponse(status: number, error: string): NextResponse {
