@@ -1,5 +1,6 @@
 import type { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { setHttpOnlyCookie } from '../../../lib/http-only-cookie.ts';
 
 const THREAD_ID_COOKIE = 'thread_id';
 const END_USER_ID_COOKIE = 'end_user_id';
@@ -20,22 +21,14 @@ function readUuidCookie(
   return result.success ? result.data : undefined;
 }
 
-function setCookie(response: NextResponse, name: string, value: string): void {
-  response.cookies.set(name, value, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: MAX_AGE_SECONDS,
-  });
-}
-
 export function readThreadId(cookies: RequestCookies): string | undefined {
   return readUuidCookie(cookies, THREAD_ID_COOKIE);
 }
 
 export function setThreadId(response: NextResponse, threadId: string): void {
-  setCookie(response, THREAD_ID_COOKIE, threadId);
+  setHttpOnlyCookie(response, THREAD_ID_COOKIE, threadId, {
+    maxAge: MAX_AGE_SECONDS,
+  });
 }
 
 export function clearThreadId(response: NextResponse): void {
@@ -47,5 +40,7 @@ export function readEndUserId(cookies: RequestCookies): string | undefined {
 }
 
 export function setEndUserId(response: NextResponse, endUserId: string): void {
-  setCookie(response, END_USER_ID_COOKIE, endUserId);
+  setHttpOnlyCookie(response, END_USER_ID_COOKIE, endUserId, {
+    maxAge: MAX_AGE_SECONDS,
+  });
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   clearThreadId,
   readEndUserId,
@@ -30,24 +30,12 @@ describe('readThreadId', () => {
 });
 
 describe('setThreadId', () => {
-  it('sets a cookie that is not secure outside production', () => {
+  it('sets the thread cookie', () => {
     const response = new NextResponse();
 
     setThreadId(response, THREAD_ID);
 
-    expect(response.cookies.get('thread_id')).toMatchObject({
-      value: THREAD_ID,
-      secure: false,
-    });
-  });
-
-  it('sets a secure cookie in production', () => {
-    vi.stubEnv('NODE_ENV', 'production');
-    const response = new NextResponse();
-
-    setThreadId(response, THREAD_ID);
-
-    expect(response.cookies.get('thread_id')?.secure).toBe(true);
+    expect(response.cookies.get('thread_id')?.value).toBe(THREAD_ID);
   });
 });
 
