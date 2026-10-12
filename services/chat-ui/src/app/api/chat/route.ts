@@ -4,8 +4,6 @@ import { z } from 'zod';
 import { invokeThread } from '../../../chat-api/client.ts';
 import { readEndUserId, setEndUserId, setThreadId } from '../../../cookies.ts';
 
-export const runtime = 'nodejs';
-
 const uuidSchema = z.uuid();
 
 function errorResponse(status: number, error: string): NextResponse {

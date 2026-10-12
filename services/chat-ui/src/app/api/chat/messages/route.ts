@@ -10,8 +10,6 @@ import {
   setThreadId,
 } from '../../../../cookies.ts';
 
-export const runtime = 'nodejs';
-
 interface ThreadMessagesBody {
   messages: ThreadMessage[];
 }
