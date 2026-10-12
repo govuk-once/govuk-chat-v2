@@ -291,6 +291,8 @@ that explains that change.
   history; amend and rebase your commits so that, once merged, they read as the
   changes that actually affected main.
 - **Rebase, don't merge**, to bring a branch up to date with its base.
-- One `.gitignore` for the whole project, ignoring only artefacts produced by
-  this codebase. Personal or device-specific ignores belong in the developer's
-  global gitignore, not here.
+- One `.gitignore` for the whole project, ignoring artefacts produced by this
+  codebase and the development tooling the team commonly uses with it (e.g.
+  virtual environments, coding agents). Personal or device-specific ignores,
+  such as editor or OS files, belong in the developer's global gitignore, not
+  here.
