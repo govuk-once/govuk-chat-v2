@@ -8,7 +8,7 @@ import {
   readThreadId,
   setEndUserId,
   setThreadId,
-} from '../cookies.ts';
+} from '../../../../cookies.ts';
 
 export const runtime = 'nodejs';
 

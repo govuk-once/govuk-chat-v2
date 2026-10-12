@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { readThreadId } from './api/chat/cookies.ts';
+import { readThreadId } from '../cookies.ts';
 import { Chat } from './chat.tsx';
 
 export default async function Home() {

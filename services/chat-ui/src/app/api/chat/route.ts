@@ -2,7 +2,7 @@ import { RunAgentInputSchema } from '@ag-ui/core';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { invokeThread } from '../../../chat-api/client.ts';
-import { readEndUserId, setEndUserId, setThreadId } from './cookies.ts';
+import { readEndUserId, setEndUserId, setThreadId } from '../../../cookies.ts';
 
 export const runtime = 'nodejs';
 

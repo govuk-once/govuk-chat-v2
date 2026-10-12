@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { clearThreadId } from '../cookies.ts';
+import { clearThreadId } from '../../../../cookies.ts';
 
 export function POST(): NextResponse {
   // A relative redirect, because behind the load balancer `request.url` may
