@@ -1,6 +1,6 @@
 version: 2
 registries:
-  govuk-once:
+  github:
     type: git
     url: https://github.com
     username: x-access-token
