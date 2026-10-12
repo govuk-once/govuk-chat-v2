@@ -2,9 +2,16 @@ import { sealData, unsealData } from 'iron-session';
 import type { NextRequest, NextResponse } from 'next/server';
 import { requireEnv } from '../lib/env.ts';
 import { setHttpOnlyCookie } from '../lib/http-only-cookie.ts';
+import type { SignInFlow } from './cognito-sign-in.ts';
+import { CALLBACK_PATH } from './urls.ts';
 
 const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE_SECONDS = 24 * 60 * 60;
+
+const SIGN_IN_FLOW_COOKIE = 'sign_in_flow';
+// 10 minutes is long enough to sign in at the Hosted UI, short enough that an
+// abandoned sign-in doesn't linger.
+const SIGN_IN_FLOW_MAX_AGE_SECONDS = 10 * 60;
 
 type RequestCookies = Pick<NextRequest['cookies'], 'get'>;
 
@@ -38,4 +45,31 @@ export async function setSession(
     await seal({ sub }, SESSION_MAX_AGE_SECONDS),
     { maxAge: SESSION_MAX_AGE_SECONDS },
   );
+}
+
+export async function readSignInFlow(
+  cookies: RequestCookies,
+): Promise<SignInFlow | undefined> {
+  const cookie = cookies.get(SIGN_IN_FLOW_COOKIE)?.value;
+  if (!cookie) return undefined;
+  const { codeVerifier, state, returnPath } = await unseal<SignInFlow>(cookie);
+  return codeVerifier && state && returnPath
+    ? { codeVerifier, state, returnPath }
+    : undefined;
+}
+
+export async function setSignInFlow(
+  response: NextResponse,
+  flow: SignInFlow,
+): Promise<void> {
+  setHttpOnlyCookie(
+    response,
+    SIGN_IN_FLOW_COOKIE,
+    await seal(flow, SIGN_IN_FLOW_MAX_AGE_SECONDS),
+    { path: CALLBACK_PATH, maxAge: SIGN_IN_FLOW_MAX_AGE_SECONDS },
+  );
+}
+
+export function clearSignInFlow(response: NextResponse): void {
+  response.cookies.delete({ name: SIGN_IN_FLOW_COOKIE, path: CALLBACK_PATH });
 }

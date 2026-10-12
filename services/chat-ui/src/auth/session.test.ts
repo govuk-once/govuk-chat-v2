@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readSession, setSession } from './session.ts';
+import type { SignInFlow } from './cognito-sign-in.ts';
+import {
+  clearSignInFlow,
+  readSession,
+  readSignInFlow,
+  setSession,
+  setSignInFlow,
+} from './session.ts';
 
 const SUB = crypto.randomUUID();
+const FLOW: SignInFlow = {
+  codeVerifier: 'verifier',
+  state: 'state',
+  returnPath: '/chat',
+};
 
 beforeEach(() => {
   vi.stubEnv('SESSION_SECRET', 'a'.repeat(64));
@@ -15,6 +27,12 @@ afterEach(() => {
 async function sessionResponse(): Promise<NextResponse> {
   const response = new NextResponse();
   await setSession(response, SUB);
+  return response;
+}
+
+async function signInFlowResponse(): Promise<NextResponse> {
+  const response = new NextResponse();
+  await setSignInFlow(response, FLOW);
   return response;
 }
 
@@ -47,5 +65,42 @@ describe('readSession', () => {
     vi.setSystemTime(Date.now() + (maxAge + 3600) * 1000);
 
     expect(await readSession(response.cookies)).toBeUndefined();
+  });
+});
+
+describe('readSignInFlow', () => {
+  it('returns the flow from a sign-in flow cookie', async () => {
+    const response = await signInFlowResponse();
+
+    expect(await readSignInFlow(response.cookies)).toEqual(FLOW);
+  });
+
+  it('returns undefined once the sign-in has taken too long', async () => {
+    const response = await signInFlowResponse();
+    const maxAge = response.cookies.get('sign_in_flow')?.maxAge ?? 0;
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.now() + (maxAge + 3600) * 1000);
+
+    expect(await readSignInFlow(response.cookies)).toBeUndefined();
+  });
+
+  it('returns undefined for a session cookie', async () => {
+    const response = await sessionResponse();
+    const session = response.cookies.get('session')?.value;
+    const request = new NextRequest('http://localhost/', {
+      headers: { cookie: `sign_in_flow=${session}` },
+    });
+
+    expect(await readSignInFlow(request.cookies)).toBeUndefined();
+  });
+});
+
+describe('clearSignInFlow', () => {
+  it('clears the sign-in flow cookie', () => {
+    const response = new NextResponse();
+
+    clearSignInFlow(response);
+
+    expect(response.cookies.get('sign_in_flow')?.value).toBe('');
   });
 });
