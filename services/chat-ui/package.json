@@ -11,7 +11,7 @@
     "type-check": "scripts/type-check.sh"
   },
   "dependencies": {
-    "@ag-ui/client": "0.0.59",
+    "@ag-ui/client": "1.0.1",
     "@ag-ui/core": "0.0.59",
     "@assistant-ui/react": "0.15.22",
     "@assistant-ui/react-ag-ui": "0.0.63",
