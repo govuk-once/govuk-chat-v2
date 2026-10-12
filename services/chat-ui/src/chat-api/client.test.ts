@@ -10,7 +10,8 @@ const ACCESS_TOKEN = 'example-access-token';
 const TOKEN_LIFETIME_SECONDS = 3600;
 const NOW = new Date('2026-09-24T12:00:00.000Z');
 
-const send = vi.fn();
+const fetchClientSecret =
+  vi.fn<(userPoolId: string, clientId: string) => Promise<string>>();
 const fetchMock = vi.fn<typeof fetch>();
 
 const testEnv = {} as {
@@ -49,23 +50,14 @@ beforeEach(async () => {
   vi.stubEnv('COGNITO_APP_CLIENT_ID', APP_CLIENT_ID);
   vi.stubGlobal('fetch', fetchMock);
 
-  send.mockResolvedValue({ UserPoolClient: { ClientSecret: CLIENT_SECRET } });
+  fetchClientSecret.mockResolvedValue(CLIENT_SECRET);
   fetchMock.mockImplementation(async (url) =>
     url === TOKEN_ENDPOINT ? tokenResponse() : new Response('upstream'),
   );
 
   // The token cache lives in module scope, so each test imports afresh.
   vi.resetModules();
-  vi.doMock('@aws-sdk/client-cognito-identity-provider', () => ({
-    CognitoIdentityProviderClient: vi.fn().mockImplementation(function () {
-      return { send };
-    }),
-    DescribeUserPoolClientCommand: vi.fn().mockImplementation(function (
-      input: unknown,
-    ) {
-      return { input };
-    }),
-  }));
+  vi.doMock('../lib/cognito-client-secret.ts', () => ({ fetchClientSecret }));
   const clientModule = await import('./client.ts');
   testEnv.invokeThread = clientModule.invokeThread;
   testEnv.listThreadMessages = clientModule.listThreadMessages;
@@ -90,10 +82,8 @@ describe('invokeThread', () => {
     await testEnv.invokeThread(invokeInput());
     await testEnv.invokeThread(invokeInput());
 
-    expect(send).toHaveBeenCalledOnce();
-    expect(send).toHaveBeenCalledWith({
-      input: { UserPoolId: USER_POOL_ID, ClientId: APP_CLIENT_ID },
-    });
+    expect(fetchClientSecret).toHaveBeenCalledOnce();
+    expect(fetchClientSecret).toHaveBeenCalledWith(USER_POOL_ID, APP_CLIENT_ID);
     expect(tokenRequests()).toHaveLength(1);
     const [, tokenInit] = tokenRequests()[0]!;
     expect(new Headers(tokenInit?.headers).get('Authorization')).toBe(
@@ -107,15 +97,6 @@ describe('invokeThread', () => {
     await testEnv.invokeThread(invokeInput());
 
     expect(tokenRequests()).toHaveLength(2);
-  });
-
-  it('throws when the app client has no client secret', async () => {
-    send.mockResolvedValueOnce({ UserPoolClient: {} });
-
-    await expect(testEnv.invokeThread(invokeInput())).rejects.toThrow(
-      `App client ${APP_CLIENT_ID} has no client secret`,
-    );
-    expect(tokenRequests()).toHaveLength(0);
   });
 
   it('throws when the token request fails and does not cache the failure', async () => {

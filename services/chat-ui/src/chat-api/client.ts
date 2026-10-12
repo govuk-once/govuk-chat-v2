@@ -1,7 +1,4 @@
-import {
-  CognitoIdentityProviderClient,
-  DescribeUserPoolClientCommand,
-} from '@aws-sdk/client-cognito-identity-provider';
+import { fetchClientSecret } from '../lib/cognito-client-secret.ts';
 import { requireEnv } from '../lib/env.ts';
 
 const TOKEN_SCOPE = 'chat-api/invoke';
@@ -42,8 +39,6 @@ export interface ThreadMessage {
   createdAt: string;
 }
 
-const cognitoClient = new CognitoIdentityProviderClient({});
-
 // A property rather than a top-level `let`, which unicorn's lint rules reject.
 const tokenCache: { token?: AccessToken } = {};
 
@@ -58,21 +53,11 @@ function readConfig(): ChatApiConfig {
   };
 }
 
-async function fetchClientSecret(config: ChatApiConfig): Promise<string> {
-  const { UserPoolClient } = await cognitoClient.send(
-    new DescribeUserPoolClientCommand({
-      UserPoolId: config.userPoolId,
-      ClientId: config.appClientId,
-    }),
-  );
-  if (!UserPoolClient?.ClientSecret) {
-    throw new Error(`App client ${config.appClientId} has no client secret`);
-  }
-  return UserPoolClient.ClientSecret;
-}
-
 async function fetchAccessToken(config: ChatApiConfig): Promise<AccessToken> {
-  const clientSecret = await fetchClientSecret(config);
+  const clientSecret = await fetchClientSecret(
+    config.userPoolId,
+    config.appClientId,
+  );
   const credentials = Buffer.from(
     `${config.appClientId}:${clientSecret}`,
   ).toString('base64');
