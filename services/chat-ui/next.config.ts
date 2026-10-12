@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   // Otherwise `next dev` writes its own AGENTS.md and CLAUDE.md into this
   // package; agent guidance for the repo lives in the root AGENTS.md.
   agentRules: false,
+  poweredByHeader: false,
 };
 
 export default nextConfig;
