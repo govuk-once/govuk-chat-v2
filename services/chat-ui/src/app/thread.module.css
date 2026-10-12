@@ -1,0 +1,132 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.header {
+  padding: 1rem 1rem 0;
+}
+
+.viewport {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.5rem 1rem 0;
+}
+
+.column {
+  width: 100%;
+  max-width: 44rem;
+  margin-inline: auto;
+}
+
+.newConversation {
+  composes: column;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.newConversationButton {
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--text-colour);
+  font: inherit;
+  color: var(--text-colour);
+  background: var(--surface-colour);
+  cursor: pointer;
+}
+
+.welcome {
+  composes: column;
+  margin-block: auto;
+  font-size: 1.5rem;
+}
+
+.message {
+  margin-block: 0.5rem;
+  overflow-wrap: break-word;
+}
+
+.message p:first-child {
+  margin-top: 0;
+}
+
+.message p:last-child {
+  margin-bottom: 0;
+}
+
+/* Each message composes column itself, because Turbopack does not follow a
+   composes rule inside a composed class. */
+.userMessage {
+  composes: column message;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.userMessageText {
+  max-width: 80%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  color: var(--surface-colour);
+  background: var(--brand-colour);
+}
+
+.assistantMessage {
+  composes: column message;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--surface-colour);
+}
+
+.thinking {
+  margin: 0;
+  color: var(--secondary-text-colour);
+}
+
+.error {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 4px solid var(--error-colour);
+  color: var(--error-colour);
+  background: var(--error-background-colour);
+}
+
+.footer {
+  composes: column;
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding-block: 1rem;
+  background: var(--page-colour);
+}
+
+.composer {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.composerInput {
+  flex: 1;
+  max-height: 8rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--text-colour);
+  font: inherit;
+  resize: none;
+}
+
+.composerButton {
+  padding: 0.5rem 1rem;
+  border: 0;
+  font: inherit;
+  color: var(--surface-colour);
+  background: var(--button-colour);
+  cursor: pointer;
+}
+
+.composerButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
