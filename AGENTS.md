@@ -172,6 +172,11 @@ the effort where it stays accurate. In order of what we rely on most:
   - **Ask before writing one.** Whether a decision is significant enough to
     warrant an ADR is a judgement for the team, not a side effect of a task.
 
+- Larger pieces of work are planned as specs in [docs/specs](docs/specs) and
+  reviewed before implementation starts — see
+  [docs/specs/README.md](docs/specs/README.md). Like ADRs, specs are a
+  point-in-time record; the `/spec` skill drafts one.
+
 - Guides for developers (getting started, how things work) live in the relevant
   README.md files. Keep these succinct — the more detail a guide carries the
   faster it drifts out of date, so cover what a developer needs to orient
