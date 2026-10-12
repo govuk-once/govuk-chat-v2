@@ -13,7 +13,7 @@
   "dependencies": {
     "@ag-ui/client": "0.0.59",
     "@ag-ui/core": "0.0.59",
-    "@assistant-ui/react": "0.15.22",
+    "@assistant-ui/react": "0.15.23",
     "@assistant-ui/react-ag-ui": "0.0.61",
     "@assistant-ui/react-streamdown": "0.3.17",
     "@aws-sdk/client-cognito-identity-provider": "^3.1145.0",
