@@ -51,9 +51,9 @@ Arguments pass straight through to `agentcore dev`, so `--port`,
 ### When the Inspector's chat pane stays empty
 
 The Inspector renders a reply only if it recognises the stream, which in
-practice means AG-UI events. The chat pane shows nothing for example-agent,
-which streams this repository's own event format. The agent still runs, and
-the traces and resources views still work.
+practice means AG-UI events. The chat pane shows nothing for an agent that
+streams any other format. The agent still runs, and the traces and resources
+views still work.
 
 To read a reply from an agent like that, run the dev server in one terminal and
 prompt it from a second:

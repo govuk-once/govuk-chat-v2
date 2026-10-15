@@ -1,1 +1,0 @@
-../../../scripts/shared/agentcore-inspector.sh

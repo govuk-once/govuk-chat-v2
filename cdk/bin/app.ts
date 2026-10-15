@@ -8,7 +8,6 @@ import {
 import { AguiAgentStack } from '../src/stacks/agui-agent-stack.ts';
 import { ChatApiTsStack } from '../src/stacks/chat-api-ts-stack.ts';
 import { ChatUiStack } from '../src/stacks/chat-ui-stack.ts';
-import { ExampleAgentStack } from '../src/stacks/example-agent-stack.ts';
 
 const app = new cdk.App();
 const githubToken = process.env.GITHUB_TOKEN;
@@ -28,14 +27,6 @@ const aguiAgentStack = new AguiAgentStack(app, 'AguiAgentStack', {
   environment: getEnvironment(),
   githubToken: githubToken,
   stackName: `${getResourceNamePrefix()}-AguiAgentStack`,
-  ...serviceMetadata,
-});
-
-new ExampleAgentStack(app, 'ExampleAgentStack', {
-  env: env,
-  environment: getEnvironment(),
-  githubToken: githubToken,
-  stackName: `${getResourceNamePrefix()}-ExampleAgentStack`,
   ...serviceMetadata,
 });
 
