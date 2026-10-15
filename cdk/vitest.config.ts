@@ -2,10 +2,9 @@ import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    exclude: [...configDefaults.exclude, '**/cdk.out/**'],
+    exclude: [...configDefaults.exclude, 'cdk.out/**'],
     clearMocks: true,
     restoreMocks: true,
     unstubEnvs: true,
-    env: { POWERTOOLS_LOG_LEVEL: 'SILENT' },
   },
 });
