@@ -1,7 +1,6 @@
-# Chat API TypeScript
+# Chat API
 
-TypeScript Lambda serverless HTTP API. Exploring whether this is a better API
-option than Python Lambda Web Adapter
+TypeScript Lambda serverless HTTP API.
 
 ## Usage
 
@@ -14,10 +13,10 @@ To deploy:
 To invoke:
 
 ```
-GATEWAY_URL=$(scripts/fetch-cdk-output.sh ChatApiTsStack GatewayUrl)
-export TOKEN_ENDPOINT=$(scripts/fetch-cdk-output.sh ChatApiTsStack TokenEndpoint)
-export USER_POOL_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack UserPoolId)
-export APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack AppClientId)
+GATEWAY_URL=$(scripts/fetch-cdk-output.sh ChatApiStack GatewayUrl)
+export TOKEN_ENDPOINT=$(scripts/fetch-cdk-output.sh ChatApiStack TokenEndpoint)
+export USER_POOL_ID=$(scripts/fetch-cdk-output.sh ChatApiStack UserPoolId)
+export APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiStack AppClientId)
 
 ./scripts/api-curl.sh -X POST "${GATEWAY_URL%/}/v1/threads/invoke" \
   -H "Content-Type: application/json" \
