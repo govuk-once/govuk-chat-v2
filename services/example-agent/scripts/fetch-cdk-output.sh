@@ -1,1 +1,0 @@
-../../../scripts/shared/fetch-cdk-output.sh

@@ -10,10 +10,10 @@ from agentcore_cli_wrapper import configure
 
 ACCOUNT = "123456789012"
 REGION = "eu-west-2"
-RUNTIME_ID = "example_agent-abc123"
+RUNTIME_ID = "agui_agent-abc123"
 RUNTIME_ARN = f"arn:aws:bedrock-agentcore:{REGION}:{ACCOUNT}:runtime/{RUNTIME_ID}"
-ROLE_ARN = f"arn:aws:iam::{ACCOUNT}:role/example-agent-runtime-role"
-MEMORY_ID = "example_agent_memory-abc123"
+ROLE_ARN = f"arn:aws:iam::{ACCOUNT}:role/agui-agent-runtime-role"
+MEMORY_ID = "agui_agent_memory-abc123"
 MEMORY_ARN = f"arn:aws:bedrock-agentcore:{REGION}:{ACCOUNT}:memory/{MEMORY_ID}"
 
 STACK_OUTPUTS = {
@@ -23,8 +23,8 @@ STACK_OUTPUTS = {
     "ShortTermMemoryArn": MEMORY_ARN,
 }
 MANIFEST = {
-    "runtimes": [{"name": "ExampleAgent"}],
-    "memories": [{"name": "ExampleAgentMemory", "eventExpiryDuration": 90}],
+    "runtimes": [{"name": "AguiAgent"}],
+    "memories": [{"name": "AguiAgentMemory", "eventExpiryDuration": 90}],
 }
 
 
@@ -34,15 +34,15 @@ def make_service_dir(
     manifest: Mapping[str, Any] | None = None,
 ) -> Path:
     repo_dir = tmp_path / "repo"
-    service_dir = repo_dir / "services/example-agent"
+    service_dir = repo_dir / "services/agui-agent"
     agentcore_dir = service_dir / "agentcore"
     agentcore_dir.mkdir(parents=True)
     (repo_dir / ".venv").mkdir()
     if outputs is not None:
         outputs_dir = repo_dir / "cdk/cdk-outputs"
         outputs_dir.mkdir(parents=True)
-        (outputs_dir / "ExampleAgentStack.json").write_text(
-            json.dumps({"chaecramb-govuk-chat-ExampleAgentStack": outputs})
+        (outputs_dir / "AguiAgentStack.json").write_text(
+            json.dumps({"chaecramb-govuk-chat-AguiAgentStack": outputs})
         )
     if manifest is not None:
         (agentcore_dir / "agentcore.json").write_text(json.dumps(manifest))
@@ -58,9 +58,7 @@ class TestReadManifest:
     def test_missing_manifest_names_the_expected_path(self, tmp_path: Path) -> None:
         service_dir = make_service_dir(tmp_path)
 
-        with pytest.raises(
-            configure.ConfigError, match="example-agent has no manifest"
-        ):
+        with pytest.raises(configure.ConfigError, match="agui-agent has no manifest"):
             configure.read_manifest(service_dir)
 
 
@@ -88,11 +86,11 @@ class TestPrepareAgentConfiguration:
 
 
 def test_runtime_name_returns_the_name_from_the_manifest() -> None:
-    assert configure.runtime_name(MANIFEST) == "ExampleAgent"
+    assert configure.runtime_name(MANIFEST) == "AguiAgent"
 
 
 def test_memory_name_returns_the_name_from_the_manifest() -> None:
-    assert configure.memory_name(MANIFEST) == "ExampleAgentMemory"
+    assert configure.memory_name(MANIFEST) == "AguiAgentMemory"
 
 
 class TestReadStackOutputs:
@@ -132,14 +130,14 @@ class TestWriteDeployedState:
                 "default": {
                     "resources": {
                         "runtimes": {
-                            "ExampleAgent": {
+                            "AguiAgent": {
                                 "runtimeId": RUNTIME_ID,
                                 "runtimeArn": RUNTIME_ARN,
                                 "roleArn": ROLE_ARN,
                             }
                         },
                         "memories": {
-                            "ExampleAgentMemory": {
+                            "AguiAgentMemory": {
                                 "memoryId": MEMORY_ID,
                                 "memoryArn": MEMORY_ARN,
                             }
@@ -175,7 +173,7 @@ class TestEnsureVenvLink:
         assert os.readlink(service_dir / ".venv") == "../../.venv"
 
     def test_missing_venv_says_to_install_dependencies(self, tmp_path: Path) -> None:
-        service_dir = tmp_path / "repo/services/example-agent"
+        service_dir = tmp_path / "repo/services/agui-agent"
         service_dir.mkdir(parents=True)
 
         with pytest.raises(configure.ConfigError, match="No virtual environment found"):

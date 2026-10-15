@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 from agentcore_cli_wrapper import cli
 
-RUNTIME_NAME = "ExampleAgent"
+RUNTIME_NAME = "AguiAgent"
 MANIFEST = {"runtimes": [{"name": RUNTIME_NAME}]}
 LOCAL_RUN_COMMAND = [
     "pnpm",
