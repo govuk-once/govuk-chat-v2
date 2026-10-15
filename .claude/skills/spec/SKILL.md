@@ -43,7 +43,7 @@ the file dumps.
 ## 3. Draft
 
 Write the spec to `docs/specs/YYYY-MM-DD-title-in-kebab-case.md`, using today's
-date and status **proposed**.
+date and status **accepted**.
 
 - **Don't invent content.** Requirements, goals and rationale come from the
   user or the codebase. Where you would be guessing, add an open question
