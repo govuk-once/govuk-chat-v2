@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import baseContext from '../../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
 import { vi, describe, it, afterEach } from 'vitest';
-import { ChatApiTsStack } from './chat-api-ts-stack.ts';
+import { ChatApiStack } from './chat-api-stack.ts';
 
 const context = {
   ...baseContext,
@@ -10,7 +10,7 @@ const context = {
   'aws:cdk:bundling-stacks': [],
 };
 
-describe('ChatApiTsStack', () => {
+describe('ChatApiStack', () => {
   const baseProps = {
     serviceName: 'chat-api',
     teamName: 'chat',
@@ -22,13 +22,13 @@ describe('ChatApiTsStack', () => {
 
   function stackTemplate() {
     const app = new cdk.App({ context });
-    const stack = new ChatApiTsStack(app, 'TestStack', baseProps);
+    const stack = new ChatApiStack(app, 'TestStack', baseProps);
     return Template.fromStack(stack);
   }
 
   function stackTags() {
     const app = new cdk.App({ context });
-    const stack = new ChatApiTsStack(app, 'TestStack', baseProps);
+    const stack = new ChatApiStack(app, 'TestStack', baseProps);
     return Tags.fromStack(stack);
   }
 
@@ -56,12 +56,12 @@ describe('ChatApiTsStack', () => {
       );
 
       template.hasResourceProperties('AWS::Lambda::Function', {
-        FunctionName: Match.stringLikeRegexp('chat-api-ts-threads-invoke-ts'),
+        FunctionName: Match.stringLikeRegexp('chat-api-threads-invoke-ts'),
         Timeout: 30,
         Environment: {
           Variables: Match.objectLike({
             AGENT_RUNTIME_ARN: baseProps.agentRuntimeArn,
-            POWERTOOLS_SERVICE_NAME: 'chat-api-ts',
+            POWERTOOLS_SERVICE_NAME: 'chat-api',
             CHAT_API_TABLE_NAME: { Ref: tableId },
             RUN_LOCK_LEASE_SECONDS: '30',
           }),
@@ -77,10 +77,10 @@ describe('ChatApiTsStack', () => {
       );
 
       template.hasResourceProperties('AWS::Lambda::Function', {
-        FunctionName: Match.stringLikeRegexp('chat-api-ts-threads-messages-ts'),
+        FunctionName: Match.stringLikeRegexp('chat-api-threads-messages-ts'),
         Environment: {
           Variables: Match.objectLike({
-            POWERTOOLS_SERVICE_NAME: 'chat-api-ts',
+            POWERTOOLS_SERVICE_NAME: 'chat-api',
             CHAT_API_TABLE_NAME: { Ref: tableId },
           }),
         },
@@ -95,9 +95,7 @@ describe('ChatApiTsStack', () => {
       );
       const functions = template.findResources('AWS::Lambda::Function', {
         Properties: {
-          FunctionName: Match.stringLikeRegexp(
-            'chat-api-ts-threads-messages-ts',
-          ),
+          FunctionName: Match.stringLikeRegexp('chat-api-threads-messages-ts'),
         },
       });
       const roleId =
@@ -125,7 +123,7 @@ describe('ChatApiTsStack', () => {
       );
       const functions = template.findResources('AWS::Lambda::Function', {
         Properties: {
-          FunctionName: Match.stringLikeRegexp('chat-api-ts-threads-invoke-ts'),
+          FunctionName: Match.stringLikeRegexp('chat-api-threads-invoke-ts'),
         },
       });
       const roleId =
@@ -149,7 +147,7 @@ describe('ChatApiTsStack', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::DynamoDB::Table', {
-        TableName: Match.stringLikeRegexp('chat-api-ts'),
+        TableName: Match.stringLikeRegexp('chat-api'),
         KeySchema: [
           { AttributeName: 'pk', KeyType: 'HASH' },
           { AttributeName: 'sk', KeyType: 'RANGE' },
@@ -318,7 +316,7 @@ describe('ChatApiTsStack', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::Cognito::UserPool', {
-        UserPoolName: Match.stringLikeRegexp('chat-api-ts-user-pool'),
+        UserPoolName: Match.stringLikeRegexp('chat-api-user-pool'),
       });
     });
 

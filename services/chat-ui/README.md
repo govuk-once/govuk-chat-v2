@@ -23,15 +23,15 @@ http://localhost:3000/api/health. Arguments are passed to `next dev`, so
 ## Configuration
 
 The server calls the Chat API as the Cognito app client of a deployed
-`ChatApiTsStack`. It needs that stack's URL, token endpoint, user pool and
+`ChatApiStack`. It needs that stack's URL, token endpoint, user pool and
 app client, and reads the client secret from Cognito with your AWS
 credentials. To run it against your own stack:
 
 ```
-export CHAT_API_URL=$(scripts/fetch-cdk-output.sh ChatApiTsStack GatewayUrl)
-export COGNITO_TOKEN_ENDPOINT=$(scripts/fetch-cdk-output.sh ChatApiTsStack TokenEndpoint)
-export COGNITO_USER_POOL_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack UserPoolId)
-export COGNITO_APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack AppClientId)
+export CHAT_API_URL=$(scripts/fetch-cdk-output.sh ChatApiStack GatewayUrl)
+export COGNITO_TOKEN_ENDPOINT=$(scripts/fetch-cdk-output.sh ChatApiStack TokenEndpoint)
+export COGNITO_USER_POOL_ID=$(scripts/fetch-cdk-output.sh ChatApiStack UserPoolId)
+export COGNITO_APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiStack AppClientId)
 ```
 
 ## Building the image
@@ -61,7 +61,7 @@ The app is at the stack's `EndpointUrl`:
 
 The container gets `ENVIRONMENT`, the deployment environment name.
 `/api/health` reports it. It also gets the Chat API values above from the
-`ChatApiTsStack` in the same environment, which the deploy script deploys
+`ChatApiStack` in the same environment, which the deploy script deploys
 first.
 
 A deployed stack has no access gate until CHAT-932 adds sign-in. Anyone with

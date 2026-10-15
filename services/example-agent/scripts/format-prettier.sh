@@ -1,1 +1,0 @@
-../../../scripts/shared/pnpm-prettier.sh

@@ -54,7 +54,7 @@ function requireEnv(name: string): string {
   return value;
 }
 
-// Read on use rather than at import, unlike chat-api-ts, because `next build`
+// Read on use rather than at import, unlike the Chat API, because `next build`
 // imports route modules inside the Docker build, where none of this is set.
 function readConfig(): ChatApiConfig {
   return {

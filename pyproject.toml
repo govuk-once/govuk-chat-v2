@@ -8,14 +8,11 @@ dependencies = []
 
 [tool.uv.workspace]
 members = [
-    "services/chat-api-fastapi",
-    "services/example-agent",
     "services/agui-agent",
     "libs/python/*",
 ]
 
 [tool.uv.sources]
-agent-runtime-types = { workspace = true }
 agentcore-cli-wrapper = { workspace = true }
 
 [tool.pyright]
