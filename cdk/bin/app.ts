@@ -7,7 +7,6 @@ import {
 } from '../src/constants/environment.ts';
 import { AguiAgentStack } from '../src/stacks/agui-agent-stack.ts';
 import { ChatApiTsStack } from '../src/stacks/chat-api-ts-stack.ts';
-import { ChatApiFastapiStack } from '../src/stacks/chat-api-fastapi-stack.ts';
 import { ChatUiStack } from '../src/stacks/chat-ui-stack.ts';
 import { ExampleAgentStack } from '../src/stacks/example-agent-stack.ts';
 
@@ -32,7 +31,7 @@ const aguiAgentStack = new AguiAgentStack(app, 'AguiAgentStack', {
   ...serviceMetadata,
 });
 
-const exampleAgentStack = new ExampleAgentStack(app, 'ExampleAgentStack', {
+new ExampleAgentStack(app, 'ExampleAgentStack', {
   env: env,
   environment: getEnvironment(),
   githubToken: githubToken,
@@ -45,14 +44,6 @@ const chatApiTsStack = new ChatApiTsStack(app, 'ChatApiTsStack', {
   environment: getEnvironment(),
   agentRuntimeArn: aguiAgentStack.agentRuntimeArn,
   stackName: `${getResourceNamePrefix()}-ChatApiTsStack`,
-  ...serviceMetadata,
-});
-
-new ChatApiFastapiStack(app, 'ChatApiFastapiStack', {
-  env: env,
-  environment: getEnvironment(),
-  agentRuntimeArn: exampleAgentStack.agentRuntimeArn,
-  stackName: `${getResourceNamePrefix()}-ChatApiFastapiStack`,
   ...serviceMetadata,
 });
 
