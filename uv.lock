@@ -12,7 +12,6 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "agent-runtime-types",
     "agentcore-cli-wrapper",
     "agui-agent",
     "govuk-chat-v2",
@@ -53,29 +52,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/76/77/3bc7967f3babab159c58c471c590d3b663c54bd69165c0fe8896677a2042/ag_ui_strands-0.4.1.tar.gz", hash = "sha256:d72a78eb6e63f2d5309cae4c53b11bee3a99d489b3ee9ee6f2fad3e976f3b14d", size = 560187, upload-time = "2026-09-23T12:45:50.204Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/20/8b875f9044cc0e8ccc4547eeeb5221e1ee8c5287811826d106ef718e49f2/ag_ui_strands-0.4.1-py3-none-any.whl", hash = "sha256:ed8c30d9cd53667e6ecdf927f7d89eea70302f210a09e55538c17167039ce650", size = 172498, upload-time = "2026-09-23T12:45:49.105Z" },
-]
-
-[[package]]
-name = "agent-runtime-types"
-version = "0.1.0"
-source = { editable = "libs/python/agent-runtime-types" }
-dependencies = [
-    { name = "pydantic" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pyright" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.12.5" }]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pyright", specifier = ">=1.1.411" },
-    { name = "ruff", specifier = ">=0.16.2" },
 ]
 
 [[package]]

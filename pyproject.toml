@@ -13,7 +13,6 @@ members = [
 ]
 
 [tool.uv.sources]
-agent-runtime-types = { workspace = true }
 agentcore-cli-wrapper = { workspace = true }
 
 [tool.pyright]
