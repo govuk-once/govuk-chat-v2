@@ -11,7 +11,7 @@ import { Construct } from 'constructs';
 import {
   getResourceNamePrefix,
   isEphemeralEnvironment,
-  repoRoot,
+  repositoryRoot,
 } from '../constants/environment.ts';
 
 export interface ChatApiTsStackProps extends cdk.StackProps {
@@ -361,7 +361,7 @@ export class ChatApiTsStack extends cdk.Stack {
         ...environment,
       },
       entry: path.resolve(
-        repoRoot(),
+        repositoryRoot(),
         `services/chat-api-ts/src/handlers/${handlerPath}`,
       ),
       handler: 'handler',

@@ -9,7 +9,7 @@ import {
   getResourceNamePrefix,
   isEphemeralEnvironment,
   hashGlobs,
-  repoRoot,
+  repositoryRoot,
 } from '../constants/environment.ts';
 
 export interface ChatApiFastapiStackProps extends cdk.StackProps {
@@ -158,33 +158,36 @@ export class ChatApiFastapiStack extends cdk.Stack {
 
   lambdaCode(): lambda.AssetCode {
     const assetHash = hashGlobs(
-      path.resolve(repoRoot(), 'services/chat-api-fastapi/src/**/*.py'),
-      path.resolve(repoRoot(), 'libs/python/**/src/**/*.py'),
-      path.resolve(repoRoot(), 'uv.lock'),
+      path.resolve(repositoryRoot(), 'services/chat-api-fastapi/src/**/*.py'),
+      path.resolve(repositoryRoot(), 'libs/python/**/src/**/*.py'),
+      path.resolve(repositoryRoot(), 'uv.lock'),
     );
 
     return lambda.Code.fromAsset(
-      path.resolve(repoRoot(), 'services/chat-api-fastapi'),
+      path.resolve(repositoryRoot(), 'services/chat-api-fastapi'),
       {
         bundling: {
           image: lambda.Runtime.PYTHON_3_13.bundlingImage,
           volumes: [
             {
               containerPath: '/repo-root',
-              hostPath: repoRoot(),
+              hostPath: repositoryRoot(),
             },
             {
               containerPath: '/var/cache/dnf',
-              hostPath: path.resolve(repoRoot(), 'cdk/cache/dnf'),
+              hostPath: path.resolve(repositoryRoot(), 'cdk/cache/dnf'),
             },
             {
               containerPath: '/pip-cache/global-cache',
-              hostPath: path.resolve(repoRoot(), 'cdk/cache/pip/global-cache'),
+              hostPath: path.resolve(
+                repositoryRoot(),
+                'cdk/cache/pip/global-cache',
+              ),
             },
             {
               containerPath: '/pip-cache/packages',
               hostPath: path.resolve(
-                repoRoot(),
+                repositoryRoot(),
                 'cdk/cache/pip/chat-api-fastapi-packages',
               ),
             },
