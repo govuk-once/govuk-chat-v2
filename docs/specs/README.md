@@ -30,7 +30,7 @@ for why something was built, not as a description of current behaviour.
 If the plan changes significantly during implementation, update the spec in the
 implementation pull request so the merged spec reflects what was actually
 built. After that, leave it alone: if later work changes direction, write a new
-spec and mark the old one as superseded.
+spec. If the old one was never built, mark it withdrawn.
 
 ## Naming
 
@@ -43,16 +43,22 @@ the same name as the spec, without the `.md` extension.
 
 ## Review and status
 
-A spec moves through the following states:
+A spec's status is set in the pull request that changes it, so the merged spec
+is always accurate without a follow-up edit:
 
-- **proposed** — open as a pull request for review
-- **accepted** — merged to `main`; implementation can begin
-- **superseded** — replaced by a later spec
+- **accepted** — the spec is agreed but the work hasn't been built yet. Use
+  this when a spec is merged ahead of its implementation.
+- **implemented** — the work described has been built. Set this in the
+  implementation pull request, or straight away if the spec and implementation
+  land in the same pull request.
+- **withdrawn** — we decided not to build the work. Set this in a pull request
+  that explains why, linking to any spec that replaces it.
 
-Review the spec pull request before implementation starts. Reviewers should
-check that the spec solves the stated problem, that its requirements are
-testable, and that open questions are either answered or explicitly carried
-forward. Implementation pull requests should link to the spec they deliver.
+An open spec pull request is the proposal, so there is no status for it. Review
+it before implementation starts. Reviewers should check that the spec solves
+the stated problem, that its requirements are testable, and that open questions
+are either answered or explicitly carried forward. Implementation pull requests
+should link to the spec they deliver.
 
 ## Template
 
@@ -61,7 +67,7 @@ forward. Implementation pull requests should link to the spec they deliver.
 
 **Date:** YYYY-MM-DD
 
-**Status:** proposed
+**Status:** accepted
 
 ## Problem
 
