@@ -1,31 +1,30 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { readSession } from '../../../../auth/session.ts';
 import {
   listThreadMessages,
   type ThreadMessage,
 } from '../../../../chat-api/client.ts';
-import {
-  readEndUserId,
-  readThreadId,
-  setEndUserId,
-  setThreadId,
-} from '../cookies.ts';
-
-export const runtime = 'nodejs';
+import { endUserIdFor } from '../../../../chat-api/end-user-id.ts';
+import { readThreadId, setThreadId } from '../cookies.ts';
 
 interface ThreadMessagesBody {
   messages: ThreadMessage[];
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const session = await readSession(request.cookies);
+  if (!session) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   const threadId = readThreadId(request.cookies);
-  const endUserId = readEndUserId(request.cookies);
-  if (!threadId || !endUserId) {
+  if (!threadId) {
     return NextResponse.json({ messages: [] });
   }
 
   const upstream = await listThreadMessages({
     threadId,
-    endUserId,
+    endUserId: endUserIdFor(session.sub),
     signal: request.signal,
   });
 
@@ -47,6 +46,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     { headers: { 'Cache-Control': 'no-store' } },
   );
   setThreadId(response, threadId);
-  setEndUserId(response, endUserId);
   return response;
 }

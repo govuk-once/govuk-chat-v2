@@ -1,7 +1,5 @@
-import {
-  CognitoIdentityProviderClient,
-  DescribeUserPoolClientCommand,
-} from '@aws-sdk/client-cognito-identity-provider';
+import { fetchClientSecret } from '../lib/cognito-client-secret.ts';
+import { requireEnv } from '../lib/env.ts';
 
 const TOKEN_SCOPE = 'chat-api/invoke';
 const TOKEN_EXPIRY_MARGIN_MS = 60_000;
@@ -41,18 +39,8 @@ export interface ThreadMessage {
   createdAt: string;
 }
 
-const cognitoClient = new CognitoIdentityProviderClient({});
-
 // A property rather than a top-level `let`, which unicorn's lint rules reject.
 const tokenCache: { token?: AccessToken } = {};
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} is not configured`);
-  }
-  return value;
-}
 
 // Read on use rather than at import, unlike chat-api-ts, because `next build`
 // imports route modules inside the Docker build, where none of this is set.
@@ -65,21 +53,11 @@ function readConfig(): ChatApiConfig {
   };
 }
 
-async function fetchClientSecret(config: ChatApiConfig): Promise<string> {
-  const { UserPoolClient } = await cognitoClient.send(
-    new DescribeUserPoolClientCommand({
-      UserPoolId: config.userPoolId,
-      ClientId: config.appClientId,
-    }),
-  );
-  if (!UserPoolClient?.ClientSecret) {
-    throw new Error(`App client ${config.appClientId} has no client secret`);
-  }
-  return UserPoolClient.ClientSecret;
-}
-
 async function fetchAccessToken(config: ChatApiConfig): Promise<AccessToken> {
-  const clientSecret = await fetchClientSecret(config);
+  const clientSecret = await fetchClientSecret(
+    config.userPoolId,
+    config.appClientId,
+  );
   const credentials = Buffer.from(
     `${config.appClientId}:${clientSecret}`,
   ).toString('base64');

@@ -1,10 +1,10 @@
 import { RunAgentInputSchema } from '@ag-ui/core';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { readSession } from '../../../auth/session.ts';
 import { invokeThread } from '../../../chat-api/client.ts';
-import { readEndUserId, setEndUserId, setThreadId } from './cookies.ts';
-
-export const runtime = 'nodejs';
+import { endUserIdFor } from '../../../chat-api/end-user-id.ts';
+import { setThreadId } from './cookies.ts';
 
 const uuidSchema = z.uuid();
 
@@ -21,6 +21,11 @@ async function readJson(request: Request): Promise<unknown> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const session = await readSession(request.cookies);
+  if (!session) {
+    return errorResponse(401, 'Not authenticated');
+  }
+
   const body = RunAgentInputSchema.safeParse(await readJson(request));
   if (!body.success || !uuidSchema.safeParse(body.data.threadId).success) {
     return errorResponse(422, 'Invalid request body');
@@ -36,7 +41,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const { threadId } = body.data;
-  const endUserId = readEndUserId(request.cookies) ?? crypto.randomUUID();
+  const endUserId = endUserIdFor(session.sub);
 
   // assistant-ui's ids and fields fail the API's strict schema, so the route
   // builds the request rather than forwarding the body. Only the last message
@@ -63,6 +68,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     },
   });
   setThreadId(response, threadId);
-  setEndUserId(response, endUserId);
   return response;
 }

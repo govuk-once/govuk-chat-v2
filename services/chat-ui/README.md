@@ -17,8 +17,8 @@ To run it on your own machine:
 ```
 
 The page is at http://localhost:3000 and the health check at
-http://localhost:3000/api/health. Arguments are passed to `next dev`, so
-`./scripts/dev.sh --port 3001` picks another port.
+http://localhost:3000/api/health. Arguments are passed to `next dev`,
+but keep the default port, as sign-in only works locally on port 3000.
 
 ## Configuration
 
@@ -33,6 +33,44 @@ export COGNITO_TOKEN_ENDPOINT=$(scripts/fetch-cdk-output.sh ChatApiTsStack Token
 export COGNITO_USER_POOL_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack UserPoolId)
 export COGNITO_APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiTsStack AppClientId)
 ```
+
+## Sign-in
+
+The app requires Cognito sign-in. Unauthenticated page requests are
+redirected to the Cognito Hosted UI, and API requests get a 401.
+`/api/health` is exempt so that health checks and CI smoke tests still
+pass.
+
+Sign-in uses [openid-client](https://github.com/panva/openid-client),
+which finds Cognito's endpoints from its published configuration.
+Sessions last 24 hours and are kept in a cookie encrypted with
+[iron-session](https://github.com/vvo/iron-session).
+
+Self sign-up is off, so to sign in to your dev stack, create yourself a
+user (named `$USER` unless you pass a username) in your `ChatApiTsStack`
+user pool:
+
+```
+scripts/create-dev-user.sh
+```
+
+Run it again if you forget the password, and it sets a new one.
+
+For local development, deploy your `ChatUiStack` to create the sign-in
+client, then export its ID and a session secret of at least 32
+characters:
+
+```
+export COGNITO_SIGN_IN_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatUiStack SignInClientId)
+export SESSION_SECRET=$(openssl rand -base64 32)
+```
+
+Locally, sign-in only works on port 3000, as
+`http://localhost:3000/api/auth/callback` is the only local callback URL
+the sign-in client accepts.
+
+For a deployed stack, the CDK passes these values to the container and
+registers the endpoint's callback URL automatically via a custom resource.
 
 ## Building the image
 
@@ -63,10 +101,6 @@ The container gets `ENVIRONMENT`, the deployment environment name.
 `/api/health` reports it. It also gets the Chat API values above from the
 `ChatApiTsStack` in the same environment, which the deploy script deploys
 first.
-
-A deployed stack has no access gate until CHAT-932 adds sign-in. Anyone with
-its URL can chat using the team's Chat API credentials, so destroy it as soon
-as you are finished.
 
 Each stack runs a Fargate task and a load balancer all the time, so destroy
 it when you are finished. `aws-stack-cleanup` will not remove it, because it
