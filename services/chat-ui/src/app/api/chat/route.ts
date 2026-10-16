@@ -1,4 +1,4 @@
-import { RunAgentInputSchema } from '@ag-ui/core';
+import { RunAgentInputSchema } from '@ag-ui/core/schemas';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { readSession } from '../../../auth/session.ts';
