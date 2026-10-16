@@ -2,7 +2,7 @@ import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import path from 'node:path';
-import { hashGlobs, repoRoot } from '../constants/environment.ts';
+import { hashGlobs, repositoryRoot } from '../constants/environment.ts';
 
 interface AgentCoreCodeAssetOptions {
   packageName: string;
@@ -24,12 +24,12 @@ export function agentCoreCodeAsset(
   const dnfPackages = ['git', 'zip', ...extraDnfPackages];
 
   const assetHash = hashGlobs(
-    path.resolve(repoRoot(), `${servicePath}/src/**/*.py`),
-    path.resolve(repoRoot(), 'uv.lock'),
+    path.resolve(repositoryRoot(), `${servicePath}/src/**/*.py`),
+    path.resolve(repositoryRoot(), 'uv.lock'),
   );
 
   return agentcore.AgentRuntimeArtifact.fromCodeAsset({
-    path: path.resolve(repoRoot(), servicePath),
+    path: path.resolve(repositoryRoot(), servicePath),
     runtime: agentcore.AgentCoreRuntime.PYTHON_3_13,
     entrypoint: ['opentelemetry-instrument', entrypoint],
     bundling: {
@@ -37,20 +37,23 @@ export function agentCoreCodeAsset(
       volumes: [
         {
           containerPath: '/repo-root',
-          hostPath: repoRoot(),
+          hostPath: repositoryRoot(),
         },
         {
           containerPath: '/var/cache/dnf',
-          hostPath: path.resolve(repoRoot(), 'cdk/cache/dnf'),
+          hostPath: path.resolve(repositoryRoot(), 'cdk/cache/dnf'),
         },
         {
           containerPath: '/pip-cache/global-cache',
-          hostPath: path.resolve(repoRoot(), 'cdk/cache/pip/global-cache'),
+          hostPath: path.resolve(
+            repositoryRoot(),
+            'cdk/cache/pip/global-cache',
+          ),
         },
         {
           containerPath: '/pip-cache/packages',
           hostPath: path.resolve(
-            repoRoot(),
+            repositoryRoot(),
             `cdk/cache/pip/${packageName}-packages`,
           ),
         },

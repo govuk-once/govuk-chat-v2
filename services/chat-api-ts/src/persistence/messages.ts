@@ -22,11 +22,9 @@ export async function lookupThread(
     .get(key)
     .go({ consistent: true });
 
-  if (!mapping || mapping.expiresAt <= nowSeconds) {
-    return undefined;
-  }
-
-  return { systemThreadId: mapping.systemThreadId };
+  return !mapping || mapping.expiresAt <= nowSeconds
+    ? undefined
+    : { systemThreadId: mapping.systemThreadId };
 }
 
 export async function getMessages(
@@ -48,8 +46,9 @@ export const MESSAGE_PAGE_SIZE = 50;
 
 function compareMessages(a: StoredMessage, b: StoredMessage): number {
   const dateCompare = a.createdAt.localeCompare(b.createdAt);
-  if (dateCompare !== 0) return dateCompare;
-  return a.messageId.localeCompare(b.messageId);
+  return dateCompare === 0
+    ? a.messageId.localeCompare(b.messageId)
+    : dateCompare;
 }
 
 export function sliceMessages(
