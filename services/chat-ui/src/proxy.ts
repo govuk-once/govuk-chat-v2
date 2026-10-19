@@ -29,9 +29,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   // A fetch that follows the redirect to the Hosted UI fails on CORS, so API
   // callers get a status they can act on instead.
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
-
-  return redirectToSignIn(request);
+  return request.nextUrl.pathname.startsWith('/api/')
+    ? NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    : redirectToSignIn(request);
 }
