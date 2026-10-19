@@ -47,7 +47,7 @@ Sessions last 24 hours and are kept in a cookie encrypted with
 [iron-session](https://github.com/vvo/iron-session).
 
 Self sign-up is off, so to sign in to your dev stack, create yourself a
-user (named `$USER` unless you pass a username) in your `ChatApiTsStack`
+user (named `$USER` unless you pass a username) in your `ChatApiStack`
 user pool:
 
 ```
