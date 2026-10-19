@@ -64,7 +64,7 @@ export const hashGlobs = (...pathGlobs: string[]): string => {
   return hash.digest('hex');
 };
 
-export const repoRoot = () => {
+export const repositoryRoot = () => {
   const filename = fileURLToPath(import.meta.url);
 
   // relative to the path of this current file

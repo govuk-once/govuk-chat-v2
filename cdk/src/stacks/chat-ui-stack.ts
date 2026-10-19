@@ -11,7 +11,7 @@ import { Construct } from 'constructs';
 import {
   getResourceNamePrefix,
   isEphemeralEnvironment,
-  repoRoot,
+  repositoryRoot,
 } from '../constants/environment.ts';
 
 export interface ChatUiStackProps extends cdk.StackProps {
@@ -179,7 +179,7 @@ export class ChatUiStack extends cdk.Stack {
     // The Express Mode CloudFormation resource has no CPU architecture
     // property, so the task runs on x86.
     const image = new DockerImageAsset(this, `${serviceName}-image`, {
-      directory: repoRoot(),
+      directory: repositoryRoot(),
       file: 'services/chat-ui/Dockerfile',
       platform: Platform.LINUX_AMD64,
     });

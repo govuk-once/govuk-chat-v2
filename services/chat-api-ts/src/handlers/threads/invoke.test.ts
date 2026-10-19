@@ -83,9 +83,9 @@ function validRequest(): string {
   });
 }
 
-function fieldErrorResponse(error: string, fields: string[]): unknown {
+function fieldErrorResponse(fields: string[]): unknown {
   return expect.objectContaining({
-    error,
+    error: 'Agent invocation error',
     details: expect.objectContaining({
       fieldErrors: expect.objectContaining(
         Object.fromEntries(fields.map((field) => [field, expect.anything()])),
@@ -121,7 +121,7 @@ describe('handler', () => {
       expectJsonHttpResponse(
         testEnv.responseStream,
         422,
-        fieldErrorResponse('Agent invocation error', ['end-user-id']),
+        fieldErrorResponse(['end-user-id']),
       );
       expect(resolveThread).not.toHaveBeenCalled();
     });
@@ -140,7 +140,7 @@ describe('handler', () => {
       expectJsonHttpResponse(
         testEnv.responseStream,
         422,
-        fieldErrorResponse('Agent invocation error', ['runId']),
+        fieldErrorResponse(['runId']),
       );
     });
   });
@@ -177,7 +177,7 @@ describe('handler', () => {
       expectJsonHttpResponse(
         testEnv.responseStream,
         422,
-        fieldErrorResponse('Agent invocation error', ['threadId', 'messages']),
+        fieldErrorResponse(['threadId', 'messages']),
       );
     });
 
@@ -195,7 +195,7 @@ describe('handler', () => {
       expectJsonHttpResponse(
         testEnv.responseStream,
         422,
-        fieldErrorResponse('Agent invocation error', ['messages']),
+        fieldErrorResponse(['messages']),
       );
     });
   });

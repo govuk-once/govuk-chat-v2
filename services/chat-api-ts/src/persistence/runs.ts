@@ -131,10 +131,12 @@ export async function finishRun(
     ])
     .go();
 
-  if (result.canceled) {
-    const codes = cancellationCodes(result.data);
-    throw new Error(`Run completion was cancelled: ${codes.join(', ')}`);
+  if (!result.canceled) {
+    return;
   }
+
+  const codes = cancellationCodes(result.data);
+  throw new Error(`Run completion was cancelled: ${codes.join(', ')}`);
 }
 
 export async function releaseRun(

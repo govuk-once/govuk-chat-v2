@@ -26,10 +26,10 @@ describe('load', () => {
   it('loads the messages from the messages route in order', async () => {
     fetchMock.mockResolvedValueOnce(Response.json({ messages: MESSAGES }));
 
-    const repo = await threadHistory.load();
+    const repository = await threadHistory.load();
 
     expect(fetchMock).toHaveBeenCalledWith('/api/chat/messages');
-    expect(repo.messages.map(({ message }) => message.id)).toEqual(
+    expect(repository.messages.map(({ message }) => message.id)).toEqual(
       MESSAGES.map(({ id }) => id),
     );
   });
