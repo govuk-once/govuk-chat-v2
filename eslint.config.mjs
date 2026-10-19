@@ -42,5 +42,12 @@ export default defineConfig(
       'unicorn/max-nested-calls': 'off',
     },
   },
+  {
+    files: ['**/vitest.config.ts'],
+    rules: {
+      // Config files export the result of a call (`defineConfig`)
+      'unicorn/no-top-level-side-effects': 'off',
+    },
+  },
   includeIgnoreFile(gitignorePath, { name: 'Imported .gitignore patterns' }),
 );
