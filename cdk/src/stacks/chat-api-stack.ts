@@ -14,7 +14,7 @@ import {
   repositoryRoot,
 } from '../constants/environment.ts';
 
-export interface ChatApiTsStackProps extends cdk.StackProps {
+export interface ChatApiStackProps extends cdk.StackProps {
   serviceName: string;
   teamName: string;
   agentRuntimeArn: string;
@@ -45,14 +45,14 @@ interface CognitoAuth {
   tokenEndpoint: string;
 }
 
-export class ChatApiTsStack extends cdk.Stack {
+export class ChatApiStack extends cdk.Stack {
   public readonly gatewayUrl: string;
   public readonly tokenEndpoint: string;
   public readonly userPoolId: string;
   public readonly userPoolArn: string;
   public readonly appClientId: string;
 
-  constructor(scope: Construct, id: string, props: ChatApiTsStackProps) {
+  constructor(scope: Construct, id: string, props: ChatApiStackProps) {
     super(scope, id, props);
 
     cdk.Tags.of(this).add('ServiceName', props.serviceName);
@@ -79,9 +79,9 @@ export class ChatApiTsStack extends cdk.Stack {
   cognitoAuth(): CognitoAuth {
     const userPool = new cognito.UserPool(
       this,
-      `${getResourceNamePrefix()}-chat-api-ts-user-pool`,
+      `${getResourceNamePrefix()}-chat-api-user-pool`,
       {
-        userPoolName: `${getResourceNamePrefix()}-chat-api-ts-user-pool`,
+        userPoolName: `${getResourceNamePrefix()}-chat-api-user-pool`,
         selfSignUpEnabled: false,
         removalPolicy: isEphemeralEnvironment()
           ? cdk.RemovalPolicy.DESTROY
@@ -95,7 +95,7 @@ export class ChatApiTsStack extends cdk.Stack {
     });
 
     const resourceServer = userPool.addResourceServer(
-      `${getResourceNamePrefix()}-chat-api-ts-resource-server`,
+      `${getResourceNamePrefix()}-chat-api-resource-server`,
       {
         identifier: 'chat-api',
         scopes: [invokeScope],
@@ -103,9 +103,9 @@ export class ChatApiTsStack extends cdk.Stack {
     );
 
     const appClient = userPool.addClient(
-      `${getResourceNamePrefix()}-chat-api-ts-app-client`,
+      `${getResourceNamePrefix()}-chat-api-app-client`,
       {
-        userPoolClientName: `${getResourceNamePrefix()}-chat-api-ts-app-client`,
+        userPoolClientName: `${getResourceNamePrefix()}-chat-api-app-client`,
         generateSecret: true,
         oAuth: {
           flows: { clientCredentials: true },
@@ -122,7 +122,7 @@ export class ChatApiTsStack extends cdk.Stack {
     );
 
     const domain = userPool.addDomain(
-      `${getResourceNamePrefix()}-chat-api-ts-domain`,
+      `${getResourceNamePrefix()}-chat-api-domain`,
       {
         cognitoDomain: {
           domainPrefix: getResourceNamePrefix(),
@@ -132,9 +132,9 @@ export class ChatApiTsStack extends cdk.Stack {
 
     const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
       this,
-      `${getResourceNamePrefix()}-chat-api-ts-authorizer`,
+      `${getResourceNamePrefix()}-chat-api-authorizer`,
       {
-        authorizerName: `${getResourceNamePrefix()}-chat-api-ts-authorizer`,
+        authorizerName: `${getResourceNamePrefix()}-chat-api-authorizer`,
         cognitoUserPools: [userPool],
       },
     );
@@ -163,7 +163,7 @@ export class ChatApiTsStack extends cdk.Stack {
   }
 
   table(): dynamodb.Table {
-    const tableName = `${getResourceNamePrefix()}-chat-api-ts`;
+    const tableName = `${getResourceNamePrefix()}-chat-api`;
 
     return new dynamodb.Table(this, tableName, {
       tableName,
@@ -178,15 +178,15 @@ export class ChatApiTsStack extends cdk.Stack {
   }
 
   apiGateway(
-    props: ChatApiTsStackProps,
+    props: ChatApiStackProps,
     auth: CognitoAuth,
     table: dynamodb.Table,
   ): apigateway.RestApi {
     const api = new apigateway.RestApi(
       this,
-      `${getResourceNamePrefix()}-chat-api-ts-gateway`,
+      `${getResourceNamePrefix()}-chat-api-gateway`,
       {
-        restApiName: `${getResourceNamePrefix()}-chat-api-ts-gateway`,
+        restApiName: `${getResourceNamePrefix()}-chat-api-gateway`,
         deployOptions: {
           stageName: props.environment,
           throttlingRateLimit: RATE_LIMITS.stageRequestsPerSecond,
@@ -257,7 +257,7 @@ export class ChatApiTsStack extends cdk.Stack {
   }
 
   webAcl(api: apigateway.RestApi): wafv2.CfnWebACL {
-    const name = `${getResourceNamePrefix()}-chat-api-ts-web-acl`;
+    const name = `${getResourceNamePrefix()}-chat-api-web-acl`;
     const tooManyRequestsBodyKey = 'too-many-requests';
 
     const endUserInvokeLimit: wafv2.CfnWebACL.RuleProperty = {
@@ -349,7 +349,7 @@ export class ChatApiTsStack extends cdk.Stack {
     environment?: { [key: string]: string },
   ): NodejsFunction {
     const nameSuffix = handlerPath.replaceAll(/[^a-zA-Z0-9-]/g, '-');
-    const functionName = `${getResourceNamePrefix()}-chat-api-ts-${nameSuffix}`;
+    const functionName = `${getResourceNamePrefix()}-chat-api-${nameSuffix}`;
 
     return new NodejsFunction(this, functionName, {
       functionName: functionName,
@@ -357,12 +357,12 @@ export class ChatApiTsStack extends cdk.Stack {
       architecture: lambda.Architecture.ARM_64,
       timeout: LAMBDA_TIMEOUT,
       environment: {
-        POWERTOOLS_SERVICE_NAME: 'chat-api-ts',
+        POWERTOOLS_SERVICE_NAME: 'chat-api',
         ...environment,
       },
       entry: path.resolve(
         repositoryRoot(),
-        `services/chat-api-ts/src/handlers/${handlerPath}`,
+        `services/chat-api/src/handlers/${handlerPath}`,
       ),
       handler: 'handler',
     });

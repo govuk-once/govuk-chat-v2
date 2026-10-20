@@ -1,1 +1,0 @@
-../../../scripts/shared/aws-curl.sh

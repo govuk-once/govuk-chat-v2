@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Creates a user you can sign in to the Chat UI with, in your dev
-# ChatApiTsStack user pool. Re-running it for an existing user sets a new
+# ChatApiStack user pool. Re-running it for an existing user sets a new
 # password, which also recovers a user left without one by an earlier run.
 
 set -euo pipefail
@@ -17,7 +17,7 @@ PROJECT_DIR="$(dirname "${BASH_SOURCE[0]}")/.."
 "$PROJECT_DIR/../../scripts/check-dev-aws-credentials.sh" --quiet
 
 USER_POOL_ID=$("$PROJECT_DIR/scripts/fetch-cdk-output.sh" --skip-credentials \
-  ChatApiTsStack UserPoolId)
+  ChatApiStack UserPoolId)
 
 if lookup_error=$(aws cognito-idp admin-get-user \
   --user-pool-id "$USER_POOL_ID" --username "$USERNAME" 2>&1 >/dev/null); then

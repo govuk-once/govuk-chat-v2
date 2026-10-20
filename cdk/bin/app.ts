@@ -6,10 +6,8 @@ import {
   serviceMetadata,
 } from '../src/constants/environment.ts';
 import { AguiAgentStack } from '../src/stacks/agui-agent-stack.ts';
-import { ChatApiTsStack } from '../src/stacks/chat-api-ts-stack.ts';
-import { ChatApiFastapiStack } from '../src/stacks/chat-api-fastapi-stack.ts';
+import { ChatApiStack } from '../src/stacks/chat-api-stack.ts';
 import { ChatUiStack } from '../src/stacks/chat-ui-stack.ts';
-import { ExampleAgentStack } from '../src/stacks/example-agent-stack.ts';
 
 const app = new cdk.App();
 const githubToken = process.env.GITHUB_TOKEN;
@@ -32,38 +30,22 @@ const aguiAgentStack = new AguiAgentStack(app, 'AguiAgentStack', {
   ...serviceMetadata,
 });
 
-const exampleAgentStack = new ExampleAgentStack(app, 'ExampleAgentStack', {
-  env: env,
-  environment: getEnvironment(),
-  githubToken: githubToken,
-  stackName: `${getResourceNamePrefix()}-ExampleAgentStack`,
-  ...serviceMetadata,
-});
-
-const chatApiTsStack = new ChatApiTsStack(app, 'ChatApiTsStack', {
+const chatApiStack = new ChatApiStack(app, 'ChatApiStack', {
   env: env,
   environment: getEnvironment(),
   agentRuntimeArn: aguiAgentStack.agentRuntimeArn,
-  stackName: `${getResourceNamePrefix()}-ChatApiTsStack`,
-  ...serviceMetadata,
-});
-
-new ChatApiFastapiStack(app, 'ChatApiFastapiStack', {
-  env: env,
-  environment: getEnvironment(),
-  agentRuntimeArn: exampleAgentStack.agentRuntimeArn,
-  stackName: `${getResourceNamePrefix()}-ChatApiFastapiStack`,
+  stackName: `${getResourceNamePrefix()}-ChatApiStack`,
   ...serviceMetadata,
 });
 
 new ChatUiStack(app, 'ChatUiStack', {
   env: env,
   environment: getEnvironment(),
-  chatApiUrl: chatApiTsStack.gatewayUrl,
-  cognitoTokenEndpoint: chatApiTsStack.tokenEndpoint,
-  cognitoUserPoolId: chatApiTsStack.userPoolId,
-  cognitoUserPoolArn: chatApiTsStack.userPoolArn,
-  cognitoAppClientId: chatApiTsStack.appClientId,
+  chatApiUrl: chatApiStack.gatewayUrl,
+  cognitoTokenEndpoint: chatApiStack.tokenEndpoint,
+  cognitoUserPoolId: chatApiStack.userPoolId,
+  cognitoUserPoolArn: chatApiStack.userPoolArn,
+  cognitoAppClientId: chatApiStack.appClientId,
   stackName: `${getResourceNamePrefix()}-ChatUiStack`,
   ...serviceMetadata,
 });

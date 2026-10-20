@@ -42,7 +42,7 @@ export interface ThreadMessage {
 // A property rather than a top-level `let`, which unicorn's lint rules reject.
 const tokenCache: { token?: AccessToken } = {};
 
-// Read on use rather than at import, unlike chat-api-ts, because `next build`
+// Read on use rather than at import, unlike the Chat API, because `next build`
 // imports route modules inside the Docker build, where none of this is set.
 function readConfig(): ChatApiConfig {
   return {
