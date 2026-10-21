@@ -62,3 +62,9 @@ Summarise the spec for the user, lead with the open questions and riskiest
 assumptions, and iterate on their feedback. When they are happy, offer to
 commit it and open a pull request for team review — the spec is accepted when
 that pull request merges.
+
+Start the pull request description by linking to the rendered spec, so
+reviewers read it formatted rather than as a diff. Use a GitHub blob URL pinned
+to the commit SHA (`https://github.com/<owner>/<repo>/blob/<sha>/docs/specs/<spec>.md`)
+rather than the branch name, so the link survives the branch being deleted on
+merge. After pushing further commits, update the link to the new SHA.
