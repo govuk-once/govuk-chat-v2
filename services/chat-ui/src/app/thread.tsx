@@ -72,7 +72,11 @@ function MarkdownText() {
   // Tailwind-styled confirmation modal, which is invisible here without
   // Tailwind, so links render as ordinary anchors instead.
   return (
-    <StreamdownTextPrimitive mode="streaming" linkSafety={{ enabled: false }} />
+    <StreamdownTextPrimitive
+      mode="streaming"
+      smooth
+      linkSafety={{ enabled: false }}
+    />
   );
 }
 
