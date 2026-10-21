@@ -7,7 +7,7 @@ import {
 } from '../src/constants/environment.ts';
 import { AguiAgentStack } from '../src/stacks/agui-agent-stack.ts';
 import { ChatApiStack } from '../src/stacks/chat-api-stack.ts';
-import { ChatUiStack } from '../src/stacks/chat-ui-stack.ts';
+import { DemoUiStack } from '../src/stacks/demo-ui-stack.ts';
 
 const app = new cdk.App();
 const githubToken = process.env.GITHUB_TOKEN;
@@ -38,7 +38,7 @@ const chatApiStack = new ChatApiStack(app, 'ChatApiStack', {
   ...serviceMetadata,
 });
 
-new ChatUiStack(app, 'ChatUiStack', {
+new DemoUiStack(app, 'DemoUiStack', {
   env: env,
   environment: getEnvironment(),
   chatApiUrl: chatApiStack.gatewayUrl,
@@ -46,6 +46,6 @@ new ChatUiStack(app, 'ChatUiStack', {
   cognitoUserPoolId: chatApiStack.userPoolId,
   cognitoUserPoolArn: chatApiStack.userPoolArn,
   cognitoAppClientId: chatApiStack.appClientId,
-  stackName: `${getResourceNamePrefix()}-ChatUiStack`,
+  stackName: `${getResourceNamePrefix()}-DemoUiStack`,
   ...serviceMetadata,
 });

@@ -1,4 +1,4 @@
-# Chat UI
+# Demo UI
 
 A Next.js web app for trying out the Chat API in a browser. Its page is a
 chat that sends each message to the Chat API through a server-side route and
@@ -56,12 +56,12 @@ scripts/create-dev-user.sh
 
 Run it again if you forget the password, and it sets a new one.
 
-For local development, deploy your `ChatUiStack` to create the sign-in
+For local development, deploy your `DemoUiStack` to create the sign-in
 client, then export its ID and a session secret of at least 32
 characters:
 
 ```
-export COGNITO_SIGN_IN_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatUiStack SignInClientId)
+export COGNITO_SIGN_IN_CLIENT_ID=$(scripts/fetch-cdk-output.sh DemoUiStack SignInClientId)
 export SESSION_SECRET=$(openssl rand -base64 32)
 ```
 
@@ -77,8 +77,8 @@ registers the endpoint's callback URL automatically via a custom resource.
 The image builds from the repo root, because pnpm keeps the lockfile there:
 
 ```
-docker build -f services/chat-ui/Dockerfile -t chat-ui .
-docker run --rm -p 3000:3000 chat-ui
+docker build -f services/demo-ui/Dockerfile -t demo-ui .
+docker run --rm -p 3000:3000 demo-ui
 ```
 
 `next build` runs only inside this Docker build.
@@ -94,7 +94,7 @@ To deploy to ECS Express Mode:
 The app is at the stack's `EndpointUrl`:
 
 ```
-./scripts/fetch-cdk-output.sh ChatUiStack EndpointUrl
+./scripts/fetch-cdk-output.sh DemoUiStack EndpointUrl
 ```
 
 The container gets `ENVIRONMENT`, the deployment environment name.
@@ -108,5 +108,5 @@ matches on a tag key named after its environment and Chat stacks tag
 `Environment=<name>`. To destroy it, from the `cdk` directory:
 
 ```
-pnpm exec cdk destroy ChatUiStack
+pnpm exec cdk destroy DemoUiStack
 ```

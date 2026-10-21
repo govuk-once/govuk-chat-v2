@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Creates a user you can sign in to the Chat UI with, in your dev
+# Creates a user you can sign in to the Demo UI with, in your dev
 # ChatApiStack user pool. Re-running it for an existing user sets a new
 # password, which also recovers a user left without one by an earlier run.
 
