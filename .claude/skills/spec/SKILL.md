@@ -51,7 +51,9 @@ date and status **accepted**.
 - Make each requirement testable, and reference requirement numbers from the
   implementation plan and testing sections.
 - Order the implementation plan as atomic commits, following the repo's
-  conventions for packages, tests and CDK.
+  conventions for packages, tests and CDK. Where splitting the work into
+  several pull requests would help reviewers, as the template describes,
+  propose the split and say why.
 - Treat prompts as sensitive: don't write production prompts into a spec.
 - If the design includes an architectural decision, say so to the user and ask
   whether it warrants an ADR. Don't write one unprompted.
