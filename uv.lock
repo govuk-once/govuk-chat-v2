@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.13.7"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -761,7 +761,7 @@ source = { virtual = "." }
 [[package]]
 name = "govuk-chat-v2-private"
 version = "0.1.0"
-source = { git = "https://github.com/govuk-once/govuk-chat-v2-private.git#aadb248165bb4f24ea971b9e327c27b671263934" }
+source = { git = "https://github.com/govuk-once/govuk-chat-v2-private.git#7e0d5008e0e72797d008c18fb9467c08f701168b" }
 dependencies = [
     { name = "pyyaml" },
 ]
