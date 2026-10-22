@@ -58,7 +58,8 @@ An open spec pull request is the proposal, so there is no status for it. Review
 it before implementation starts. Reviewers should check that the spec solves
 the stated problem, that its requirements are testable, and that open questions
 are either answered or explicitly carried forward. Implementation pull requests
-should link to the spec they deliver.
+should link to the spec they deliver. Where the work is split across several
+pull requests, set **implemented** in the last of them.
 
 ## Template
 
@@ -102,6 +103,14 @@ Approaches that were rejected, and why.
 
 The affected packages and files, and the steps to deliver the work, ordered as
 they will be committed. Note which requirements each step delivers.
+
+Plan the pull requests to suit reviewers. One pull request is fine when the
+work reads as a single change. Where it breaks down into distinct changes that
+a reviewer can assess on their own, such as an API endpoint, then the service
+that calls it, then the UI that uses it, split it into a pull request for each,
+ordered as they will merge; later ones can build on earlier ones. When split,
+group the steps under a heading per pull request saying what it delivers, and
+say why it helps.
 
 1. Step one (R1)
 
