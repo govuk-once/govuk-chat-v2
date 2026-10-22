@@ -301,3 +301,101 @@ that explains that change.
   virtual environments, coding agents). Personal or device-specific ignores,
   such as editor or OS files, belong in the developer's global gitignore, not
   here.
+
+## Code review
+
+How to review a change. The sections above say what good looks like; this one
+says how to check for it. Raise a few findings that are right rather than many
+that might be — a review that cries wolf trains people to ignore it.
+
+### Scope
+
+- Review what the change introduces, and any existing problem it makes worse.
+  Leave other problems in the surrounding code for a separate change.
+- Read the changed files in full, and the code the change relies on, not just
+  the diff.
+- Review lockfiles through the manifest change that caused them, not line by
+  line. Do call out anything peculiar in them, such as a significant dependency
+  being downgraded, or mass changes that suggest a different tool, or a
+  different version of it, generated the file.
+- Check the change against the spec in [docs/specs](docs/specs) it implements,
+  if any.
+- Check the change against the ADRs in [docs/adr](docs/adr) that touch the area.
+  A change that contradicts an accepted ADR needs a superseding ADR, not a
+  silent divergence.
+
+### What to look for
+
+In priority order:
+
+1. **Secrets and production prompts.** Either committed is critical — see
+   [Organisational](#organisational).
+2. **Correctness.** Logic that is wrong for realistic input, unhandled errors,
+   errors swallowed or hidden behind a fallback.
+3. **Security.** Apply general industry best practice (e.g. the OWASP Top 10).
+   Look especially for:
+   - missing authentication or authorisation on an entry point
+   - untrusted input reaching a query, shell command, template or file path
+   - overly broad IAM permissions, or public exposure of a resource
+   - sensitive data or conversation content written to logs
+   - LLM input and output treated as trusted, and agent tools with more
+     permission than their task needs
+   - dependencies added without a clear need
+4. **Conventions.** Violations of this document, and tech choices that aren't
+   idiomatic, such as reimplementing something the language, its standard
+   library or an AWS service already provides. Only flag a violation if you can
+   quote the part of this document it breaks; for an idiom, name what should
+   have been used.
+5. **New patterns and design decisions.** A change that introduces a way of
+   doing something the codebase doesn't already do (a new library, structure,
+   abstraction or integration approach), or makes a consequential design
+   decision that would be costly to reverse, should be discussed with
+   colleagues before it lands. Call it out for discussion, don't judge it:
+   say what is new, what the precedent was, and whether it may warrant an ADR
+   (see [Documentation](#documentation)). Whether it does is the team's call.
+6. **Tests.** Judge them by [Testing](#testing), not coverage numbers. A missing
+   test for risky logic is a finding; so is over-testing (incidental
+   assertions, re-testing collaborators, tests added beside outdated ones).
+7. **Documentation and git history.** Per [Documentation](#documentation) and
+   [Git](#git): stale or redundant comments, READMEs the change has made
+   wrong, commit messages that don't explain why, and commits that won't read
+   as atomic changes once merged.
+
+### Before raising a finding
+
+Check it is real. Re-read the code and its callers, and confirm that nothing
+else already handles it and that the change introduced it or made it worse.
+For a bug or security problem, you should be able to say what input or state
+triggers it; for anything else, which rule it breaks. Drop anything that fails.
+
+Don't raise:
+
+- anything the formatter, linter or type checker enforces — CI covers it
+- subjective preferences, or "could be cleaner" with no rule behind it
+- speculative problems that need unlikely input
+- lines carrying a deliberate lint-ignore with a stated reason
+
+### Raising a finding
+
+Locate the problem as `path:line` in the new version of the file (the old
+version, for code the change deletes), say what it is — the scenario that
+triggers it, or the rule it breaks — and what to do about it. Give it a
+severity, so the author knows what has to be fixed before merging:
+
+- **critical**: must be fixed — a secret or production prompt committed, a
+  security hole, data loss, or a bug on the main path through the change
+- **important**: should be fixed — a bug on a realistic but less common path,
+  a clear convention violation, a missing test for risky logic, or a
+  contradiction of an ADR or spec
+- **nit**: worth fixing but fine to merge, such as a stale comment or a
+  commit message that doesn't explain why
+
+Give it a confidence too: **high** if you have confirmed it, **medium** if it
+hinges on something you couldn't check, such as intent or runtime behaviour.
+Drop anything less certain.
+
+Raise new patterns and design decisions separately, as **for discussion**
+rather than with a severity: they are questions for the team, not defects.
+
+If nothing survives, say so and what you checked; an empty review is a valid
+result.
