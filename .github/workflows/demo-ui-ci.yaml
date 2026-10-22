@@ -1,4 +1,4 @@
-name: Chat UI CI
+name: Demo UI CI
 
 on:
   workflow_dispatch: {}
@@ -7,19 +7,19 @@ on:
       - main
     paths:
       - '.github/actions/setup-node-pnpm-env/*'
-      - '.github/workflows/chat-ui-ci.yaml'
+      - '.github/workflows/demo-ui-ci.yaml'
       - '.dockerignore'
       - 'pnpm-lock.yaml'
       - 'tsconfig.json'
-      - 'services/chat-ui/**'
+      - 'services/demo-ui/**'
   pull_request:
     paths:
       - '.github/actions/setup-node-pnpm-env/*'
-      - '.github/workflows/chat-ui-ci.yaml'
+      - '.github/workflows/demo-ui-ci.yaml'
       - '.dockerignore'
       - 'pnpm-lock.yaml'
       - 'tsconfig.json'
-      - 'services/chat-ui/**'
+      - 'services/demo-ui/**'
 
 jobs:
   test:
@@ -31,7 +31,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm-env
 
       - name: Run tests
-        run: services/chat-ui/scripts/test.sh
+        run: services/demo-ui/scripts/test.sh
 
   lint:
     name: Lint
@@ -42,7 +42,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm-env
 
       - name: Run linter
-        run: services/chat-ui/scripts/lint.sh
+        run: services/demo-ui/scripts/lint.sh
 
   format:
     name: Format
@@ -53,7 +53,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm-env
 
       - name: Run formatter
-        run: services/chat-ui/scripts/format.sh
+        run: services/demo-ui/scripts/format.sh
 
   typing:
     name: Type checks
@@ -64,7 +64,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm-env
 
       - name: Run type checks
-        run: services/chat-ui/scripts/type-check.sh
+        run: services/demo-ui/scripts/type-check.sh
 
   docker:
     name: Docker image
@@ -73,10 +73,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build image
-        run: docker build -f services/chat-ui/Dockerfile -t chat-ui .
+        run: docker build -f services/demo-ui/Dockerfile -t demo-ui .
 
       - name: Run container
-        run: docker run --detach --name chat-ui --publish 3000:3000 chat-ui
+        run: docker run --detach --name demo-ui --publish 3000:3000 demo-ui
 
       - name: Check health endpoint
         run: >-
@@ -86,4 +86,4 @@ jobs:
 
       - name: Show container logs
         if: failure()
-        run: docker logs chat-ui
+        run: docker logs demo-ui

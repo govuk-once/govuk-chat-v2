@@ -103,7 +103,7 @@ importers:
         specifier: ^8.10.164
         version: 8.10.164
 
-  services/chat-ui:
+  services/demo-ui:
     dependencies:
       '@ag-ui/client':
         specifier: 0.0.59

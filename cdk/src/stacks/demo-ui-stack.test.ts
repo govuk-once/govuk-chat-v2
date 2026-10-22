@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import baseContext from '../../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
 import { vi, describe, expect, it } from 'vitest';
-import { ChatUiStack } from './chat-ui-stack.ts';
+import { DemoUiStack } from './demo-ui-stack.ts';
 
 const context = {
   ...baseContext,
@@ -10,9 +10,9 @@ const context = {
   'aws:cdk:bundling-stacks': [],
 };
 
-describe('ChatUiStack', () => {
+describe('DemoUiStack', () => {
   const baseProps = {
-    serviceName: 'chat-ui',
+    serviceName: 'demo-ui',
     teamName: 'chat',
     repositoryUrl: 'https://example.com/repo',
     environment: 'testing',
@@ -26,7 +26,7 @@ describe('ChatUiStack', () => {
 
   function createStack() {
     const app = new cdk.App({ context });
-    return new ChatUiStack(app, 'TestStack', baseProps);
+    return new DemoUiStack(app, 'TestStack', baseProps);
   }
 
   // The custom resource's SDK call, as JSON text without its CloudFormation

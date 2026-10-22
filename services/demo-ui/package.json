@@ -1,5 +1,5 @@
 {
-  "name": "@govuk-chat-v2/chat-ui",
+  "name": "@govuk-chat-v2/demo-ui",
   "type": "module",
   "private": true,
   "scripts": {

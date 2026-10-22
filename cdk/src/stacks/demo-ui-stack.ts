@@ -14,7 +14,7 @@ import {
   repositoryRoot,
 } from '../constants/environment.ts';
 
-export interface ChatUiStackProps extends cdk.StackProps {
+export interface DemoUiStackProps extends cdk.StackProps {
   serviceName: string;
   teamName: string;
   repositoryUrl: string;
@@ -29,8 +29,8 @@ export interface ChatUiStackProps extends cdk.StackProps {
 const CONTAINER_PORT = 3000;
 const LOCAL_DEV_ORIGIN = 'http://localhost:3000';
 
-export class ChatUiStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: ChatUiStackProps) {
+export class DemoUiStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: DemoUiStackProps) {
     super(scope, id, props);
 
     cdk.Tags.of(this).add('ServiceName', props.serviceName);
@@ -63,7 +63,7 @@ export class ChatUiStack extends cdk.Stack {
   // A VPC per developer stack, until the platform shared VPC can host
   // Express Mode tasks (CHAT-929 sub-issue 04).
   publicSubnets(): ec2.ISubnet[] {
-    const vpcName = `${getResourceNamePrefix()}-chat-ui-vpc`;
+    const vpcName = `${getResourceNamePrefix()}-demo-ui-vpc`;
 
     const vpc = new ec2.Vpc(this, vpcName, {
       vpcName,
@@ -78,7 +78,7 @@ export class ChatUiStack extends cdk.Stack {
   }
 
   logGroup(): logs.LogGroup {
-    const logGroupName = `/ecs/express/${getResourceNamePrefix()}-chat-ui`;
+    const logGroupName = `/ecs/express/${getResourceNamePrefix()}-demo-ui`;
 
     return new logs.LogGroup(this, logGroupName, {
       logGroupName,
@@ -90,7 +90,7 @@ export class ChatUiStack extends cdk.Stack {
   }
 
   sessionSecret(): secretsmanager.Secret {
-    const secretName = `${getResourceNamePrefix()}-chat-ui-session-secret`;
+    const secretName = `${getResourceNamePrefix()}-demo-ui-session-secret`;
 
     return new secretsmanager.Secret(this, secretName, {
       secretName,
@@ -102,8 +102,8 @@ export class ChatUiStack extends cdk.Stack {
   }
 
   // Its settings are applied by applySignInClientSettings, not here.
-  signInClient(props: ChatUiStackProps): cognito.CfnUserPoolClient {
-    const clientName = `${getResourceNamePrefix()}-chat-ui-sign-in-client`;
+  signInClient(props: DemoUiStackProps): cognito.CfnUserPoolClient {
+    const clientName = `${getResourceNamePrefix()}-demo-ui-sign-in-client`;
 
     return new cognito.CfnUserPoolClient(this, clientName, {
       userPoolId: props.cognitoUserPoolId,
@@ -123,7 +123,7 @@ export class ChatUiStack extends cdk.Stack {
   // either replaces it or renames it, and both change this call, so it runs
   // again.
   applySignInClientSettings(
-    props: ChatUiStackProps,
+    props: DemoUiStackProps,
     signInClient: cognito.CfnUserPoolClient,
     service: ecs.CfnExpressGatewayService,
   ): void {
@@ -168,19 +168,19 @@ export class ChatUiStack extends cdk.Stack {
   }
 
   expressService(
-    props: ChatUiStackProps,
+    props: DemoUiStackProps,
     subnets: ec2.ISubnet[],
     logGroup: logs.LogGroup,
     signInClientId: string,
     sessionSecret: secretsmanager.ISecret,
   ): ecs.CfnExpressGatewayService {
-    const serviceName = `${getResourceNamePrefix()}-chat-ui`;
+    const serviceName = `${getResourceNamePrefix()}-demo-ui`;
 
     // The Express Mode CloudFormation resource has no CPU architecture
     // property, so the task runs on x86.
     const image = new DockerImageAsset(this, `${serviceName}-image`, {
       directory: repositoryRoot(),
-      file: 'services/chat-ui/Dockerfile',
+      file: 'services/demo-ui/Dockerfile',
       platform: Platform.LINUX_AMD64,
     });
 
@@ -248,7 +248,7 @@ export class ChatUiStack extends cdk.Stack {
         ],
         awsLogsConfiguration: {
           logGroup: logGroup.logGroupName,
-          logStreamPrefix: 'chat-ui',
+          logStreamPrefix: 'demo-ui',
         },
       },
       scalingTarget: {
