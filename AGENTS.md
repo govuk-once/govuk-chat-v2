@@ -189,6 +189,9 @@ For code itself, prefer making it self-documenting over describing it:
   out of date the way comments do. Use a comment only where code is genuinely
   cryptic, or to explain an unobvious decision that the code can't express on
   its own.
+- Name things for what they are or do. Module, file, function, class and
+  variable names should explain their purpose and not be ambiguous in their
+  context — the wider the scope, the more specific the name.
 - Prefer restrictive type signatures over documentation. A precise type tells a
   developer (and their IDE) how to use a function far more reliably than prose
   describing parameters. Reach for tighter typing before reaching for docs.
@@ -337,10 +340,12 @@ In priority order:
    - LLM input and output treated as trusted, and agent tools with more
      permission than their task needs
    - dependencies added without a clear need
-4. **Conventions.** Violations of this document, and tech choices that aren't
-   idiomatic: reinventing what the language, standard library, an existing
-   `libs/` module or the AWS service already provides. Only flag a violation
-   you can quote the rule for; for an idiom, name what should have been used.
+4. **Conventions.** Violations of this document, including naming that is vague
+   or ambiguous in its context (see [Documentation](#documentation)), and tech
+   choices that aren't idiomatic: reinventing what the language, standard
+   library, an existing `libs/` module or the AWS service already provides.
+   Only flag a violation you can quote the rule for; for an idiom, name what
+   should have been used.
 5. **New patterns and design decisions.** A change that introduces a way of
    doing something the codebase doesn't already do (a new library, structure,
    abstraction or integration approach), or makes a consequential design
