@@ -16,7 +16,7 @@
     "@assistant-ui/react": "0.15.22",
     "@assistant-ui/react-ag-ui": "0.0.63",
     "@assistant-ui/react-streamdown": "0.3.20",
-    "@aws-sdk/client-cognito-identity-provider": "^3.1146.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.1152.0",
     "iron-session": "^9.0.1",
     "next": "^16.3.8",
     "openid-client": "^6.8.8",
