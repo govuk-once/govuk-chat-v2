@@ -30,10 +30,10 @@ export function agentCoreCodeAsset(
 
   return agentcore.AgentRuntimeArtifact.fromCodeAsset({
     path: path.resolve(repositoryRoot(), servicePath),
-    runtime: agentcore.AgentCoreRuntime.PYTHON_3_13,
+    runtime: agentcore.AgentCoreRuntime.PYTHON_3_14,
     entrypoint: ['opentelemetry-instrument', entrypoint],
     bundling: {
-      image: lambda.Runtime.PYTHON_3_13.bundlingImage,
+      image: lambda.Runtime.PYTHON_3_14.bundlingImage,
       volumes: [
         {
           containerPath: '/repo-root',
@@ -86,7 +86,7 @@ export function agentCoreCodeAsset(
                         --link-mode=copy \
                         --target /pip-cache/packages \
                         --python-platform aarch64-manylinux_2_28 \
-                        --python-version 3.13 \
+                        --python-version 3.14 \
                         --exact \
                         --no-deps \
                         --cache-dir=/pip-cache/global-cache \
