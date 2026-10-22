@@ -68,7 +68,16 @@ function AssistantMessage() {
 }
 
 function MarkdownText() {
-  return <StreamdownTextPrimitive mode="streaming" />;
+  // Streamdown's link safety renders links as buttons that open a
+  // Tailwind-styled confirmation modal, which is invisible here without
+  // Tailwind, so links render as ordinary anchors instead.
+  return (
+    <StreamdownTextPrimitive
+      mode="streaming"
+      smooth
+      linkSafety={{ enabled: false }}
+    />
+  );
 }
 
 function Composer() {
