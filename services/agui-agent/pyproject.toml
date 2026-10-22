@@ -3,7 +3,7 @@ name = "agui-agent"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13.7"
+requires-python = ">=3.14.9"
 dependencies = [
     "ag-ui-strands >= 0.1.7",
     "ag-ui-protocol >= 0.1.10",

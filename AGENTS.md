@@ -223,7 +223,7 @@ For code itself, prefer making it self-documenting over describing it:
 
 #### Python
 
-- Python 3.13+. Modern syntax and standard-library features are available; use
+- Python 3.14+. Modern syntax and standard-library features are available; use
   them. A single version covers the whole project, pinned in the root
   `.python-version` — change it there, don't add per-package versions.
 - `src/` layout. Package code lives in a `src/` directory, with the
