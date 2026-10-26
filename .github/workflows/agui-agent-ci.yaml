@@ -34,7 +34,8 @@ jobs:
 
       - uses: ./.github/actions/setup-python-uv-env
         with:
-          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+          private_repo_app_client_id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private_repo_app_private_key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
 
       - name: Run tests
         run: services/agui-agent/scripts/test.sh
@@ -47,7 +48,8 @@ jobs:
 
       - uses: ./.github/actions/setup-python-uv-env
         with:
-          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+          private_repo_app_client_id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private_repo_app_private_key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
 
       - name: Run linter
         run: services/agui-agent/scripts/lint.sh
@@ -60,7 +62,8 @@ jobs:
 
       - uses: ./.github/actions/setup-python-uv-env
         with:
-          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+          private_repo_app_client_id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private_repo_app_private_key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
 
       - name: Run formatter
         run: services/agui-agent/scripts/format-ruff.sh
@@ -84,7 +87,8 @@ jobs:
 
       - uses: ./.github/actions/setup-python-uv-env
         with:
-          dependencies_github_token: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
+          private_repo_app_client_id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private_repo_app_private_key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
 
       - name: Run type checks
         run: services/agui-agent/scripts/type-check.sh
