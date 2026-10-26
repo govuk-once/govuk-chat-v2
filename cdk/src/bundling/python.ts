@@ -1,4 +1,4 @@
-import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
+import * as agentcore from 'aws-cdk-lib/aws-bedrockagentcore';
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import path from 'node:path';
