@@ -11,6 +11,7 @@ on:
       - '.github/workflows/agui-agent-ci.yaml'
       - 'uv.lock'
       - '.nvmrc'
+      - '.python-version'
       - 'pnpm-lock.yaml'
       - 'services/agui-agent/**'
   pull_request:
@@ -20,6 +21,7 @@ on:
       - '.github/workflows/agui-agent-ci.yaml'
       - 'uv.lock'
       - '.nvmrc'
+      - '.python-version'
       - 'pnpm-lock.yaml'
       - 'services/agui-agent/**'
 

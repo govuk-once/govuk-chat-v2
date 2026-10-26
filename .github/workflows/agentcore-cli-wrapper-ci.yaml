@@ -11,6 +11,7 @@ on:
       - '.github/workflows/agentcore-cli-wrapper-ci.yaml'
       - 'uv.lock'
       - '.nvmrc'
+      - '.python-version'
       - 'pnpm-lock.yaml'
       - 'libs/python/agentcore-cli-wrapper/**'
   pull_request:
@@ -20,6 +21,7 @@ on:
       - '.github/workflows/agentcore-cli-wrapper-ci.yaml'
       - 'uv.lock'
       - '.nvmrc'
+      - '.python-version'
       - 'pnpm-lock.yaml'
       - 'libs/python/agentcore-cli-wrapper/**'
 

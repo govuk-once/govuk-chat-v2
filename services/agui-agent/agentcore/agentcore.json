@@ -9,7 +9,7 @@
       "build": "CodeZip",
       "entrypoint": "src/agui_agent/main.py",
       "codeLocation": ".",
-      "runtimeVersion": "PYTHON_3_13",
+      "runtimeVersion": "PYTHON_3_14",
       "networkMode": "PUBLIC",
       "protocol": "AGUI"
     }
