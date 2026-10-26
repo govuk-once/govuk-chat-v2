@@ -131,6 +131,9 @@ Keep code as simple as the problem allows, so it stays easy to read and change:
   chains of branches, is a sign it needs splitting.
 - Follow the SOLID principles where appropriate, single responsibility above
   all: each function, class or module should have one reason to change.
+- Name things for what they are or do. Module, file, function, class and
+  variable names should explain their purpose and not be ambiguous in their
+  context — the wider the scope, the more specific the name.
 
 #### Testing
 
