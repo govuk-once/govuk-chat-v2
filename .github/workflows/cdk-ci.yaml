@@ -69,12 +69,22 @@ jobs:
   cdk-synth:
     name: CDK Synth
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.PRIVATE_REPO_ACCESS_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-node-pnpm-env
 
+      - name: Create private repo token
+        id: private-repo-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
+          owner: govuk-once
+          repositories: govuk-chat-v2-private
+          permission-contents: read
+
       - name: Run CDK Synth
+        env:
+          GITHUB_TOKEN: ${{ steps.private-repo-token.outputs.token }}
         run: cdk/scripts/cdk-synth.sh

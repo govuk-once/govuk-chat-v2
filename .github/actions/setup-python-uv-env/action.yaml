@@ -1,7 +1,9 @@
 name: 'Set up a Python UV environment'
 description: 'Installs uv and sets up Python'
 inputs:
-  dependencies_github_token:
+  private_repo_app_client_id:
+    required: true
+  private_repo_app_private_key:
     required: true
 runs:
   using: 'composite'
@@ -14,10 +16,20 @@ runs:
       with:
         python-version-file: '.python-version'
 
+    - name: Create private repo token
+      id: private-repo-token
+      uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      with:
+        client-id: ${{ inputs.private_repo_app_client_id }}
+        private-key: ${{ inputs.private_repo_app_private_key }}
+        owner: govuk-once
+        repositories: govuk-chat-v2-private
+        permission-contents: read
+
     - name: Configure Git for Private Repos
       shell: bash
       run: |
-        git config --global url."https://x-access-token:${{ inputs.dependencies_github_token }}@github.com/".insteadOf "https://github.com/"
+        git config --global url."https://x-access-token:${{ steps.private-repo-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
 
     - name: Install dependencies
       shell: bash
