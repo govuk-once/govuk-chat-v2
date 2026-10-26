@@ -122,6 +122,16 @@ To keep diffs free of editor-dependent noise: end every text file with a
 newline, and don't leave trailing whitespace (except where a syntax like
 markdown makes it meaningful).
 
+#### Code design
+
+Keep code as simple as the problem allows, so it stays easy to read and change:
+
+- Keep functions, classes and modules small and focused, and split them as they
+  grow. High cyclomatic complexity in a function, such as deep nesting or long
+  chains of branches, is a sign it needs splitting.
+- Follow the SOLID principles where appropriate, single responsibility above
+  all: each function, class or module should have one reason to change.
+
 #### Testing
 
 We unit test so we can be confident our logic still behaves as intended —
@@ -356,7 +366,9 @@ In priority order:
 6. **Tests.** Judge them by [Testing](#testing), not coverage numbers. A missing
    test for risky logic is a finding; so is over-testing (incidental
    assertions, re-testing collaborators, tests added beside outdated ones).
-7. **Documentation and git history.** Per [Documentation](#documentation) and
+7. **Design.** Code that breaks [Code design](#code-design). Suggest how it
+   could be improved to better follow it.
+8. **Documentation and git history.** Per [Documentation](#documentation) and
    [Git](#git): stale or redundant comments, READMEs the change has made
    wrong, commit messages that don't explain why, and commits that won't read
    as atomic changes once merged.
