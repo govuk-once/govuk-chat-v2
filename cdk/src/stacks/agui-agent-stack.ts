@@ -1,4 +1,4 @@
-import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
+import * as agentcore from 'aws-cdk-lib/aws-bedrockagentcore';
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';

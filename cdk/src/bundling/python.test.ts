@@ -1,4 +1,4 @@
-import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
+import * as agentcore from 'aws-cdk-lib/aws-bedrockagentcore';
 import { describe, it, expect, vi } from 'vitest';
 import { agentCoreCodeAsset } from './python.ts';
 
