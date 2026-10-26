@@ -32,7 +32,7 @@ wheels = [
 
 [[package]]
 name = "ag-ui-strands"
-version = "1.0.1"
+version = "1.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ag-ui-a2ui-toolkit" },
@@ -41,9 +41,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "strands-agents" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/75/27/184c195469dc711c9b472cab1b068b443dfebf3b55368e17c909518f0a41/ag_ui_strands-1.0.1.tar.gz", hash = "sha256:90a8c8f938afcbd6c9b98e2908f213223d2fd8d032d632c2802e42bf51da963e", size = 601444, upload-time = "2026-10-12T10:22:31.396Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f4/0f/160573c078114338b63c2aac1429fb7904a74a4688f46e6a6fb2069cc5ee/ag_ui_strands-1.0.2.tar.gz", hash = "sha256:61e8183a275e47ce49c5f217f91c460dde5659f3dc58d3cf5651260da96973d1", size = 603983, upload-time = "2026-10-16T08:45:04.072Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/92/9a/4a002e3b6b6d2daf5d7f76501c1e9741536a2290d9345e70c264b265b535/ag_ui_strands-1.0.1-py3-none-any.whl", hash = "sha256:7540549022ef8897c2166bb1bf3a0745a7223cba99e099f5c066a72251e9b3aa", size = 180610, upload-time = "2026-10-12T10:22:29.825Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/e9/2153a1676574566efca3054c557227498f96f9e0fd1fcd6a9774e0a1fb86/ag_ui_strands-1.0.2-py3-none-any.whl", hash = "sha256:a16f615bc8911137fd5c7018480df9ba44758980db5c8961dc7aa69692b44a23", size = 181044, upload-time = "2026-10-16T08:45:02.778Z" },
 ]
 
 [[package]]
