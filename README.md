@@ -43,6 +43,18 @@ To set-up your environment with ZSH then run `source scripts/dev-prepare.zsh`
 If you don't use ZSH check the [scripts/dev-prepare.zsh](scripts/dev-prepare.zsh)
 script to check which commands to run.
 
+### Reviewing a pull request with Claude
+
+To have Claude review a pull request and leave its findings on GitHub, run this
+in [Claude Code](https://claude.com/claude-code), with the
+[GitHub CLI](https://cli.github.com/) authenticated:
+
+```text
+/draft-pr-review <PR number or URL>
+```
+
+Leave out the PR to review the one for your current branch.
+
 ## Decisions
 
 Architecture decisions are recorded as ADRs in [docs/adr](docs/adr).
