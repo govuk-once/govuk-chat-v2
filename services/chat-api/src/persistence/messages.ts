@@ -11,11 +11,6 @@ export interface StoredMessage {
 
 export interface MessagePage {
   messages: StoredMessage[];
-  oldestMessageId: string | undefined;
-}
-
-export interface MessagePageWithPositions {
-  messages: StoredMessage[];
   earlier?: Cursor;
   later?: Cursor;
 }
@@ -32,16 +27,6 @@ export async function lookupThread(
   return !mapping || mapping.expiresAt <= nowSeconds
     ? undefined
     : { systemThreadId: mapping.systemThreadId };
-}
-
-export async function getMessages(
-  systemThreadId: string,
-): Promise<StoredMessage[]> {
-  const { data: records } = await service.entities.message.query
-    .primary({ systemThreadId })
-    .go();
-
-  return records.map((record) => toStoredMessage(record));
 }
 
 function toStoredMessage(record: StoredMessage): StoredMessage {
@@ -69,7 +54,7 @@ function queryFrom(systemThreadId: string, from?: Cursor) {
 export async function getMessagePage(
   systemThreadId: string,
   from?: Cursor,
-): Promise<MessagePageWithPositions> {
+): Promise<MessagePage> {
   const isAscending = from?.direction === 'after';
   const { data: records } = await queryFrom(systemThreadId, from).go({
     order: isAscending ? 'asc' : 'desc',
@@ -99,36 +84,5 @@ export async function getMessagePage(
     messages,
     ...(hasEarlier && { earlier: Cursor.before(oldest) }),
     ...(hasLater && { later: Cursor.after(newest) }),
-  };
-}
-
-function compareMessages(a: StoredMessage, b: StoredMessage): number {
-  const dateCompare = a.createdAt.localeCompare(b.createdAt);
-  return dateCompare === 0
-    ? a.messageId.localeCompare(b.messageId)
-    : dateCompare;
-}
-
-export function sliceMessages(
-  messages: StoredMessage[],
-  before?: string,
-): MessagePage {
-  const sorted = messages.toSorted(compareMessages);
-
-  let endIndex = sorted.length;
-  if (before) {
-    endIndex = sorted.findIndex((m) => m.messageId === before);
-    if (endIndex === -1) {
-      return { messages: [], oldestMessageId: undefined };
-    }
-  }
-
-  const startIndex = Math.max(0, endIndex - MESSAGE_PAGE_SIZE);
-  const page = sorted.slice(startIndex, endIndex);
-  const hasEarlier = startIndex > 0;
-
-  return {
-    messages: page,
-    oldestMessageId: hasEarlier ? page[0].messageId : undefined,
   };
 }

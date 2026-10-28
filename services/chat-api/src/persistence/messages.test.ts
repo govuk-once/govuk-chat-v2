@@ -1,13 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { send, stubDynamoDBDocumentClient } from '../test-utils/dynamodb.ts';
 import { Cursor } from '../schemas/message-cursor.ts';
-import type {
-  lookupThread,
-  getMessages,
-  getMessagePage,
-  sliceMessages,
-  StoredMessage,
-} from './messages.ts';
+import type { lookupThread, getMessagePage } from './messages.ts';
 
 const NOW = new Date('2026-09-03T12:00:00.000Z');
 const NOW_SECONDS = Math.floor(NOW.getTime() / 1000);
@@ -18,9 +12,7 @@ const SYSTEM_THREAD_ID = crypto.randomUUID();
 
 const testEnv = {} as {
   lookupThread: typeof lookupThread;
-  getMessages: typeof getMessages;
   getMessagePage: typeof getMessagePage;
-  sliceMessages: typeof sliceMessages;
 };
 
 beforeAll(async () => {
@@ -31,9 +23,7 @@ beforeAll(async () => {
 
   const messagesModule = await import('./messages.ts');
   testEnv.lookupThread = messagesModule.lookupThread;
-  testEnv.getMessages = messagesModule.getMessages;
   testEnv.getMessagePage = messagesModule.getMessagePage;
-  testEnv.sliceMessages = messagesModule.sliceMessages;
 });
 
 afterAll(() => {
@@ -131,47 +121,6 @@ describe('lookupThread', () => {
     const result = await testEnv.lookupThread(KEY);
 
     expect(result).toBeUndefined();
-  });
-});
-
-describe('getMessages', () => {
-  it('returns messages mapped to the StoredMessage shape', async () => {
-    send.mockResolvedValueOnce({
-      Items: [
-        storedMessage('msg-1', 'user', 'Hello', '2026-09-03T12:00:00.000Z'),
-        storedMessage(
-          'msg-2',
-          'assistant',
-          'Hi there',
-          '2026-09-03T12:00:01.000Z',
-        ),
-      ],
-    });
-
-    const result = await testEnv.getMessages(SYSTEM_THREAD_ID);
-
-    expect(result).toEqual([
-      {
-        messageId: 'msg-1',
-        role: 'user',
-        content: 'Hello',
-        createdAt: '2026-09-03T12:00:00.000Z',
-      },
-      {
-        messageId: 'msg-2',
-        role: 'assistant',
-        content: 'Hi there',
-        createdAt: '2026-09-03T12:00:01.000Z',
-      },
-    ]);
-  });
-
-  it('returns an empty array when no messages exist', async () => {
-    send.mockResolvedValueOnce({ Items: [] });
-
-    const result = await testEnv.getMessages(SYSTEM_THREAD_ID);
-
-    expect(result).toEqual([]);
   });
 });
 
@@ -340,62 +289,4 @@ describe('getMessagePage', () => {
       expect(result).toEqual({ messages: [] });
     },
   );
-});
-
-describe('sliceMessages', () => {
-  const messages: StoredMessage[] = [
-    {
-      messageId: 'c',
-      role: 'user',
-      content: 'Third',
-      createdAt: '2026-09-03T12:00:02.000Z',
-    },
-    {
-      messageId: 'a',
-      role: 'user',
-      content: 'First',
-      createdAt: '2026-09-03T12:00:00.000Z',
-    },
-    {
-      messageId: 'b',
-      role: 'assistant',
-      content: 'Second',
-      createdAt: '2026-09-03T12:00:01.000Z',
-    },
-  ];
-
-  it('returns all messages sorted by createdAt ascending when within the page size', () => {
-    const result = testEnv.sliceMessages(messages);
-
-    expect(result.messages.map((m) => m.messageId)).toEqual(['a', 'b', 'c']);
-    expect(result.oldestMessageId).toBeUndefined();
-  });
-
-  it('returns messages before the given message id', () => {
-    const result = testEnv.sliceMessages(messages, 'c');
-
-    expect(result.messages.map((m) => m.messageId)).toEqual(['a', 'b']);
-    expect(result.oldestMessageId).toBeUndefined();
-  });
-
-  it('returns empty messages when before references an unknown id', () => {
-    const result = testEnv.sliceMessages(messages, 'unknown');
-
-    expect(result.messages).toEqual([]);
-    expect(result.oldestMessageId).toBeUndefined();
-  });
-
-  it('returns empty messages when before references the earliest message', () => {
-    const result = testEnv.sliceMessages(messages, 'a');
-
-    expect(result.messages).toEqual([]);
-    expect(result.oldestMessageId).toBeUndefined();
-  });
-
-  it('handles an empty messages array', () => {
-    const result = testEnv.sliceMessages([]);
-
-    expect(result.messages).toEqual([]);
-    expect(result.oldestMessageId).toBeUndefined();
-  });
 });
