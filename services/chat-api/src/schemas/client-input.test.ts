@@ -7,6 +7,7 @@ import {
   ThreadMessagesPathParametersSchema,
   ThreadMessagesQuerySchema,
 } from './client-input.ts';
+import { Cursor } from './message-cursor.ts';
 
 const VALID_THREAD_ID = crypto.randomUUID();
 const VALID_RUN_ID = crypto.randomUUID();
@@ -318,5 +319,17 @@ describe('ThreadMessagesQuerySchema', () => {
       { before: 'not-a-uuid' },
       { before: ['before must be a valid message UUID'] },
     );
+  });
+
+  it('decodes an optional cursor', () => {
+    const cursor = Cursor.before({
+      createdAt: new Date().toISOString(),
+      messageId: crypto.randomUUID(),
+    });
+    const result = ThreadMessagesQuerySchema.safeParse({
+      cursor: cursor.toString(),
+    });
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ cursor });
   });
 });
