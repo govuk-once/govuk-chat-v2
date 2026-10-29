@@ -1,5 +1,6 @@
 import { service } from './service.ts';
 import type { ThreadKey, ResolvedThread } from './threads.ts';
+import { Cursor } from '../schemas/message-cursor.ts';
 
 export interface StoredMessage {
   messageId: string;
@@ -10,7 +11,8 @@ export interface StoredMessage {
 
 export interface MessagePage {
   messages: StoredMessage[];
-  oldestMessageId: string | undefined;
+  earlier?: Cursor;
+  later?: Cursor;
 }
 
 export async function lookupThread(
@@ -27,50 +29,60 @@ export async function lookupThread(
     : { systemThreadId: mapping.systemThreadId };
 }
 
-export async function getMessages(
-  systemThreadId: string,
-): Promise<StoredMessage[]> {
-  const { data: records } = await service.entities.message.query
-    .primary({ systemThreadId })
-    .go();
-
-  return records.map((record) => ({
+function toStoredMessage(record: StoredMessage): StoredMessage {
+  return {
     messageId: record.messageId,
     role: record.role,
     content: record.content,
     createdAt: record.createdAt,
-  }));
+  };
 }
 
-export const MESSAGE_PAGE_SIZE = 50;
+export const MESSAGE_PAGE_SIZE = 100;
 
-function compareMessages(a: StoredMessage, b: StoredMessage): number {
-  const dateCompare = a.createdAt.localeCompare(b.createdAt);
-  return dateCompare === 0
-    ? a.messageId.localeCompare(b.messageId)
-    : dateCompare;
+function queryFrom(systemThreadId: string, from?: Cursor) {
+  const query = service.entities.message.query.byCreatedAt({ systemThreadId });
+  if (!from) {
+    return query;
+  }
+  const { createdAt, messageId } = from;
+  return from.direction === 'before'
+    ? query.lt({ createdAt, messageId })
+    : query.gt({ createdAt, messageId });
 }
 
-export function sliceMessages(
-  messages: StoredMessage[],
-  before?: string,
-): MessagePage {
-  const sorted = messages.toSorted(compareMessages);
+export async function getMessagePage(
+  systemThreadId: string,
+  from?: Cursor,
+): Promise<MessagePage> {
+  const isAscending = from?.direction === 'after';
+  const { data: records } = await queryFrom(systemThreadId, from).go({
+    order: isAscending ? 'asc' : 'desc',
+    limit: MESSAGE_PAGE_SIZE + 1,
+    count: MESSAGE_PAGE_SIZE + 1,
+  });
 
-  let endIndex = sorted.length;
-  if (before) {
-    endIndex = sorted.findIndex((m) => m.messageId === before);
-    if (endIndex === -1) {
-      return { messages: [], oldestMessageId: undefined };
-    }
+  const hasMoreInPagedDirection = records.length > MESSAGE_PAGE_SIZE;
+  const read = records
+    .slice(0, MESSAGE_PAGE_SIZE)
+    .map((record) => toStoredMessage(record));
+  const messages = isAscending ? read : read.toReversed();
+
+  const oldest = messages.at(0);
+  const newest = messages.at(-1);
+  if (!oldest || !newest) {
+    return { messages };
   }
 
-  const startIndex = Math.max(0, endIndex - MESSAGE_PAGE_SIZE);
-  const page = sorted.slice(startIndex, endIndex);
-  const hasEarlier = startIndex > 0;
+  // A page reached from a cursor always has the cursor's message on the
+  // side it came from, so only the paged direction needs the extra read.
+  const hasEarlier = isAscending || hasMoreInPagedDirection;
+  const hasLater =
+    from !== undefined && (!isAscending || hasMoreInPagedDirection);
 
   return {
-    messages: page,
-    oldestMessageId: hasEarlier ? page[0].messageId : undefined,
+    messages,
+    ...(hasEarlier && { earlier: Cursor.before(oldest) }),
+    ...(hasLater && { later: Cursor.after(newest) }),
   };
 }

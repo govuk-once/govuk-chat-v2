@@ -7,6 +7,7 @@ import {
   ThreadMessagesPathParametersSchema,
   ThreadMessagesQuerySchema,
 } from './client-input.ts';
+import { Cursor } from './message-cursor.ts';
 
 const VALID_THREAD_ID = crypto.randomUUID();
 const VALID_RUN_ID = crypto.randomUUID();
@@ -305,18 +306,15 @@ describe('ThreadMessagesQuerySchema', () => {
     expect(result.data).toEqual({});
   });
 
-  it('accepts an optional before as a UUID', () => {
-    const id = crypto.randomUUID();
-    const result = ThreadMessagesQuerySchema.safeParse({ before: id });
+  it('decodes an optional cursor', () => {
+    const cursor = Cursor.before({
+      createdAt: new Date().toISOString(),
+      messageId: crypto.randomUUID(),
+    });
+    const result = ThreadMessagesQuerySchema.safeParse({
+      cursor: cursor.toString(),
+    });
     expect(result.success).toBe(true);
-    expect(result.data).toEqual({ before: id });
-  });
-
-  it('rejects a before that is not a UUID', () => {
-    expectInputFailure(
-      ThreadMessagesQuerySchema,
-      { before: 'not-a-uuid' },
-      { before: ['before must be a valid message UUID'] },
-    );
+    expect(result.data).toEqual({ cursor });
   });
 });
