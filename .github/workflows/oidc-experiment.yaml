@@ -27,7 +27,7 @@ jobs:
         with:
           audience: sts.amazonaws.com
           role-to-assume: arn:aws:iam::207513914339:role/GitHubDeploymentRole
-          aws-region: eu-west-1
+          aws-region: eu-west-2
 
       - name: Check the assumed identity
         run: aws sts get-caller-identity
