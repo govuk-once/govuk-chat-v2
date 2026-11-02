@@ -143,7 +143,7 @@ describe('ChatApiStack', () => {
   });
 
   describe('DynamoDB table', () => {
-    it('creates the table with the keys and TTL attribute the repository expects', () => {
+    it('creates the table with the keys, index and TTL attribute the repository expects', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::DynamoDB::Table', {
@@ -153,6 +153,12 @@ describe('ChatApiStack', () => {
           { AttributeName: 'sk', KeyType: 'RANGE' },
         ],
         TimeToLiveSpecification: { AttributeName: 'expiresAt', Enabled: true },
+        GlobalSecondaryIndexes: [
+          Match.objectLike({
+            IndexName: 'gsi1',
+            Projection: { ProjectionType: 'ALL' },
+          }),
+        ],
       });
     });
 

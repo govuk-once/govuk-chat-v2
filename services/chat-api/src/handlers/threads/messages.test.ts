@@ -7,6 +7,7 @@ import type {
 import { logger } from '../../logging/logger.ts';
 import type { ResolvedThread, ThreadKey } from '../../persistence/threads.ts';
 import type { StoredMessage, MessagePage } from '../../persistence/messages.ts';
+import { Cursor } from '../../schemas/message-cursor.ts';
 import { apiGatewayProxyEventFixture } from '../../test-utils/api-gateway.ts';
 
 /* eslint-disable unicorn/no-null -- API Gateway types body as string | null */
@@ -26,20 +27,14 @@ const END_USER_ID_HEADER = { 'end-user-id': VALID_USER_ID };
 const lookupThread = vi
   .fn<(key: ThreadKey) => Promise<ResolvedThread | undefined>>()
   .mockResolvedValue({ systemThreadId: SYSTEM_THREAD_ID });
-const getMessages = vi
-  .fn<(systemThreadId: string) => Promise<StoredMessage[]>>()
-  .mockResolvedValue([]);
-const sliceMessages = vi
-  .fn<
-    (messages: StoredMessage[], limit: number, before?: string) => MessagePage
-  >()
-  .mockReturnValue({ messages: [], oldestMessageId: undefined });
+const getMessagePage = vi
+  .fn<(systemThreadId: string, from?: Cursor) => Promise<MessagePage>>()
+  .mockResolvedValue({ messages: [] });
 
 beforeAll(async () => {
   vi.doMock('../../persistence/messages.ts', () => ({
     lookupThread,
-    getMessages,
-    sliceMessages,
+    getMessagePage,
   }));
   vi.stubEnv('CHAT_API_TABLE_NAME', 'test-chat-api');
 
@@ -49,8 +44,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   lookupThread.mockResolvedValue({ systemThreadId: SYSTEM_THREAD_ID });
-  getMessages.mockResolvedValue([]);
-  sliceMessages.mockReturnValue({ messages: [], oldestMessageId: undefined });
+  getMessagePage.mockResolvedValue({ messages: [] });
 });
 
 function validEvent(
@@ -122,15 +116,21 @@ describe('path parameter validation', () => {
 });
 
 describe('query parameter validation', () => {
-  it('returns 422 when before is not a UUID', async () => {
-    const event = validEvent({ before: 'not-a-uuid' });
+  it('returns 422 when the cursor is malformed', async () => {
+    const event = validEvent({ cursor: 'not-a-cursor' });
 
     const response = await runHandler(event);
 
     expect(response.statusCode).toBe(422);
     expect(parsedBody(response)).toMatchObject({
       error: 'Messages retrieval error',
+      details: expect.objectContaining({
+        fieldErrors: expect.objectContaining({
+          cursor: expect.anything(),
+        }),
+      }),
     });
+    expect(getMessagePage).not.toHaveBeenCalled();
   });
 });
 
@@ -165,10 +165,10 @@ describe('thread lookup failure', () => {
 });
 
 describe('message retrieval failure', () => {
-  it('returns 500 when getMessages throws', async () => {
+  it('returns 500 when getMessagePage throws', async () => {
     const logError = vi.spyOn(logger, 'error');
     const storeError = new Error('DynamoDB error');
-    getMessages.mockRejectedValueOnce(storeError);
+    getMessagePage.mockRejectedValueOnce(storeError);
 
     const response = await runHandler(validEvent());
 
@@ -199,11 +199,7 @@ describe('successful retrieval', () => {
         createdAt: '2026-09-03T12:00:01.000Z',
       },
     ];
-    getMessages.mockResolvedValueOnce(storedMessages);
-    sliceMessages.mockReturnValueOnce({
-      messages: storedMessages,
-      oldestMessageId: undefined,
-    });
+    getMessagePage.mockResolvedValueOnce({ messages: storedMessages });
 
     const response = await runHandler(validEvent());
 
@@ -235,7 +231,18 @@ describe('successful retrieval', () => {
     });
   });
 
-  it('omits earlier_messages_url when there are no earlier messages', async () => {
+  it('reads the page starting from the decoded cursor', async () => {
+    const cursor = Cursor.before({
+      createdAt: '2026-09-03T12:00:00.000Z',
+      messageId: crypto.randomUUID(),
+    });
+
+    await runHandler(validEvent({ cursor: cursor.toString() }));
+
+    expect(getMessagePage).toHaveBeenCalledWith(SYSTEM_THREAD_ID, cursor);
+  });
+
+  it('omits the earlier and later URLs when the page has no cursors', async () => {
     const response = await runHandler(validEvent());
 
     expect(response.statusCode).toBe(200);
@@ -244,16 +251,33 @@ describe('successful retrieval', () => {
     });
   });
 
-  it('includes earlier_messages_url when there are earlier messages', async () => {
-    sliceMessages.mockReturnValueOnce({
-      messages: [],
-      oldestMessageId: 'oldest-msg-id',
+  it('builds only earlierMessagesUrl, from the earlier cursor, when the page has only that', async () => {
+    const earlier = Cursor.before({
+      createdAt: '2026-09-03T12:00:00.000Z',
+      messageId: crypto.randomUUID(),
     });
+    getMessagePage.mockResolvedValueOnce({ messages: [], earlier });
 
     const response = await runHandler(validEvent());
 
-    expect(parsedBody(response)).toMatchObject({
-      earlier_messages_url: `/v1/threads/${VALID_THREAD_ID}/messages?before=oldest-msg-id`,
+    expect(parsedBody(response)).toEqual({
+      messages: [],
+      earlierMessagesUrl: `/v1/threads/${VALID_THREAD_ID}/messages?cursor=${earlier}`,
+    });
+  });
+
+  it('builds only laterMessagesUrl, from the later cursor, when the page has only that', async () => {
+    const later = Cursor.after({
+      createdAt: '2026-09-03T12:00:01.000Z',
+      messageId: crypto.randomUUID(),
+    });
+    getMessagePage.mockResolvedValueOnce({ messages: [], later });
+
+    const response = await runHandler(validEvent());
+
+    expect(parsedBody(response)).toEqual({
+      messages: [],
+      laterMessagesUrl: `/v1/threads/${VALID_THREAD_ID}/messages?cursor=${later}`,
     });
   });
 });

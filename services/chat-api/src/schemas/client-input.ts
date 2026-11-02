@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CursorSchema } from './message-cursor.ts';
 
 // We may want to use JSON schema validaiton or use an OpenAPI spec
 // for request and response validation. These are quite easy to convert to
@@ -50,7 +51,7 @@ export type ThreadMessagesPathParameters = z.infer<
 >;
 
 export const ThreadMessagesQuerySchema = z.object({
-  before: z.uuid({ message: 'before must be a valid message UUID' }).optional(),
+  cursor: CursorSchema.optional(),
 });
 
 export type ThreadMessagesQuery = z.infer<typeof ThreadMessagesQuerySchema>;
