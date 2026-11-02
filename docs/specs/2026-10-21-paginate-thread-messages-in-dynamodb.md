@@ -59,10 +59,11 @@ through messages yet, so this is the time to settle the contract.
 
 ## Requirements
 
-1. **R1:** Getting a page of a thread's messages makes one DynamoDB query for
+1. **R1:** Getting a page of a thread's messages queries DynamoDB for
    messages, after the existing thread lookup, reading at most 101 message
-   records (one page, plus one to detect more messages in the direction being
-   paged), whatever the thread's length.
+   records per request (one page, plus one to detect more messages in the
+   direction being paged), whatever the thread's length. A page is one
+   request unless DynamoDB's 1 MB response limit cuts a request short.
 2. **R2:** Without a cursor, the response contains the thread's 100 most recent
    messages, ordered oldest first by `createdAt`, then by message id.
 3. **R3:** Following a response's `earlierMessagesUrl` returns up to 100
@@ -145,39 +146,44 @@ read straight back.
 
 `getMessages` and `sliceMessages` are replaced by one repository operation in
 `src/persistence/messages.ts`, for example
-`getMessagePage(systemThreadId, from?: PageStart) => Promise<MessagePage>`.
-`PageStart` is a direction (`before` or `after`) and a `MessagePosition`, which
-is `{ createdAt, messageId }`.
+`getMessagePage(systemThreadId, from?: Cursor) => Promise<MessagePage>`.
+A `Cursor` is a direction (`before` or `after`) with the `createdAt` and
+`messageId` of a message. It is defined in `src/schemas/message-cursor.ts` (see
+[Cursor](#cursor)).
 
-1. Query the new index for the thread. Without a start, or with `before`, query
-   in descending order. With `after`, query in ascending order. A start
-   restricts the query to sort keys below (`before`) or above (`after`) the
-   one built from its position. Ask for 101 items with ElectroDB's
-   `limit` option, which sets DynamoDB's `Limit`. With the default of one page,
-   that means one request reading at most 101 items (R1). Don't use `count`: it
-   sets no `Limit` and keeps requesting pages until it has enough items, so a
-   single request can read up to 1 MB.
+1. Query the new index for the thread. Without a cursor, or with a `before`
+   cursor, query in descending order. With an `after` cursor, query in
+   ascending order. A cursor restricts the query to sort keys below (`before`)
+   or above (`after`) the one built from its `createdAt` and `messageId`. Ask
+   for 101 items with both of ElectroDB's `limit` and `count` options. `limit`
+   sets DynamoDB's `Limit`, so each request reads at most 101 items (R1).
+   `count` alone sets no `Limit`, but with `limit` it only matters when
+   DynamoDB stops a request at its 1 MB response size with fewer items than
+   asked for: ElectroDB then sends further requests until it has 101 items or
+   the index runs out. Without it, a page of large messages would come back
+   short and the messages behind it would be unreachable, as message content
+   has no maximum length.
 2. If 101 come back, there are more messages in the direction being paged: drop
    the last one read. Put the rest oldest first, reversing them after a
    descending query (R2, R3, R8).
-3. Return the messages with up to two positions: the oldest message on the page
-   when earlier messages exist (R4), and the newest message when later ones
-   exist (R9).
+3. Return the messages with up to two cursors: a `before` cursor at the oldest
+   message on the page when earlier messages exist (R4), and an `after` cursor
+   at the newest message when later ones exist (R9).
 
 The 101st item tells us whether there are more messages in the direction being
 paged. Nothing extra needs reading for the other direction, because a page
-reached with a start always has at least one message on the side it came
+reached with a cursor always has at least one message on the side it came
 from: the message the cursor points at. So a page fetched with `before` has
 later messages, and a page fetched with `after` has earlier ones. An empty
 page has no message to point a link at, so it has neither link. A page
-without a start is the most recent, so it has no later messages.
+without a cursor is the most recent, so it has no later messages.
 
 v1 runs a separate `exists?` query for each direction to decide whether there
 are earlier or later questions. Here the page query and the cursor already
 answer both.
 
-`MessagePage` replaces `oldestMessageId` with those positions. Callers see a
-position made of record attributes, not keys or ElectroDB types, as
+`MessagePage` replaces `oldestMessageId` with those `earlier` and `later`
+cursors. A cursor is made of record attributes, not keys or ElectroDB types, as
 [ADR 0003](../adr/0003-use-dynamodb-via-electrodb-for-chat-api-persistence.md)
 requires. The partition always comes from the thread lookup for the caller's
 `end-user-id` and `threadId`, never from the cursor (R6).
@@ -192,7 +198,8 @@ as opaque: they follow the URLs as given (R4) and aren't told the format.
 Encoding and decoding live in one module in `src/schemas/`, so the format is
 defined once.
 
-The handler decodes the token straight into a `PageStart`, so a page after the
+The `Cursor` class encodes itself with `toString()`, and the schema for the
+query parameter decodes a token straight into a `Cursor`, so a page after the
 first needs no lookup before the query (R1). `ThreadMessagesQuerySchema`
 replaces `before` with `cursor`, and checks that the token decodes to a valid
 direction, an ISO 8601 timestamp and a UUID (R5). One token carries one
@@ -249,7 +256,7 @@ endpoint that takes `before` and `after`, or reads `earlier_questions_url` or
 `later_questions_url`.
 
 This spec includes paging forwards (R8, R9) for future clients. It adds
-little to the work: an ascending query on the same index, a second position in
+little to the work: an ascending query on the same index, a second cursor in
 `MessagePage`, and a direction in the cursor. It needs no extra reads (see
 [Read one page](#read-one-page)).
 
@@ -317,10 +324,10 @@ table in place, so the table isn't replaced or renamed.
 2. Add the creation-time index to the `Message` entity in
    `services/chat-api/src/persistence/service.ts`, so that every message
    written gets `gsi1pk` and `gsi1sk` (R1).
-3. Add `getMessagePage` to `src/persistence/messages.ts`, with
+3. Add the `Cursor` class and its schema in `src/schemas/message-cursor.ts`,
+   and add `cursor` to `ThreadMessagesQuerySchema`, with tests (R5, R6).
+4. Add `getMessagePage` to `src/persistence/messages.ts`, with
    `MESSAGE_PAGE_SIZE` raised to 100, and tests (R1–R4, R6, R8, R9).
-4. Add the cursor module in `src/schemas/` and replace `before` with `cursor`
-   in `ThreadMessagesQuerySchema`, with tests (R5, R6).
 5. Switch the handler in `src/handlers/threads/messages.ts` to the new
    operations, build both URLs under their camelCase names, remove
    `getMessages` and `sliceMessages`, and replace their tests (R3, R4, R7, R8,
@@ -334,25 +341,29 @@ that step 1 creates.
 - `services/chat-api/src/persistence/messages.test.ts`, using the existing
   stubbed document client: drop the `getMessages` and `sliceMessages` tests and
   cover `getMessagePage`'s logic paths:
-  - Without a start, and with a `before` start, the query uses the index, runs
+  - Without a cursor, and with a `before` cursor, the query uses the index, runs
     in descending order and sends a `Limit` of 101 (R1). Results come back
     reversed into ascending order (R2, R3).
-  - With an `after` start, the query runs in ascending order with the same
+  - With an `after` cursor, the query runs in ascending order with the same
     `Limit`, and results aren't reversed (R1, R8).
-  - Exactly 101 results: the last one read is dropped, and a position is
-    returned for that direction. Fewer than 101: no position for that direction
+  - Exactly 101 results: the last one read is dropped, and a cursor is
+    returned for that direction. Fewer than 101: no cursor for that direction
     (R4, R9).
-  - A non-empty page with a `before` start always returns a later position, a
-    non-empty page with an `after` start always returns an earlier one, an
-    empty page returns neither, and a page without a start never returns a
-    later one (R4, R9).
-- Cursor module: a token round-trips to the same direction and position, the
+  - When DynamoDB stops a request early with fewer than 101 items and a
+    `LastEvaluatedKey`, a further request completes the page, which keeps its
+    cursor in the paged direction (R1).
+  - A non-empty page with a `before` cursor always returns a `later` cursor, a
+    non-empty page with an `after` cursor always returns an `earlier` one, an
+    empty page returns neither, and a page without a cursor never returns a
+    `later` one (R4, R9).
+- Cursor module: a token round-trips to the same cursor, the
   schema rejects input that isn't base64url JSON or lacks a valid direction,
   timestamp and UUID (R5), and the token holds only those three values (R6).
 - `services/chat-api/src/handlers/threads/messages.test.ts`: change the
   mocks to the new repository operations. Keep the existing handler paths, and
-  cover turning a cursor into a page start and building `earlierMessagesUrl`
-  and `laterMessagesUrl` from the returned positions (R3, R4, R7, R8, R9).
+  cover passing the decoded cursor to the repository and building
+  `earlierMessagesUrl` and `laterMessagesUrl` from the returned cursors (R3,
+  R4, R7, R8, R9).
   Cover a malformed cursor returning `422` (R5).
 - `cdk/src/stacks/chat-api-stack.test.ts`: assert the table has the GSI with
   `hasResourceProperties`.
@@ -388,9 +399,9 @@ pages through messages yet, so nothing needs to change first.
   its records would enter the index. ElectroDB's entity filter would keep them
   out of results, but pages could come back short.
 - **The read stops being bounded.** If someone later adds a filter that removes
-  items from the index, or swaps `limit` for `count`, pages would come back
-  short or read more than 101 items. The persistence tests assert the `Limit`
-  that is sent.
+  items from the index, pages would come back short. If someone drops `limit`
+  and relies on `count` alone, each request could read up to 1 MB. The
+  persistence tests assert the `Limit` that is sent.
 - **Something sensitive gets into the cursor.** The token is only encoded, so
   anything added to it later is readable by clients. The cursor tests assert
   what it holds (R6).
