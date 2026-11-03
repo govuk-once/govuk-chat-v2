@@ -57,6 +57,15 @@ importers:
         specifier: ^10.8.1
         version: 10.8.1
 
+  cloud-tests:
+    devDependencies:
+      '@aws-sdk/client-cloudformation':
+        specifier: ^3.1146.0
+        version: 3.1146.0
+      '@govuk-chat-v2/cdk':
+        specifier: workspace:*
+        version: link:../cdk
+
   services/chat-api:
     dependencies:
       '@ag-ui/core':
