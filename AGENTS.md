@@ -30,6 +30,7 @@ covered by automated tests.
   sub-directory
 - `libs/` — shared libraries, split by language (e.g. `libs/python`)
 - `cdk/` — AWS CDK infrastructure as code
+- `cloud-tests/` — tests of the whole system against a deployed environment
 - `scripts/` — repo-wide helper scripts; `scripts/shared` holds scripts meant to
   be symlinked into individual packages
 
@@ -66,6 +67,8 @@ Prefer development tooling that runs against real AWS over cloud emulators.
 Local machines must be able to run the standard CI tasks (automated testing,
 linting, static analysis) simply and easily. Any test that needs cloud
 infrastructure must be tagged separately from the other tests for that package.
+Tests of the system as a whole, which need a deployed environment, belong in
+`cloud-tests/`.
 
 `source scripts/dev-prepare.zsh` sets a developer up with the dependencies and
 credentials to run any of this project's scripts. Keep it up to date when you
@@ -104,7 +107,9 @@ stay consistent across the project:
   action workflow
 
 After changing code in a package, run its `scripts/dev-checks.sh` (format, lint,
-type-check, test) before committing — this is what CI runs per package.
+type-check, test) before committing — this is what CI runs per package. The
+exception is `cloud-tests`: every test there needs AWS, so its `dev-checks.sh`
+and CI workflow don't run them.
 
 #### Formatting
 
