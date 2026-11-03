@@ -1,0 +1,67 @@
+name: Environment CI
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/environment-ci.yaml'
+      - '.nvmrc'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.json'
+      - 'libs/typescript/environment/**'
+  pull_request:
+    paths:
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/environment-ci.yaml'
+      - '.nvmrc'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.json'
+      - 'libs/typescript/environment/**'
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run tests
+        run: libs/typescript/environment/scripts/test.sh
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run linter
+        run: libs/typescript/environment/scripts/lint.sh
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run formatter
+        run: libs/typescript/environment/scripts/format.sh
+
+  typing:
+    name: Type checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-pnpm-env
+
+      - name: Run type checks
+        run: libs/typescript/environment/scripts/type-check.sh

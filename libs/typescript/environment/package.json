@@ -1,0 +1,15 @@
+{
+  "name": "@govuk-chat-v2/environment",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/environment.ts"
+  },
+  "scripts": {
+    "dev-checks": "scripts/dev-checks.sh",
+    "format": "scripts/format.sh",
+    "lint": "scripts/lint.sh",
+    "test": "scripts/test.sh",
+    "type-check": "scripts/type-check.sh"
+  }
+}
