@@ -6,10 +6,13 @@
     "dev-checks": "scripts/dev-checks.sh",
     "format": "scripts/format.sh",
     "lint": "scripts/lint.sh",
+    "test": "scripts/test.sh",
     "type-check": "scripts/type-check.sh"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudformation": "^3.1146.0",
-    "@govuk-chat-v2/cdk": "workspace:*"
+    "@aws-sdk/client-cognito-identity-provider": "^3.1167.0",
+    "@govuk-chat-v2/cdk": "workspace:*",
+    "eventsource-parser": "^4.1.3"
   }
 }
