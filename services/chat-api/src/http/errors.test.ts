@@ -18,6 +18,8 @@ describe('buildJsonErrorResponse', () => {
   });
 });
 
+const UNEXPECTED_ERROR_MESSAGE = 'Something went wrong';
+
 interface ThrownError {
   statusCode?: number;
   message?: string;
@@ -26,7 +28,7 @@ interface ThrownError {
 
 function buildThrowingHandler(error: ThrownError) {
   return middy()
-    .use(jsonHttpErrorHandler())
+    .use(jsonHttpErrorHandler(UNEXPECTED_ERROR_MESSAGE))
     .handler(async () => {
       throw Object.assign(new Error(error.message), error);
     });
@@ -56,7 +58,7 @@ describe('jsonHttpErrorHandler', () => {
     expect(response.statusCode).toBe(500);
     // The underlying message would leak internals, so it must not be returned.
     expect(JSON.parse(response.body)).toEqual({
-      error: 'Internal server error',
+      error: UNEXPECTED_ERROR_MESSAGE,
     });
   });
 
@@ -70,7 +72,7 @@ describe('jsonHttpErrorHandler', () => {
 
     expect(response.statusCode).toBe(503);
     expect(JSON.parse(response.body)).toEqual({
-      error: 'Internal server error',
+      error: UNEXPECTED_ERROR_MESSAGE,
     });
   });
 
@@ -123,7 +125,7 @@ describe('jsonHttpErrorHandler', () => {
     const logWarn = vi.spyOn(logger, 'warn');
     const logError = vi.spyOn(logger, 'error');
     const handler = middy()
-      .use(jsonHttpErrorHandler())
+      .use(jsonHttpErrorHandler(UNEXPECTED_ERROR_MESSAGE))
       .use({
         onError: (request) => {
           request.response = buildJsonErrorResponse(422, { error: 'handled' });
@@ -142,7 +144,7 @@ describe('jsonHttpErrorHandler', () => {
   it('leaves a response alone when one has already been produced', async () => {
     const alreadyHandled = buildJsonErrorResponse(422, { error: 'handled' });
     const handler = middy()
-      .use(jsonHttpErrorHandler())
+      .use(jsonHttpErrorHandler(UNEXPECTED_ERROR_MESSAGE))
       .use({
         onError: (request) => {
           request.response = alreadyHandled;
@@ -161,7 +163,7 @@ describe('jsonHttpErrorHandler', () => {
     const cleanUp = vi.fn();
     const handler = middy()
       .use({ onError: cleanUp })
-      .use(jsonHttpErrorHandler())
+      .use(jsonHttpErrorHandler(UNEXPECTED_ERROR_MESSAGE))
       .handler(async () => {
         throw new Error('boom');
       });

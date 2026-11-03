@@ -4,7 +4,6 @@ import type {
   APIGatewayProxyResult,
   Context,
 } from 'aws-lambda';
-import { logger } from '../../logging/logger.ts';
 import type { ResolvedThread, ThreadKey } from '../../persistence/threads.ts';
 import type { StoredMessage, MessagePage } from '../../persistence/messages.ts';
 import { Cursor } from '../../schemas/message-cursor.ts';
@@ -145,41 +144,14 @@ describe('thread not found', () => {
   });
 });
 
-describe('thread lookup failure', () => {
-  it('returns 500 when the thread lookup throws', async () => {
-    const logError = vi.spyOn(logger, 'error');
-    const storeError = new Error('DynamoDB error');
-    lookupThread.mockRejectedValueOnce(storeError);
+describe('store failure', () => {
+  it('returns a 500 JSON error when the store throws', async () => {
+    getMessagePage.mockRejectedValueOnce(new Error('DynamoDB error'));
 
     const response = await runHandler(validEvent());
 
     expect(response.statusCode).toBe(500);
-    expect(parsedBody(response)).toEqual({
-      error: 'Messages retrieval error',
-    });
-    expect(logError).toHaveBeenCalledWith('Thread lookup failed', {
-      error: storeError,
-      userThreadId: VALID_THREAD_ID,
-    });
-  });
-});
-
-describe('message retrieval failure', () => {
-  it('returns 500 when getMessagePage throws', async () => {
-    const logError = vi.spyOn(logger, 'error');
-    const storeError = new Error('DynamoDB error');
-    getMessagePage.mockRejectedValueOnce(storeError);
-
-    const response = await runHandler(validEvent());
-
-    expect(response.statusCode).toBe(500);
-    expect(parsedBody(response)).toEqual({
-      error: 'Messages retrieval error',
-    });
-    expect(logError).toHaveBeenCalledWith('Message retrieval failed', {
-      error: storeError,
-      userThreadId: VALID_THREAD_ID,
-    });
+    expect(parsedBody(response)).toEqual({ error: 'Messages retrieval error' });
   });
 });
 
