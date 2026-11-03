@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import {
-  getEnvironment,
-  getResourceNamePrefix,
-  serviceMetadata,
-} from '../src/constants/environment.ts';
+import { getEnvironment, serviceMetadata } from '@govuk-chat-v2/environment';
+import { getResourceNamePrefix } from '../src/constants/environment.ts';
 import { AguiAgentStack } from '../src/stacks/agui-agent-stack.ts';
 import { ChatApiStack } from '../src/stacks/chat-api-stack.ts';
 import { DemoUiStack } from '../src/stacks/demo-ui-stack.ts';

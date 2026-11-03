@@ -12,6 +12,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'tsconfig.json'
       - 'cdk/**'
+      - 'libs/typescript/environment/**'
   pull_request:
     paths:
       - '.github/actions/setup-node-pnpm-env/*'
@@ -20,6 +21,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'tsconfig.json'
       - 'cdk/**'
+      - 'libs/typescript/environment/**'
 
 jobs:
   test:

@@ -10,6 +10,7 @@
     "type-check": "scripts/type-check.sh"
   },
   "dependencies": {
+    "@govuk-chat-v2/environment": "workspace:*",
     "aws-cdk": "^2.1146.1",
     "aws-cdk-lib": "^2.274.0",
     "constructs": "^10.8.1"
