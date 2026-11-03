@@ -156,4 +156,19 @@ describe('jsonHttpErrorHandler', () => {
 
     expect(response).toEqual(alreadyHandled);
   });
+
+  it('lets onError hooks registered before it run, so they can clean up', async () => {
+    const cleanUp = vi.fn();
+    const handler = middy()
+      .use({ onError: cleanUp })
+      .use(jsonHttpErrorHandler())
+      .handler(async () => {
+        throw new Error('boom');
+      });
+
+    const response = await handler({}, {} as Context);
+
+    expect(cleanUp).toHaveBeenCalled();
+    expect(response.statusCode).toBe(500);
+  });
 });

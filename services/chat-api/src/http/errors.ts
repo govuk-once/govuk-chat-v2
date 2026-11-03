@@ -56,7 +56,9 @@ export function jsonHttpErrorHandler(): MiddlewareObj<unknown> {
         logger.error('Request failed with an unhandled error', logContext);
       }
 
-      return buildJsonErrorResponse(statusCode, {
+      // Returning the response would stop middy running the onError hooks
+      // registered before this one, such as the logger's key reset.
+      request.response = buildJsonErrorResponse(statusCode, {
         error:
           isExposable && error.message
             ? error.message
