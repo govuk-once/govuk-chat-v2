@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@ag-ui/client": "1.0.3",
-    "@ag-ui/core": "1.0.2",
-    "@assistant-ui/react": "0.15.22",
-    "@assistant-ui/react-ag-ui": "0.0.63",
+    "@ag-ui/core": "1.0.3",
+    "@assistant-ui/react": "0.15.32",
+    "@assistant-ui/react-ag-ui": "0.1.1",
     "@assistant-ui/react-streamdown": "0.3.20",
     "@aws-sdk/client-cognito-identity-provider": "^3.1152.0",
     "iron-session": "^9.0.1",
