@@ -61,6 +61,16 @@ are either answered or explicitly carried forward. Implementation pull requests
 should link to the spec they deliver. Where the work is split across several
 pull requests, set **implemented** in the last of them.
 
+Spec pull requests are an exception to curating history by amending and
+rebasing (see [Git](../../AGENTS.md#git)). A spec has no tests or CI to show
+whether a revision matters, so reviewers need to see what changed since they
+last looked. Commit each round of review changes separately instead of
+amending, and keep those commits when merging. Each message should say which requirement or section
+changed and why.
+
+Likewise, when the plan changes during implementation, update the spec in its
+own commit, separate from the code, saying what diverged and why.
+
 ## Template
 
 ```markdown
