@@ -61,6 +61,9 @@ export async function* relayAgentEventStream({
     }
   }
 
+  // The 200 has already gone by the time this runs, so middy can't turn an
+  // error into a response. Streaming code has to catch its own errors, report
+  // them as a RUN_ERROR and release the thread itself, rather than rethrow.
   try {
     for await (const chunk of source) {
       parser.feed(textDecoder.decode(chunk, { stream: true }));
