@@ -20,7 +20,7 @@
     "@aws-sdk/client-dynamodb": "^3.1159.0",
     "@aws-sdk/lib-dynamodb": "^3.1125.0",
     "electrodb": "^3.9.3",
-    "eventsource-parser": "^4.1.1",
+    "eventsource-parser": "^4.1.3",
     "@middy/core": "^7.9.2",
     "@middy/http-header-normalizer": "^7.9.2",
     "@middy/http-json-body-parser": "^7.9.2",
