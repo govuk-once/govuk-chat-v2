@@ -41,10 +41,9 @@ function buildHeadersHandler() {
     }));
 }
 
-type BodyEvent = Parameters<ReturnType<typeof buildBodyHandler>>[0];
-type HeadersEvent = Parameters<ReturnType<typeof buildHeadersHandler>>[0];
-
 describe('zodBodyValidator', () => {
+  type BodyEvent = Parameters<ReturnType<typeof buildBodyHandler>>[0];
+
   it('replaces event.body with the parsed data and calls through to the handler when valid', async () => {
     const handler = buildBodyHandler();
 
@@ -104,6 +103,8 @@ describe('zodBodyValidator', () => {
 });
 
 describe('zodHeadersValidator', () => {
+  type HeadersEvent = Parameters<ReturnType<typeof buildHeadersHandler>>[0];
+
   it('merges event.headers with the parsed data and calls through to the handler when valid', async () => {
     const handler = buildHeadersHandler();
 
@@ -203,12 +204,11 @@ function buildQueryHandler() {
     }));
 }
 
-type PathParametersEvent = Parameters<
-  ReturnType<typeof buildPathParametersHandler>
->[0];
-type QueryEvent = Parameters<ReturnType<typeof buildQueryHandler>>[0];
-
 describe('zodPathParamsValidator', () => {
+  type PathParametersEvent = Parameters<
+    ReturnType<typeof buildPathParametersHandler>
+  >[0];
+
   it('replaces event.pathParameters with the parsed data when valid', async () => {
     const handler = buildPathParametersHandler();
     const id = crypto.randomUUID();
@@ -255,6 +255,8 @@ describe('zodPathParamsValidator', () => {
 });
 
 describe('zodQueryValidator', () => {
+  type QueryEvent = Parameters<ReturnType<typeof buildQueryHandler>>[0];
+
   it('replaces event.queryStringParameters with the parsed data when valid', async () => {
     const handler = buildQueryHandler();
 
