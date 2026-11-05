@@ -26,7 +26,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           audience: sts.amazonaws.com
-          role-to-assume: arn:aws:iam::207513914339:role/GitHubDeploymentRole
+          role-to-assume: arn:aws:iam::207513914339:role/infra/GitHubDeploymentRole
           aws-region: eu-west-2
 
       - name: Check the assumed identity
