@@ -33,6 +33,8 @@ export async function* relayAgentEventStream({
 }: RelayAgentEventStreamParameters): AsyncGenerator<string> {
   let isRunStarted = false;
   let isOutcomeReported = false;
+  // middy resets the logger's appended keys before it streams the body, so
+  // anything logged from here has to carry its own context.
   const logContext = { threadId: systemThreadId, userThreadId, runId };
   const textDecoder = new TextDecoder('utf-8');
   const parsedEvents: RelayedEvent[] = [];
@@ -59,6 +61,9 @@ export async function* relayAgentEventStream({
     }
   }
 
+  // The 200 has already gone by the time this runs, so middy can't turn an
+  // error into a response. Streaming code has to catch its own errors, report
+  // them as a RUN_ERROR and release the thread itself, rather than rethrow.
   try {
     for await (const chunk of source) {
       parser.feed(textDecoder.decode(chunk, { stream: true }));

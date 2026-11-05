@@ -38,7 +38,9 @@ interface HttpErrorLike {
   expose?: boolean;
 }
 
-export function jsonHttpErrorHandler(): MiddlewareObj<unknown> {
+export function jsonHttpErrorHandler(
+  unexpectedErrorMessage: string,
+): MiddlewareObj<unknown> {
   return {
     onError: (request: Request<unknown>) => {
       // Something earlier in the chain already produced a response, so the
@@ -56,11 +58,11 @@ export function jsonHttpErrorHandler(): MiddlewareObj<unknown> {
         logger.error('Request failed with an unhandled error', logContext);
       }
 
-      return buildJsonErrorResponse(statusCode, {
+      // Returning the response would stop middy running the onError hooks
+      // registered before this one, such as the logger's key reset.
+      request.response = buildJsonErrorResponse(statusCode, {
         error:
-          isExposable && error.message
-            ? error.message
-            : 'Internal server error',
+          isExposable && error.message ? error.message : unexpectedErrorMessage,
       });
     },
   };
