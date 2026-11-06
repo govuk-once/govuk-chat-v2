@@ -1,0 +1,17 @@
+{
+  "name": "@govuk-chat-v2/cloud-tests",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev-checks": "scripts/dev-checks.sh",
+    "format": "scripts/format.sh",
+    "lint": "scripts/lint.sh",
+    "test": "scripts/test.sh",
+    "type-check": "scripts/type-check.sh"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-cloudformation": "^3.1146.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.1152.0",
+    "eventsource-parser": "^4.1.3"
+  }
+}
