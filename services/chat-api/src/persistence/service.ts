@@ -140,6 +140,23 @@ const Message = new Entity({
   },
 });
 
+const Feedback = new Entity({
+  model: { service: 'chat-api', entity: 'feedback', version: '1' },
+  attributes: {
+    systemThreadId: { type: 'string', required: true },
+    messageId: { type: 'string', required: true },
+    reaction: { type: ['positive', 'negative'] as const, required: true },
+    createdAt: { type: 'string', required: true, readOnly: true },
+    expiresAt: { type: 'number', required: true },
+  },
+  indexes: {
+    primary: {
+      pk: { field: 'pk', composite: ['systemThreadId'] },
+      sk: { field: 'sk', composite: ['messageId'] },
+    },
+  },
+});
+
 export const service = new Service(
   {
     threadMapping: ThreadMapping,
@@ -147,6 +164,7 @@ export const service = new Service(
     runLock: RunLock,
     run: Run,
     message: Message,
+    feedback: Feedback,
   },
   { table, client },
 );
