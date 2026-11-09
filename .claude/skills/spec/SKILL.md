@@ -65,8 +65,18 @@ assumptions, and iterate on their feedback. When they are happy, offer to
 commit it and open a pull request for team review — the spec is accepted when
 that pull request merges.
 
+Once the spec is committed, make each round of requested changes a new commit
+rather than amending. This overrides the usual advice to
+curate history, so reviewers can see what changed since they last looked (see
+the README). Name the requirement or section changed, and why, in each commit
+message.
+
 Start the pull request description by linking to the rendered spec, so
 reviewers read it formatted rather than as a diff. Use a GitHub blob URL pinned
 to the commit SHA (`https://github.com/<owner>/<repo>/blob/<sha>/docs/specs/<spec>.md`)
 rather than the branch name, so the link survives the branch being deleted on
-merge. After pushing further commits, update the link to the new SHA.
+merge. After pushing further commits, update the link to the new SHA. Put the
+diff since the last round in a comment on the pull request rather than the
+description: start it with a line saying it was posted by Claude Code, and
+link to what changed
+(`https://github.com/<owner>/<repo>/compare/<old-sha>...<new-sha>`).
