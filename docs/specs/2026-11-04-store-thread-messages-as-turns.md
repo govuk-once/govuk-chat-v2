@@ -65,11 +65,11 @@ ElectroDB 3.9.3.
 2. **R2:** Turns are stored as a `turn` entity, which replaces `Message`, under
    the primary key `THREAD#${systemThreadId}`, `TURN#${turnId}`. A user turn's
    id is the user message's id. An assistant turn's id is the run id. Each turn
-   has a `role` of `user` or `assistant`.
+   has a `sender` of `user` or `assistant`.
 3. **R3:** A turn's `messages` attribute holds AG-UI message objects. Writing a
-   turn fails unless its messages are exactly one user message, or any number
-   of assistant messages, each matching its `@ag-ui/core` schema with no other
-   fields.
+   turn fails unless its messages match its `sender`: exactly one user message
+   for `user`, or any number of assistant messages for `assistant`. Each must
+   match its `@ag-ui/core` schema with no other fields.
 4. **R4:** Reusing a user message id in a thread returns `409`. An expired turn
    doesn't block its id.
 5. **R5:** `GET /v1/threads/{threadId}/messages` returns each turn's messages in
@@ -80,7 +80,9 @@ ElectroDB 3.9.3.
    50 whole runs, which is 100 turns. The response body doesn't change, and
    each message's `createdAt` is its turn's.
 7. **R7:** A user turn's `createdAt` is the time the run was claimed. An
-   assistant turn's `createdAt` is the time the run finished.
+   assistant turn's `createdAt` is the time the run finished. An assistant
+   turn's `firstOutputAt` is the time chat-api received the agent's first
+   message, and is absent when the agent sent none.
 8. **R8:** A cursor holds `createdAt` and `turnId` in place of `createdAt` and
    `messageId`.
 9. **R9:** Messages stored before this change aren't returned or migrated.
@@ -116,17 +118,14 @@ const Turn = new Entity({
   attributes: {
     systemThreadId: { type: 'string', required: true },
     turnId: { type: 'string', required: true },
-    role: { type: ['user', 'assistant'] as const, required: true },
+    sender: { type: ['user', 'assistant'] as const, required: true },
     runId: { type: 'string', required: true },
     messages: {
-      type: CustomAttributeType<TurnMessages>('any'),
+      type: CustomAttributeType<TurnContent['messages']>('any'),
       required: true,
-      validate: (messages: unknown) => {
-        TurnMessagesSchema.parse(messages);
-        return true;
-      },
     },
     createdAt: { type: 'string', required: true, readOnly: true },
+    firstOutputAt: { type: 'string', readOnly: true },
     expiresAt: { type: 'number', required: true },
   },
   indexes: {
@@ -153,36 +152,48 @@ const Turn = new Entity({
 });
 ```
 
-`role` says whose turn it is. The
-[feedback spec](./2026-10-19-store-end-user-feedback-on-answers.md) checks that
-a message's `role` is `assistant` in the same transaction as it writes a
-reaction, so `role` is an attribute on the item. That check moves to the
-assistant turn, whose id is the run id. The run id is also the id of the
-assistant message returned today. The API returns each message's own `role`
-from its AG-UI object.
+`sender` says which side of the run a turn's messages came from: the client's
+request, or the agent's output. It is named apart from AG-UI's `role`, which
+each message keeps. The two can differ. A tool message has the role `tool`
+whichever side ran the tool (see the [appendix](#appendix-ag-ui-scenarios)).
+The API returns each message's own `role` from its AG-UI object.
+
+The [feedback spec](./2026-10-19-store-end-user-feedback-on-answers.md) checks
+that a message's `role` is `assistant` in the same transaction as it writes a
+reaction. That check moves to the assistant turn, as a check that its
+`sender` is `assistant`. The assistant turn's id is the run id, which is also
+the id of the assistant message returned today.
 
 ### Checking messages
 
 `@ag-ui/core/schemas` exports a Zod schema for each AG-UI message type.
-`src/schemas/turn-messages.ts` builds what a turn may hold from them (R3):
+`src/schemas/turn-content.ts` builds what each `sender` may hold from them
+(R3):
 
 ```ts
-export const TurnMessagesSchema = z.union([
-  z.tuple([UserMessageSchema.strict()]),
-  z.array(AssistantMessageSchema.strict()),
+export const TurnContentSchema = z.discriminatedUnion('sender', [
+  z.object({
+    sender: z.literal('user'),
+    messages: z.tuple([UserMessageSchema.strict()]),
+  }),
+  z.object({
+    sender: z.literal('assistant'),
+    messages: z.array(AssistantMessageSchema.strict()),
+  }),
 ]);
 
-export type TurnMessages = z.infer<typeof TurnMessagesSchema>;
+export type TurnContent = z.infer<typeof TurnContentSchema>;
 ```
 
 AG-UI's schemas let unknown fields through, so a user message with
 `toolCalls` would pass. `.strict()` rejects any field the message type doesn't
 have.
 
-ElectroDB runs `validate` whenever it builds a write, including inside
-`finishRun`'s transaction. `parse` throws on a mismatch, and ElectroDB puts
-Zod's issues in its validation error, so the write fails before it reaches
-DynamoDB. `finishRun` already treats a failed write as a failed run.
+`finishRun` parses each turn's `sender` and `messages` with
+`TurnContentSchema` before it builds the transaction. ElectroDB's `validate`
+only sees the attribute it is on, so it can't check messages against
+`sender`. `parse` throws on a mismatch, so nothing reaches DynamoDB.
+`finishRun` already treats a failed write as a failed run.
 
 Everything AG-UI defines on a message is kept, including `metadata`, where
 ag_ui_strands puts citations. Nothing writes `metadata` until messages are
@@ -250,7 +261,13 @@ written. So a question always sorts after the answer before it. A time taken
 earlier, when the request arrived, could sort before that answer if the
 request came in while the answer was being written.
 
-The assistant turn's time stays as it is, the time the run finished.
+The assistant turn's `createdAt` stays as it is, the time the run finished.
+An answer arrives over a period of time, so one time doesn't describe it. The
+assistant turn also stores `firstOutputAt`, the time chat-api received the
+agent's first message. `MessageAccumulator` records it on the first
+`TEXT_MESSAGE_START`, and `invoke` passes it to `finishRun`. When the agent
+sends no messages, it is left out. It is stored but not returned, as the
+response doesn't change (R6).
 
 ### Adding other message types
 
@@ -303,24 +320,29 @@ One pull request in `services/chat-api`. The steps depend on each other and
 the whole change is small. No CDK changes are needed.
 
 1. Take the user message's time just after the run is claimed (R7).
-2. Add `TurnMessagesSchema` (R3, R10).
-3. Replace `Message` with `turn`, and update `beginRun`, `finishRun`,
+2. Record the time of the agent's first message in `MessageAccumulator` (R7).
+3. Add `TurnContentSchema` (R3, R10).
+4. Replace `Message` with `turn`, and update `beginRun`, `finishRun`,
    `getMessagePage`, the cursor and the messages handler (R1, R2, R4, R5, R6,
-   R8, R9).
-4. Mark this spec implemented.
+   R7, R8, R9).
+5. Mark this spec implemented.
 
 ### Testing
 
-- `src/schemas/turn-messages.test.ts`: one user message, a list of assistant
-  messages and an empty list pass. A mixed list, two user messages and a
-  message with a field its type doesn't have fail (R3).
+- `src/schemas/turn-content.test.ts`: a user turn with one user message, and
+  an assistant turn with a list of assistant messages or an empty list, pass.
+  A user turn with an assistant message, an assistant turn with a user
+  message, two user messages and a message with a field its type doesn't have
+  fail (R3).
+- `src/streaming/message-accumulator.test.ts`: the first output time is the
+  time of the first `TEXT_MESSAGE_START`, and is absent before one (R7).
 - `src/persistence/runs.test.ts`:
   - `finishRun` writes a user turn under the user message's id and an
-    assistant turn under the run id, each with its `role` (R1, R2)
-  - `finishRun` writes an assistant turn with an empty list when the agent
-    sent no text (R1)
-  - `finishRun` rejects a turn whose messages fail the schema, without
-    sending the write (R3)
+    assistant turn under the run id, each with its `sender` (R1, R2)
+  - `finishRun` writes an assistant turn with an empty list and no
+    `firstOutputAt` when the agent sent no text (R1, R7)
+  - `finishRun` rejects a turn whose messages don't match its `sender`,
+    without sending the write (R3)
   - `beginRun`'s check uses the turn key, and a failed check is
     `duplicate-message` (R4)
 - `src/persistence/messages.test.ts`: the existing tests stay, with turn
