@@ -55,6 +55,23 @@ Nothing is recorded for a run that ends in an error. A run and its message
 are stored as the run finishes, just before `RUN_FINISHED` reaches the
 client, and expire alongside the thread.
 
+## Feedback
+
+An end user can react to an assistant message once, with
+`POST /v1/threads/{threadId}/messages/{messageId}/feedback` and a body of
+`{ "reaction": "positive" }` or `{ "reaction": "negative" }`. The
+`messageId` is the message's `id` from `GET /v1/threads/{threadId}/messages`.
+A recorded reaction returns `201` with `{}`.
+
+It returns `404` if the thread isn't the end user's, or the message isn't
+in it, has expired or is a user message. It returns `409` if the message
+already has a reaction, and `422` if the `end-user-id` header, `threadId`
+or `messageId` isn't a UUID, or the body has anything other than a
+recognised reaction. A reaction can't be changed once given.
+
+A reaction expires a year after it is given, so it can outlive the message
+it is for.
+
 ## Rate limits
 
 These limits apply at the API Gateway, before the lambda runs:
@@ -65,7 +82,7 @@ These limits apply at the API Gateway, before the lambda runs:
   client shares them.
 - Each end user, identified by the `end-user-id` header, can send 15
   `POST /v1/threads/invoke` requests a minute, and 180 other requests a
-  minute, such as listing messages. Each request counts
+  minute, such as listing messages or giving feedback. Each request counts
   towards exactly one of these, so other requests don't use up the
   allowance for invoking the agent.
 
