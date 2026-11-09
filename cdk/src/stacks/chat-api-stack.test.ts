@@ -238,7 +238,7 @@ describe('ChatApiStack', () => {
       template.hasOutput('GatewayUrl', {});
     });
 
-    it('throttles the stage and answers with the API error body', () => {
+    it('throttles invoke separately from other requests and answers with the API error body', () => {
       const template = stackTemplate();
 
       template.hasResourceProperties('AWS::ApiGateway::Stage', {
@@ -246,8 +246,14 @@ describe('ChatApiStack', () => {
           Match.objectLike({
             HttpMethod: '*',
             ResourcePath: '/*',
-            ThrottlingRateLimit: Match.anyValue(),
-            ThrottlingBurstLimit: Match.anyValue(),
+            ThrottlingRateLimit: 180,
+            ThrottlingBurstLimit: 360,
+          }),
+          Match.objectLike({
+            HttpMethod: 'POST',
+            ResourcePath: '/~1v1~1threads~1invoke',
+            ThrottlingRateLimit: 15,
+            ThrottlingBurstLimit: 30,
           }),
         ]),
       });

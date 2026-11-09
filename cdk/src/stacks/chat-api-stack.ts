@@ -26,11 +26,16 @@ export interface ChatApiStackProps extends cdk.StackProps {
 // releasing must not hold it longer than it could have run for.
 const LAMBDA_TIMEOUT = cdk.Duration.seconds(30);
 
-// V1's write limits (CHAT-968): 900 a minute per client, 15 a minute per
-// end user.
+// Invokes call a model, so they're limited far more tightly than other
+// requests. WAF rate rules limit each end user, identified by the
+// end-user-id header. WAF can't identify the API client, so stage throttles
+// limit the API as a whole instead: API Gateway applies them to each method
+// separately, and every client shares them.
 const RATE_LIMITS = {
-  stageRequestsPerSecond: 15,
-  stageBurst: 30,
+  stageInvokesPerSecond: 15,
+  stageInvokeBurst: 30,
+  stageDefaultMethodRequestsPerSecond: 180,
+  stageDefaultMethodBurst: 360,
   endUserInvokesPerWindow: 15,
   endUserOtherRequestsPerWindow: 180,
   endUserWindowSeconds: 60,
@@ -199,8 +204,14 @@ export class ChatApiStack extends cdk.Stack {
         restApiName: `${getResourceNamePrefix()}-chat-api-gateway`,
         deployOptions: {
           stageName: props.environment,
-          throttlingRateLimit: RATE_LIMITS.stageRequestsPerSecond,
-          throttlingBurstLimit: RATE_LIMITS.stageBurst,
+          throttlingRateLimit: RATE_LIMITS.stageDefaultMethodRequestsPerSecond,
+          throttlingBurstLimit: RATE_LIMITS.stageDefaultMethodBurst,
+          methodOptions: {
+            '/v1/threads/invoke/POST': {
+              throttlingRateLimit: RATE_LIMITS.stageInvokesPerSecond,
+              throttlingBurstLimit: RATE_LIMITS.stageInvokeBurst,
+            },
+          },
         },
         defaultMethodOptions: {
           authorizationType: apigateway.AuthorizationType.COGNITO,

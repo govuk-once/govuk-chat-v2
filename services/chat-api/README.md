@@ -59,7 +59,10 @@ client, and expire alongside the thread.
 
 These limits apply at the API Gateway, before the lambda runs:
 
-- The whole stage accepts 15 requests a second, with a burst of 30.
+- `POST /v1/threads/invoke` accepts 15 requests a second, with a burst of
+  30, and each other endpoint accepts 180 requests a second, with a burst
+  of 360. These apply to the whole stage, not to each client, so every
+  client shares them.
 - Each end user, identified by the `end-user-id` header, can send 15
   `POST /v1/threads/invoke` requests a minute, and 180 other requests a
   minute, such as listing messages. Each request counts
