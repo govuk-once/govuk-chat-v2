@@ -62,6 +62,24 @@ function storedMessage(
   };
 }
 
+function storedFeedback(messageId: string, reaction: 'positive' | 'negative') {
+  return {
+    pk: `$chat-api#systemthreadid_${SYSTEM_THREAD_ID}`,
+    sk: `$feedback_1#messageid_${messageId}`,
+    systemThreadId: SYSTEM_THREAD_ID,
+    messageId,
+    reaction,
+    createdAt: NOW.toISOString(),
+    expiresAt: NOW_SECONDS + 31_536_000,
+    __edb_e__: 'feedback',
+    __edb_v__: '1',
+  };
+}
+
+function batchGetResponse(items: ReturnType<typeof storedFeedback>[] = []) {
+  return { Responses: { 'test-chat-api': items }, UnprocessedKeys: {} };
+}
+
 // Messages in a thread, oldest first, one second apart
 function threadOf(count: number) {
   return Array.from({ length: count }, (_, index) =>
@@ -140,7 +158,9 @@ describe('getMessagePage', () => {
 
     it('returns the messages oldest first, with no positions, when fewer than 101 come back', async () => {
       const thread = threadOf(3);
-      send.mockResolvedValueOnce({ Items: thread.toReversed() });
+      send
+        .mockResolvedValueOnce({ Items: thread.toReversed() })
+        .mockResolvedValueOnce(batchGetResponse());
 
       const result = await testEnv.getMessagePage(SYSTEM_THREAD_ID);
 
@@ -156,7 +176,9 @@ describe('getMessagePage', () => {
 
     it('drops the oldest read and returns an earlier position, but no later one, when 101 come back', async () => {
       const thread = threadOf(101);
-      send.mockResolvedValueOnce({ Items: thread.toReversed() });
+      send
+        .mockResolvedValueOnce({ Items: thread.toReversed() })
+        .mockResolvedValueOnce(batchGetResponse());
 
       const result = await testEnv.getMessagePage(SYSTEM_THREAD_ID);
 
@@ -180,11 +202,12 @@ describe('getMessagePage', () => {
             gsi1sk: `$message_1#createdat_${lastRead.createdAt}#messageid_${lastRead.messageId}`,
           },
         })
-        .mockResolvedValueOnce({ Items: thread.slice(50) });
+        .mockResolvedValueOnce({ Items: thread.slice(50) })
+        .mockResolvedValueOnce(batchGetResponse());
 
       const result = await testEnv.getMessagePage(SYSTEM_THREAD_ID);
 
-      expect(send).toHaveBeenCalledTimes(2);
+      expect(send).toHaveBeenCalledTimes(3);
       expect(result.messages).toHaveLength(100);
       expect(result.earlier).toEqual(Cursor.before(thread[99]));
     });
@@ -208,7 +231,9 @@ describe('getMessagePage', () => {
 
     it('returns the messages oldest first, with only a later position, when fewer than 101 come back', async () => {
       const thread = threadOf(3);
-      send.mockResolvedValueOnce({ Items: thread.toReversed() });
+      send
+        .mockResolvedValueOnce({ Items: thread.toReversed() })
+        .mockResolvedValueOnce(batchGetResponse());
 
       const result = await testEnv.getMessagePage(SYSTEM_THREAD_ID, start);
 
@@ -221,7 +246,9 @@ describe('getMessagePage', () => {
 
     it('drops the oldest read and returns both positions when 101 come back', async () => {
       const thread = threadOf(101);
-      send.mockResolvedValueOnce({ Items: thread.toReversed() });
+      send
+        .mockResolvedValueOnce({ Items: thread.toReversed() })
+        .mockResolvedValueOnce(batchGetResponse());
 
       const result = await testEnv.getMessagePage(SYSTEM_THREAD_ID, start);
 
@@ -251,7 +278,9 @@ describe('getMessagePage', () => {
 
     it('returns the messages as read, with only an earlier position, when fewer than 101 come back', async () => {
       const thread = threadOf(4).slice(1);
-      send.mockResolvedValueOnce({ Items: thread });
+      send
+        .mockResolvedValueOnce({ Items: thread })
+        .mockResolvedValueOnce(batchGetResponse());
 
       const result = await testEnv.getMessagePage(SYSTEM_THREAD_ID, start);
 
@@ -264,7 +293,9 @@ describe('getMessagePage', () => {
 
     it('drops the newest read and returns both positions when 101 come back', async () => {
       const thread = threadOf(102).slice(1);
-      send.mockResolvedValueOnce({ Items: thread });
+      send
+        .mockResolvedValueOnce({ Items: thread })
+        .mockResolvedValueOnce(batchGetResponse());
 
       const result = await testEnv.getMessagePage(SYSTEM_THREAD_ID, start);
 
@@ -289,4 +320,54 @@ describe('getMessagePage', () => {
       expect(result).toEqual({ messages: [] });
     },
   );
+
+  describe('feedback', () => {
+    it('attaches each reaction to its assistant message, read consistently', async () => {
+      const thread = threadOf(4);
+      const feedback = storedFeedback('msg-3', 'positive');
+      send
+        .mockResolvedValueOnce({ Items: thread.toReversed() })
+        .mockResolvedValueOnce(batchGetResponse([feedback]));
+
+      const result = await testEnv.getMessagePage(SYSTEM_THREAD_ID);
+
+      expect(send.mock.calls[1][0]).toMatchObject({
+        input: {
+          RequestItems: { 'test-chat-api': { ConsistentRead: true } },
+        },
+      });
+      expect(result.messages.map((m) => m.feedback)).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        { reaction: 'positive', createdAt: feedback.createdAt },
+      ]);
+    });
+
+    it('skips reading reactions when the page has no assistant messages', async () => {
+      send.mockResolvedValueOnce({ Items: threadOf(1) });
+
+      await testEnv.getMessagePage(SYSTEM_THREAD_ID);
+
+      expect(send).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws when any reaction keys come back unprocessed', async () => {
+      send.mockResolvedValueOnce({ Items: threadOf(2) }).mockResolvedValueOnce({
+        Responses: { 'test-chat-api': [] },
+        UnprocessedKeys: {
+          'test-chat-api': {
+            Keys: [
+              {
+                pk: `$chat-api#systemthreadid_${SYSTEM_THREAD_ID}`,
+                sk: '$feedback_1#messageid_msg-1',
+              },
+            ],
+          },
+        },
+      });
+
+      await expect(testEnv.getMessagePage(SYSTEM_THREAD_ID)).rejects.toThrow();
+    });
+  });
 });
