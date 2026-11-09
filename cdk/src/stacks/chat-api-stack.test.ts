@@ -261,41 +261,47 @@ describe('ChatApiStack', () => {
   });
 
   describe('WAF', () => {
-    it('rate limits each end user on POST invoke requests with a 429', () => {
+    it('rate limits each end user separately on invoke and other requests', () => {
       const template = stackTemplate();
+      const endUserRateLimit = (
+        limit: number,
+        scopeDownStatement: object,
+      ): object =>
+        Match.objectLike({
+          Statement: {
+            RateBasedStatement: Match.objectLike({
+              CustomKeys: [
+                { Header: Match.objectLike({ Name: 'end-user-id' }) },
+              ],
+              Limit: limit,
+              ScopeDownStatement: scopeDownStatement,
+            }),
+          },
+          Action: {
+            Block: {
+              CustomResponse: Match.objectLike({ ResponseCode: 429 }),
+            },
+          },
+        });
+      const invokeRequest = {
+        AndStatement: {
+          Statements: [
+            Match.objectLike({
+              ByteMatchStatement: Match.objectLike({ SearchString: 'POST' }),
+            }),
+            Match.objectLike({
+              ByteMatchStatement: Match.objectLike({
+                SearchString: '/v1/threads/invoke',
+              }),
+            }),
+          ],
+        },
+      };
 
       template.hasResourceProperties('AWS::WAFv2::WebACL', {
         Rules: [
-          Match.objectLike({
-            Statement: {
-              RateBasedStatement: Match.objectLike({
-                CustomKeys: [
-                  { Header: Match.objectLike({ Name: 'end-user-id' }) },
-                ],
-                ScopeDownStatement: {
-                  AndStatement: {
-                    Statements: [
-                      Match.objectLike({
-                        ByteMatchStatement: Match.objectLike({
-                          SearchString: 'POST',
-                        }),
-                      }),
-                      Match.objectLike({
-                        ByteMatchStatement: Match.objectLike({
-                          SearchString: '/v1/threads/invoke',
-                        }),
-                      }),
-                    ],
-                  },
-                },
-              }),
-            },
-            Action: {
-              Block: {
-                CustomResponse: Match.objectLike({ ResponseCode: 429 }),
-              },
-            },
-          }),
+          endUserRateLimit(15, invokeRequest),
+          endUserRateLimit(180, { NotStatement: { Statement: invokeRequest } }),
         ],
       });
     });

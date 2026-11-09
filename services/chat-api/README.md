@@ -57,17 +57,20 @@ client, and expire alongside the thread.
 
 ## Rate limits
 
-Two limits apply at the API Gateway, before the lambda runs:
+These limits apply at the API Gateway, before the lambda runs:
 
 - The whole stage accepts 15 requests a second, with a burst of 30.
 - Each end user, identified by the `end-user-id` header, can send 15
-  `POST /v1/threads/invoke` requests a minute.
+  `POST /v1/threads/invoke` requests a minute, and 180 other requests a
+  minute, such as listing messages. Each request counts
+  towards exactly one of these, so other requests don't use up the
+  allowance for invoking the agent.
 
-Requests over either limit receive `429` with the API's usual
-`{ "error": "..." }` body. The per-end-user limit is evaluated before
+Requests over any limit receive `429` with the API's usual
+`{ "error": "..." }` body. The per-end-user limits are evaluated before
 authentication, so an unauthenticated flood is counted and blocked too.
 
-The per-end-user limit is a WAF rate rule. WAF checks the count about
-every ten seconds, so a burst can exceed the limit before blocking
+The per-end-user limits are WAF rate rules. WAF checks the counts about
+every ten seconds, so a burst can exceed a limit before blocking
 begins, and blocking lasts until the count for the last minute drops
 below the limit again.

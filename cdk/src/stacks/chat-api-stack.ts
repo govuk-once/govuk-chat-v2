@@ -32,6 +32,7 @@ const RATE_LIMITS = {
   stageRequestsPerSecond: 15,
   stageBurst: 30,
   endUserInvokesPerWindow: 15,
+  endUserOtherRequestsPerWindow: 180,
   endUserWindowSeconds: 60,
 };
 
@@ -269,9 +270,39 @@ export class ChatApiStack extends cdk.Stack {
     const name = `${getResourceNamePrefix()}-chat-api-web-acl`;
     const tooManyRequestsBodyKey = 'too-many-requests';
 
-    const endUserInvokeLimit: wafv2.CfnWebACL.RuleProperty = {
-      name: 'end-user-invoke-limit',
-      priority: 0,
+    // Shared by both end-user rules so every request falls into exactly one
+    const invokeRequest: wafv2.CfnWebACL.StatementProperty = {
+      andStatement: {
+        statements: [
+          {
+            byteMatchStatement: {
+              fieldToMatch: { method: {} },
+              positionalConstraint: 'EXACTLY',
+              searchString: 'POST',
+              textTransformations: [{ priority: 0, type: 'NONE' }],
+            },
+          },
+          {
+            // The stage name prefixes the path as WAF sees it
+            byteMatchStatement: {
+              fieldToMatch: { uriPath: {} },
+              positionalConstraint: 'ENDS_WITH',
+              searchString: '/v1/threads/invoke',
+              textTransformations: [{ priority: 0, type: 'NONE' }],
+            },
+          },
+        ],
+      },
+    };
+
+    const endUserRateLimit = (
+      ruleName: string,
+      priority: number,
+      limit: number,
+      scopeDownStatement: wafv2.CfnWebACL.StatementProperty,
+    ): wafv2.CfnWebACL.RuleProperty => ({
+      name: ruleName,
+      priority,
       statement: {
         rateBasedStatement: {
           aggregateKeyType: 'CUSTOM_KEYS',
@@ -285,31 +316,9 @@ export class ChatApiStack extends cdk.Stack {
               },
             },
           ],
-          limit: RATE_LIMITS.endUserInvokesPerWindow,
+          limit,
           evaluationWindowSec: RATE_LIMITS.endUserWindowSeconds,
-          scopeDownStatement: {
-            andStatement: {
-              statements: [
-                {
-                  byteMatchStatement: {
-                    fieldToMatch: { method: {} },
-                    positionalConstraint: 'EXACTLY',
-                    searchString: 'POST',
-                    textTransformations: [{ priority: 0, type: 'NONE' }],
-                  },
-                },
-                {
-                  // The stage name prefixes the path as WAF sees it
-                  byteMatchStatement: {
-                    fieldToMatch: { uriPath: {} },
-                    positionalConstraint: 'ENDS_WITH',
-                    searchString: '/v1/threads/invoke',
-                    textTransformations: [{ priority: 0, type: 'NONE' }],
-                  },
-                },
-              ],
-            },
-          },
+          scopeDownStatement,
         },
       },
       action: {
@@ -323,9 +332,9 @@ export class ChatApiStack extends cdk.Stack {
       visibilityConfig: {
         cloudWatchMetricsEnabled: true,
         sampledRequestsEnabled: true,
-        metricName: `${name}-end-user-invoke-limit`,
+        metricName: `${name}-${ruleName}`,
       },
-    };
+    });
 
     const webAcl = new wafv2.CfnWebACL(this, name, {
       name,
@@ -337,7 +346,20 @@ export class ChatApiStack extends cdk.Stack {
           content: TOO_MANY_REQUESTS_BODY,
         },
       },
-      rules: [endUserInvokeLimit],
+      rules: [
+        endUserRateLimit(
+          'end-user-invoke-limit',
+          0,
+          RATE_LIMITS.endUserInvokesPerWindow,
+          invokeRequest,
+        ),
+        endUserRateLimit(
+          'end-user-other-requests-limit',
+          1,
+          RATE_LIMITS.endUserOtherRequestsPerWindow,
+          { notStatement: { statement: invokeRequest } },
+        ),
+      ],
       visibilityConfig: {
         cloudWatchMetricsEnabled: true,
         sampledRequestsEnabled: true,
