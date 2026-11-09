@@ -37,12 +37,13 @@ generous default bucket:
 | End user      | 15 a minute              | 180 a minute    |
 
 The Chat API only has the conversation write limits. Each end user can send 15
-`POST /v1/threads/invoke` requests a minute, enforced by a WAF rule. A
-stage-wide throttle of 15 requests a second stands in for V1's per-client
-write limit, because Chat UI is the only client (CHAT-968). That throttle
-counts every request, not just invoke, and nothing limits an end user's other
-requests. Adding feedback without the default buckets would mean reactions
-eat into the allowance for asking questions, which is the problem V1 fixed.
+`POST /v1/threads/invoke` requests a minute, enforced by a WAF rule. A stage
+throttle of 15 requests a second stands in for V1's per-client write limit,
+because Chat UI is the only client (CHAT-968). API Gateway applies it to each
+method, so it holds every endpoint to the write limit, and nothing limits an
+end user's other requests. Adding feedback without the default buckets would
+mean reactions are held to the same tight limit as asking questions, which is
+the problem V1 fixed.
 
 ## Goals
 
@@ -99,9 +100,9 @@ eat into the allowance for asking questions, which is the problem V1 fixed.
    towards exactly one of these limits, and a request over either one
    receives `429` with the API's usual error body.
 10. **R10:** The stage accepts 15 `POST /v1/threads/invoke` requests a second
-    (V1's 900 a minute per client) and 180 other requests a second, such as
-    listing messages or giving feedback (V1's 10,800 a minute per client),
-    each with a burst of twice its rate.
+    (V1's 900 a minute per client) and 180 requests a second for each other
+    method, such as listing messages or giving feedback (V1's 10,800 a minute
+    per client), each with a burst of twice its rate.
 11. **R11:** The `chat-api` README documents the feedback endpoint, the
     feedback fields on messages, and the rate limits. It says that the
     per-client limits apply to the whole stage, not to each client.
@@ -256,14 +257,16 @@ bucket without changing the rules. As today, requests without an
 
 **Per client (R10).** WAF can't identify the API client: the Cognito access
 token in the `Authorization` header is rotated hourly, and WAF can't read its
-claims. Instead, the stage's default throttle rises to 180 requests a second,
-with a burst of 360. A method-level throttle in the stage's `methodOptions`
-keeps `POST /v1/threads/invoke` at 15 a second with a burst of 30. The bursts
-keep the existing ratio of twice the rate. While Chat UI is the only client,
-this is equivalent to V1's per-client limits. With more than one client, the
-limits are shared between them, so they will need revisiting when a second
-client such as a mobile app arrives. The `RATE_LIMITS` constant and its
-CHAT-968 comment in the stack are updated to say this.
+claims. Instead, the stage's default throttle, which API Gateway applies to
+each method separately, rises to 180 requests a second, with a burst of 360. A
+method-level throttle in the stage's `methodOptions` keeps
+`POST /v1/threads/invoke` at 15 a second with a burst of 30. The bursts keep
+the existing ratio of twice the rate. While Chat UI is the only client, this
+approximates V1's per-client limits, though each other method has its own
+allowance rather than sharing one. With more than one client, the limits are
+shared between them, so they will need revisiting when a second client such as
+a mobile app arrives. The `RATE_LIMITS` constant and its CHAT-968 comment in
+the stack are updated to say this.
 
 ### Security and privacy
 
@@ -374,6 +377,8 @@ ElectroDB command input, and `apiGatewayProxyEventFixture` for handlers.
   could use up another's allowance. Accepted for now, and recorded in the
   README and the `RATE_LIMITS` comment so it is revisited before a second
   client goes live.
-- **Raising the stage throttle to 180 requests a second** lets more
-  non-invoke traffic reach the lambdas and DynamoDB. The per-end-user WAF
-  rules still bound each end user, and none of these requests call a model.
+- **Raising the stage throttle to 180 requests a second** lets more non-invoke
+  traffic reach the lambdas and DynamoDB. The throttle applies to each method,
+  so the ceiling for other requests grows with each endpoint. The per-end-user
+  WAF rules still bound each end user, and none of these requests call a
+  model.
