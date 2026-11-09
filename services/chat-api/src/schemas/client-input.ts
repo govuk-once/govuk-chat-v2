@@ -55,3 +55,20 @@ export const ThreadMessagesQuerySchema = z.object({
 });
 
 export type ThreadMessagesQuery = z.infer<typeof ThreadMessagesQuerySchema>;
+
+export const MessageFeedbackPathParametersSchema =
+  ThreadMessagesPathParametersSchema.extend({
+    messageId: z.uuid({ message: 'messageId must be a valid UUID' }),
+  });
+
+export type MessageFeedbackPathParameters = z.infer<
+  typeof MessageFeedbackPathParametersSchema
+>;
+
+export const MessageFeedbackBodySchema = z
+  .object({
+    reaction: z.enum(['positive', 'negative']),
+  })
+  .strict();
+
+export type MessageFeedbackBody = z.infer<typeof MessageFeedbackBodySchema>;

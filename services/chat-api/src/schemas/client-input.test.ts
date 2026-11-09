@@ -6,6 +6,8 @@ import {
   ClientInputHeadersSchema,
   ThreadMessagesPathParametersSchema,
   ThreadMessagesQuerySchema,
+  MessageFeedbackPathParametersSchema,
+  MessageFeedbackBodySchema,
 } from './client-input.ts';
 import { Cursor } from './message-cursor.ts';
 
@@ -316,5 +318,55 @@ describe('ThreadMessagesQuerySchema', () => {
     });
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ cursor });
+  });
+});
+
+describe('MessageFeedbackPathParametersSchema', () => {
+  it('accepts a UUID threadId and messageId', () => {
+    expectInputSuccess(MessageFeedbackPathParametersSchema, {
+      threadId: crypto.randomUUID(),
+      messageId: crypto.randomUUID(),
+    });
+  });
+
+  it('rejects a messageId that is not a UUID', () => {
+    expectInputFailure(
+      MessageFeedbackPathParametersSchema,
+      { threadId: crypto.randomUUID(), messageId: 'not-a-uuid' },
+      { messageId: ['messageId must be a valid UUID'] },
+    );
+  });
+});
+
+describe('MessageFeedbackBodySchema', () => {
+  it.each(['positive', 'negative'])('accepts a %s reaction', (reaction) => {
+    expectInputSuccess(MessageFeedbackBodySchema, { reaction });
+  });
+
+  it('rejects a missing reaction', () => {
+    const result = MessageFeedbackBodySchema.safeParse({});
+    const error = z.flattenError(result.error!);
+
+    expect(result.success).toBe(false);
+    expect(error.fieldErrors).toMatchObject({ reaction: [/Invalid option/] });
+  });
+
+  it('rejects an unrecognised reaction', () => {
+    const result = MessageFeedbackBodySchema.safeParse({ reaction: 'neutral' });
+    const error = z.flattenError(result.error!);
+
+    expect(result.success).toBe(false);
+    expect(error.fieldErrors).toMatchObject({ reaction: [/Invalid option/] });
+  });
+
+  it('rejects any other field', () => {
+    const result = MessageFeedbackBodySchema.safeParse({
+      reaction: 'positive',
+      comment: 'Helpful',
+    });
+    const error = z.flattenError(result.error!);
+
+    expect(result.success).toBe(false);
+    expect(error.formErrors).toEqual(['Unrecognized key: "comment"']);
   });
 });
