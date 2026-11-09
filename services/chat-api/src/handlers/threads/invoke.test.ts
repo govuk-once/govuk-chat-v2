@@ -396,47 +396,18 @@ describe('handler', () => {
       });
       expect(send).not.toHaveBeenCalled();
     });
+  });
 
-    it('gives the thread back when the runtime cannot be invoked', async () => {
-      send.mockRejectedValueOnce(new Error('Error from agent runtime'));
+  describe('thread store failures', () => {
+    it('returns a 500 JSON error without invoking the runtime when the thread cannot be resolved', async () => {
+      resolveThread.mockRejectedValueOnce(new Error('Error from thread store'));
 
       await runHandler(
         apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
       );
 
-      expect(releaseRun).toHaveBeenCalledWith(
-        expect.objectContaining({
-          systemThreadId: SYSTEM_THREAD_ID,
-          runId: VALID_RUN_ID,
-        }),
-      );
-    });
-  });
-
-  describe('thread store failures', () => {
-    it('returns a 500 JSON error without invoking the runtime when the thread cannot be resolved', async () => {
-      const logError = vi.spyOn(logger, 'error');
-      const storeError = new Error('Error from thread store');
-      resolveThread.mockRejectedValueOnce(storeError);
-
-      await runHandler(
-        apiGatewayProxyEventFixture(
-          JSON.stringify({
-            threadId: VALID_THREAD_ID,
-            runId: VALID_RUN_ID,
-            messages: VALID_MESSAGES,
-          }),
-          END_USER_ID_HEADER,
-        ),
-      );
-
       expectJsonHttpResponse(testEnv.responseStream, 500, {
         error: 'Agent invocation error',
-      });
-      expect(logError).toHaveBeenCalledWith('Thread resolution failed', {
-        error: storeError,
-        userThreadId: VALID_THREAD_ID,
-        runId: VALID_RUN_ID,
       });
       expect(send).not.toHaveBeenCalled();
     });
@@ -444,63 +415,36 @@ describe('handler', () => {
 
   describe('agent runtime failures', () => {
     describe('pre-stream failures', () => {
-      it('returns a 500 JSON error when runtime client invocation fails before opening stream', async () => {
-        const logError = vi.spyOn(logger, 'error');
-        const runtimeError = new Error('Error from agent runtime');
-        send.mockRejectedValueOnce(runtimeError);
+      it.each([
+        [
+          'the runtime cannot be invoked',
+          () =>
+            send.mockRejectedValueOnce(new Error('Error from agent runtime')),
+        ],
+        [
+          'the runtime returns no response body',
+          () => send.mockResolvedValueOnce({ response: undefined }),
+        ],
+      ])(
+        'returns a 500 JSON error and gives the thread back when %s',
+        async (_, arrangeFailure) => {
+          arrangeFailure();
 
-        await runHandler(
-          apiGatewayProxyEventFixture(
-            JSON.stringify({
-              threadId: VALID_THREAD_ID,
+          await runHandler(
+            apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+          );
+
+          expectJsonHttpResponse(testEnv.responseStream, 500, {
+            error: 'Agent invocation error',
+          });
+          expect(releaseRun).toHaveBeenCalledWith(
+            expect.objectContaining({
+              systemThreadId: SYSTEM_THREAD_ID,
               runId: VALID_RUN_ID,
-              messages: VALID_MESSAGES,
             }),
-            END_USER_ID_HEADER,
-          ),
-        );
-
-        expectJsonHttpResponse(testEnv.responseStream, 500, {
-          error: 'Agent invocation error',
-        });
-        expect(logError).toHaveBeenCalledWith(
-          'Agent runtime invocation failed',
-          {
-            error: runtimeError,
-            threadId: SYSTEM_THREAD_ID,
-            userThreadId: VALID_THREAD_ID,
-            runId: VALID_RUN_ID,
-          },
-        );
-      });
-
-      it('returns a 500 JSON error when no response body is returned from agent runtime', async () => {
-        const logError = vi.spyOn(logger, 'error');
-        send.mockResolvedValueOnce({ response: undefined });
-
-        await runHandler(
-          apiGatewayProxyEventFixture(
-            JSON.stringify({
-              threadId: VALID_THREAD_ID,
-              runId: VALID_RUN_ID,
-              messages: VALID_MESSAGES,
-            }),
-            END_USER_ID_HEADER,
-          ),
-        );
-
-        expectJsonHttpResponse(testEnv.responseStream, 500, {
-          error: 'Agent invocation error',
-        });
-        expect(logError).toHaveBeenCalledWith(
-          'Agent runtime returned no response body',
-          {
-            threadId: SYSTEM_THREAD_ID,
-            userThreadId: VALID_THREAD_ID,
-            runId: VALID_RUN_ID,
-          },
-        );
-      });
+          );
+        },
+      );
     });
 
     describe('mid-stream failures', () => {

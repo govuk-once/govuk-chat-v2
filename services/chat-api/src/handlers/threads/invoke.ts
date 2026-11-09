@@ -62,15 +62,13 @@ interface AgentEventStreamResponse {
 type InvokeEvent = ValidatedBodyEvent<RunAgentInputBody> &
   ValidatedHeadersEvent<ClientInputHeaders>;
 
-async function releaseClaim(
-  runKey: Pick<RunKey, 'systemThreadId' | 'runId'>,
-): Promise<void> {
+async function releaseClaim(runKey: RunKey): Promise<void> {
   try {
     await releaseRun(runKey);
   } catch (error) {
     logger.error('Releasing the thread after a failed invocation failed', {
       error,
-      ...runKey,
+      messageId: runKey.messageId,
     });
   }
 }
@@ -80,42 +78,21 @@ async function invokeAgent(
 ): Promise<AgentEventStreamResponse | JsonErrorResponse> {
   const endUserId = event.headers['end-user-id'];
   const body = event.body;
+  logger.appendKeys({ userThreadId: body.threadId, runId: body.runId });
 
-  let thread;
-  try {
-    thread = await resolveThread({ endUserId, userThreadId: body.threadId });
-  } catch (error) {
-    logger.error('Thread resolution failed', {
-      error,
-      userThreadId: body.threadId,
-      runId: body.runId,
-    });
-    return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
-  }
+  const { systemThreadId } = await resolveThread({
+    endUserId,
+    userThreadId: body.threadId,
+  });
+  logger.appendKeys({ threadId: systemThreadId });
 
-  const { systemThreadId } = thread;
   const messageId = body.messages.at(-1)!.id;
   const runKey = { systemThreadId, runId: body.runId, messageId };
 
-  let claim: RunClaim;
-  try {
-    claim = await beginRun(runKey);
-  } catch (error) {
-    logger.error('Run claim failed', {
-      error,
-      threadId: systemThreadId,
-      userThreadId: body.threadId,
-      runId: body.runId,
-    });
-    return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
-  }
-
+  const claim = await beginRun(runKey);
   if (claim.status !== 'claimed') {
     logger.warn('Run rejected before invoking the agent', {
       status: claim.status,
-      threadId: systemThreadId,
-      userThreadId: body.threadId,
-      runId: body.runId,
     });
     return buildJsonErrorResponse(409, {
       error: REJECTION_MESSAGES[claim.status],
@@ -132,7 +109,8 @@ async function invokeAgent(
     forwardedProps: { endUserId },
   };
 
-  let response;
+  // Once the stream is returned, the relay owns the claim and releases it
+  // if the run fails, so this only covers failures before that point.
   try {
     const command = new InvokeAgentRuntimeCommand({
       agentRuntimeArn,
@@ -143,73 +121,61 @@ async function invokeAgent(
       payload: JSON.stringify(payload),
     });
 
-    response = await client.send(command);
+    const response = await client.send(command);
+
+    // The SDK types 'response.response' as optional, so we guard against
+    // it being absent even though the runtime should always return a body.
+    if (!response.response) {
+      throw new Error('Agent runtime returned no response body');
+    }
+
+    const lastMessage = body.messages.at(-1)!;
+    const userMessage = {
+      messageId: lastMessage.id,
+      role: lastMessage.role,
+      content: lastMessage.content,
+      createdAt: new Date().toISOString(),
+    };
+
+    const accumulator = new MessageAccumulator();
+    const agentEvents = relayAgentEventStream({
+      source: response.response as AsyncIterable<Uint8Array>,
+      userThreadId: body.threadId,
+      systemThreadId,
+      runId: body.runId,
+      onRunFinished: () => {
+        const assistantContent = accumulator.getContent();
+
+        const messages = assistantContent
+          ? [
+              userMessage,
+              {
+                messageId: body.runId,
+                role: 'assistant',
+                content: assistantContent,
+                createdAt: new Date().toISOString(),
+              },
+            ]
+          : [userMessage];
+
+        return finishRun(runKey, messages);
+      },
+      onRunFailed: () => releaseRun(runKey),
+      onEvent: (event) => accumulator.process(event),
+    });
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      },
+      body: Readable.from(agentEvents),
+    };
   } catch (error) {
-    logger.error('Agent runtime invocation failed', {
-      error,
-      threadId: systemThreadId,
-      userThreadId: body.threadId,
-      runId: body.runId,
-    });
     await releaseClaim(runKey);
-    return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
+    throw error;
   }
-
-  // The SDK types 'response.response' as optional, so we guard against
-  // it being absent even though the runtime should always return a body.
-  if (!response.response) {
-    logger.error('Agent runtime returned no response body', {
-      threadId: systemThreadId,
-      userThreadId: body.threadId,
-      runId: body.runId,
-    });
-    await releaseClaim(runKey);
-    return buildJsonErrorResponse(500, { error: 'Agent invocation error' });
-  }
-
-  const lastMessage = body.messages.at(-1)!;
-  const userMessage = {
-    messageId: lastMessage.id,
-    role: lastMessage.role,
-    content: lastMessage.content,
-    createdAt: new Date().toISOString(),
-  };
-
-  const accumulator = new MessageAccumulator();
-  const agentEvents = relayAgentEventStream({
-    source: response.response as AsyncIterable<Uint8Array>,
-    userThreadId: body.threadId,
-    systemThreadId,
-    runId: body.runId,
-    onRunFinished: () => {
-      const assistantContent = accumulator.getContent();
-
-      const messages = assistantContent
-        ? [
-            userMessage,
-            {
-              messageId: body.runId,
-              role: 'assistant',
-              content: assistantContent,
-              createdAt: new Date().toISOString(),
-            },
-          ]
-        : [userMessage];
-
-      return finishRun(runKey, messages);
-    },
-    onRunFailed: () => releaseRun(runKey),
-    onEvent: (event) => accumulator.process(event),
-  });
-
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-    },
-    body: Readable.from(agentEvents),
-  };
 }
 
 export const handler = middy({
@@ -220,5 +186,5 @@ export const handler = middy({
   .use(zodHeadersValidator(ClientInputHeadersSchema, 'Agent invocation error'))
   .use(httpJsonBodyParser())
   .use(zodBodyValidator(RunAgentInputSchema, 'Agent invocation error'))
-  .use(jsonHttpErrorHandler())
+  .use(jsonHttpErrorHandler('Agent invocation error'))
   .handler(invokeAgent);

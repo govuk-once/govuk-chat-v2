@@ -41,32 +41,15 @@ async function listMessages(
   const endUserId = event.headers['end-user-id'];
   const { threadId } = event.pathParameters;
   const { cursor } = event.queryStringParameters;
+  logger.appendKeys({ userThreadId: threadId });
 
-  let thread;
-  try {
-    thread = await lookupThread({ endUserId, userThreadId: threadId });
-  } catch (error) {
-    logger.error('Thread lookup failed', {
-      error,
-      userThreadId: threadId,
-    });
-    return buildJsonErrorResponse(500, { error: 'Messages retrieval error' });
-  }
-
+  const thread = await lookupThread({ endUserId, userThreadId: threadId });
   if (!thread) {
     return buildJsonErrorResponse(404, { error: 'Thread not found' });
   }
+  logger.appendKeys({ threadId: thread.systemThreadId });
 
-  let page;
-  try {
-    page = await getMessagePage(thread.systemThreadId, cursor);
-  } catch (error) {
-    logger.error('Message retrieval failed', {
-      error,
-      userThreadId: threadId,
-    });
-    return buildJsonErrorResponse(500, { error: 'Messages retrieval error' });
-  }
+  const page = await getMessagePage(thread.systemThreadId, cursor);
 
   const earlierMessagesUrl = page.earlier
     ? messagesPageUrl(threadId, page.earlier)
@@ -104,5 +87,5 @@ export const handler = middy()
     ),
   )
   .use(zodQueryValidator(ThreadMessagesQuerySchema, 'Messages retrieval error'))
-  .use(jsonHttpErrorHandler())
+  .use(jsonHttpErrorHandler('Messages retrieval error'))
   .handler(listMessages);
