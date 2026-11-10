@@ -28,9 +28,9 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/setup-node-pnpm-env
+      - uses: $/.github/actions/setup-node-pnpm-env
 
       - name: Run tests
         run: services/demo-ui/scripts/test.sh
@@ -39,9 +39,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/setup-node-pnpm-env
+      - uses: $/.github/actions/setup-node-pnpm-env
 
       - name: Run linter
         run: services/demo-ui/scripts/lint.sh
@@ -50,9 +50,9 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/setup-node-pnpm-env
+      - uses: $/.github/actions/setup-node-pnpm-env
 
       - name: Run formatter
         run: services/demo-ui/scripts/format.sh
@@ -61,9 +61,9 @@ jobs:
     name: Type checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/setup-node-pnpm-env
+      - uses: $/.github/actions/setup-node-pnpm-env
 
       - name: Run type checks
         run: services/demo-ui/scripts/type-check.sh

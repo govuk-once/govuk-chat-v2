@@ -26,9 +26,9 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/setup-node-pnpm-env
+      - uses: $/.github/actions/setup-node-pnpm-env
 
       - name: Run tests
         run: cdk/scripts/test.sh
@@ -37,9 +37,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/setup-node-pnpm-env
+      - uses: $/.github/actions/setup-node-pnpm-env
 
       - name: Run linter
         run: cdk/scripts/lint.sh
@@ -48,9 +48,9 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/setup-node-pnpm-env
+      - uses: $/.github/actions/setup-node-pnpm-env
 
       - name: Run formatter
         run: cdk/scripts/format.sh
@@ -59,9 +59,9 @@ jobs:
     name: Type checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/setup-node-pnpm-env
+      - uses: $/.github/actions/setup-node-pnpm-env
 
       - name: Run type checks
         run: cdk/scripts/type-check.sh
@@ -70,13 +70,13 @@ jobs:
     name: CDK Synth
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/setup-node-pnpm-env
+      - uses: $/.github/actions/setup-node-pnpm-env
 
       - name: Create private repo token
         id: private-repo-token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@v3.3.0
         with:
           client-id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
           private-key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
