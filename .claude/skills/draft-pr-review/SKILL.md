@@ -141,9 +141,12 @@ defines them. For a medium-confidence finding, add it to the severity line, e.g.
 
 <new patterns and design decisions, if any>
 
-_Anything weird or unhelpful about this review? Discuss with the team so we can
-iterate the skill._
+_Anything weird or unhelpful about this review? Discuss with the team so we can iterate the skill._
 ```
+
+GitHub renders single newlines in review bodies and comments as line breaks, so
+write each paragraph of the posted text on one line, and don't wrap it to match
+the 80-column wrapping used in this file.
 
 The risk rating REVIEW.md asks for is 🟢 **Low risk**, 🟡 **Medium risk** or
 🔴 **High risk**. Leave out sections with nothing in them. If no findings
