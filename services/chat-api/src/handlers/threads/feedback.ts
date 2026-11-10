@@ -1,10 +1,6 @@
-import middy from '@middy/core';
-import httpHeaderNormalizer from '@middy/http-header-normalizer';
 import httpJsonBodyParser from '@middy/http-json-body-parser';
-import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import {
-  ClientInputHeadersSchema,
   MessageFeedbackBodySchema,
   MessageFeedbackPathParametersSchema,
   type ClientInputHeaders,
@@ -13,7 +9,6 @@ import {
 } from '../../schemas/client-input.ts';
 import {
   zodBodyValidator,
-  zodHeadersValidator,
   zodPathParametersValidator,
   type ValidatedBodyEvent,
   type ValidatedHeadersEvent,
@@ -21,9 +16,9 @@ import {
 } from '../../http/zod-validator.ts';
 import {
   buildJsonErrorResponse,
-  jsonHttpErrorHandler,
   type JsonErrorResponse,
 } from '../../http/errors.ts';
+import { endUserRequestHandler } from '../../http/end-user-request-handler.ts';
 import { logger } from '../../logging/logger.ts';
 import { lookupThread } from '../../persistence/messages.ts';
 import {
@@ -78,17 +73,17 @@ async function giveFeedback(
   };
 }
 
-export const handler = middy()
-  .use(injectLambdaContext(logger, { resetKeys: true }))
-  .use(httpHeaderNormalizer())
-  .use(zodHeadersValidator(ClientInputHeadersSchema, FEEDBACK_ERROR))
-  .use(httpJsonBodyParser())
-  .use(
-    zodPathParametersValidator(
-      MessageFeedbackPathParametersSchema,
-      FEEDBACK_ERROR,
-    ),
-  )
-  .use(zodBodyValidator(MessageFeedbackBodySchema, FEEDBACK_ERROR))
-  .use(jsonHttpErrorHandler(FEEDBACK_ERROR))
-  .handler(giveFeedback);
+export const handler = endUserRequestHandler({
+  errorMessage: FEEDBACK_ERROR,
+  addMiddlewares: (stack) =>
+    stack
+      .use(httpJsonBodyParser())
+      .use(
+        zodPathParametersValidator(
+          MessageFeedbackPathParametersSchema,
+          FEEDBACK_ERROR,
+        ),
+      )
+      .use(zodBodyValidator(MessageFeedbackBodySchema, FEEDBACK_ERROR)),
+  handler: giveFeedback,
+});

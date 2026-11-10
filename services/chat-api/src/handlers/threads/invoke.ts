@@ -1,30 +1,25 @@
 import { Readable } from 'node:stream';
-import middy from '@middy/core';
 import { executionModeStreamifyResponse } from '@middy/core/StreamifyResponse';
-import httpHeaderNormalizer from '@middy/http-header-normalizer';
 import httpJsonBodyParser from '@middy/http-json-body-parser';
-import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
 import {
   BedrockAgentCoreClient,
   InvokeAgentRuntimeCommand,
 } from '@aws-sdk/client-bedrock-agentcore';
 import {
   RunAgentInputSchema,
-  ClientInputHeadersSchema,
   type RunAgentInputBody,
   type ClientInputHeaders,
 } from '../../schemas/client-input.ts';
 import {
   zodBodyValidator,
-  zodHeadersValidator,
   type ValidatedBodyEvent,
   type ValidatedHeadersEvent,
 } from '../../http/zod-validator.ts';
 import {
   buildJsonErrorResponse,
-  jsonHttpErrorHandler,
   type JsonErrorResponse,
 } from '../../http/errors.ts';
+import { endUserRequestHandler } from '../../http/end-user-request-handler.ts';
 import { logger } from '../../logging/logger.ts';
 import { resolveThread } from '../../persistence/threads.ts';
 import {
@@ -178,13 +173,12 @@ async function invokeAgent(
   }
 }
 
-export const handler = middy({
-  executionMode: executionModeStreamifyResponse,
-})
-  .use(injectLambdaContext(logger, { resetKeys: true }))
-  .use(httpHeaderNormalizer())
-  .use(zodHeadersValidator(ClientInputHeadersSchema, 'Agent invocation error'))
-  .use(httpJsonBodyParser())
-  .use(zodBodyValidator(RunAgentInputSchema, 'Agent invocation error'))
-  .use(jsonHttpErrorHandler('Agent invocation error'))
-  .handler(invokeAgent);
+export const handler = endUserRequestHandler({
+  errorMessage: 'Agent invocation error',
+  addMiddlewares: (stack) =>
+    stack
+      .use(httpJsonBodyParser())
+      .use(zodBodyValidator(RunAgentInputSchema, 'Agent invocation error')),
+  handler: invokeAgent,
+  plugin: { executionMode: executionModeStreamifyResponse },
+});
