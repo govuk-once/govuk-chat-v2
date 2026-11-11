@@ -48,3 +48,4 @@ reading. The rest of `docs/specs` is similar: 1,100 to 3,600 words each.
 ## Attempts
 
 1. [Tables and scenarios](01-tables-and-scenarios.md)
+1. [OpenSpec-style proposal, design and tasks](02-openspec-style.md)
