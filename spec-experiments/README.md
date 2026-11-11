@@ -51,6 +51,8 @@ reading. The rest of `docs/specs` is similar: 1,100 to 3,600 words each.
 1. [OpenSpec-style proposal, design and tasks](02-openspec-style.md)
 1. [Progressive disclosure](03-progressive-disclosure.md)
 1. [Recommended format](04-recommended.md)
+1. [A briefing and a build sheet](05-briefing-and-build-sheet.md): a
+   rethink rather than a refinement
 
 ## Results
 
@@ -61,8 +63,10 @@ reading. The rest of `docs/specs` is similar: 1,100 to 3,600 words each.
 | 2. OpenSpec          | 1,400 | Take the proposal shape and "X over Y"; leave SHALL and deltas   |
 | 3. Layered           |   260 | One-line "decisions to agree" list is the biggest win            |
 | 4. Recommended       | 1,550 | About 310 words to know what changes and what you're agreeing to |
+| 5. Briefing          |   850 | Author triages decisions; build sheet (700 more) is optional     |
 
 Attempt 3's count is its first screen; the whole spec is about 1,300.
+Attempt 5's count is the briefing only.
 
 Two earlier attempts were dropped as stepping stones. Rewriting in the
 current template, saying each fact once, halved the length (1,700 words),
