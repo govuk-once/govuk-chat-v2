@@ -59,7 +59,7 @@ async function listMessages(
   if (!thread) {
     return buildJsonErrorResponse(404, { error: 'Thread not found' });
   }
-  logger.appendKeys({ threadId: thread.systemThreadId });
+  logger.appendKeys({ systemThreadId: thread.systemThreadId });
 
   const page = await getMessagePage(thread.systemThreadId, cursor);
 

@@ -79,7 +79,7 @@ async function invokeAgent(
     endUserId,
     userThreadId: body.threadId,
   });
-  logger.appendKeys({ threadId: systemThreadId });
+  logger.appendKeys({ systemThreadId });
 
   const messageId = body.messages.at(-1)!.id;
   const runKey = { systemThreadId, runId: body.runId, messageId };
