@@ -1,7 +1,7 @@
 import {
   absentOrExpired,
   cancellationCodes,
-  RETENTION_PERIOD_IN_SECONDS,
+  chatRegularRetention,
   service,
 } from './service.ts';
 
@@ -60,7 +60,7 @@ async function resolveThreadOnce(
 ): Promise<ResolvedThread | undefined> {
   const now = new Date();
   const nowSeconds = Math.floor(now.getTime() / 1000);
-  const expiresAt = nowSeconds + RETENTION_PERIOD_IN_SECONDS;
+  const expiresAt = chatRegularRetention(now);
 
   const { data: mapping } = await service.entities.threadMapping
     .get(key)
