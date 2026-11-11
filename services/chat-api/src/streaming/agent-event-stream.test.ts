@@ -110,7 +110,7 @@ describe('relayAgentEventStream', () => {
     );
     expect(logError).toHaveBeenCalledWith('Agent event stream relay failed', {
       error: new Error('Stream failure'),
-      threadId: SYSTEM_THREAD_ID,
+      systemThreadId: SYSTEM_THREAD_ID,
       userThreadId: USER_THREAD_ID,
       runId: RUN_ID,
     });
@@ -143,7 +143,7 @@ describe('relayAgentEventStream', () => {
     );
     expect(logError).toHaveBeenCalledWith('Agent event stream relay failed', {
       error: new Error('Stream failure'),
-      threadId: SYSTEM_THREAD_ID,
+      systemThreadId: SYSTEM_THREAD_ID,
       userThreadId: USER_THREAD_ID,
       runId: RUN_ID,
     });

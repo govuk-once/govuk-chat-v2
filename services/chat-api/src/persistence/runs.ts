@@ -2,7 +2,7 @@ import type { WhereAttributeSymbol } from 'electrodb';
 import {
   absentOrExpired,
   cancellationCodes,
-  RETENTION_PERIOD_IN_SECONDS,
+  chatRegularRetention,
   service,
 } from './service.ts';
 
@@ -98,8 +98,9 @@ export async function finishRun(
   key: RunKey,
   messages: MessageInput[],
 ): Promise<void> {
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  const expiresAt = nowSeconds + RETENTION_PERIOD_IN_SECONDS;
+  const now = new Date();
+  const nowSeconds = Math.floor(now.getTime() / 1000);
+  const expiresAt = chatRegularRetention(now);
   const { systemThreadId, runId } = key;
 
   const result = await service.transaction
@@ -108,7 +109,7 @@ export async function finishRun(
         .put({
           systemThreadId,
           runId,
-          createdAt: new Date().toISOString(),
+          createdAt: now.toISOString(),
           expiresAt,
         })
         .where(absentOrExpired(nowSeconds))

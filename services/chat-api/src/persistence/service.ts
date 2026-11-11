@@ -10,7 +10,12 @@ if (!table) {
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 // One year in seconds.
-export const RETENTION_PERIOD_IN_SECONDS = 31_536_000;
+const RETENTION_PERIOD_IN_SECONDS = 31_536_000;
+
+// When a chat record written at `now` expires, in epoch seconds for TTL.
+export function chatRegularRetention(now: Date): number {
+  return Math.floor(now.getTime() / 1000) + RETENTION_PERIOD_IN_SECONDS;
+}
 
 const ThreadMapping = new Entity({
   model: { service: 'chat-api', entity: 'threadMapping', version: '1' },

@@ -1,9 +1,5 @@
-import middy from '@middy/core';
-import httpHeaderNormalizer from '@middy/http-header-normalizer';
-import { injectLambdaContext } from '@aws-lambda-powertools/logger/middleware';
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import {
-  ClientInputHeadersSchema,
   ThreadMessagesPathParametersSchema,
   ThreadMessagesQuerySchema,
   type ClientInputHeaders,
@@ -11,7 +7,6 @@ import {
   type ThreadMessagesQuery,
 } from '../../schemas/client-input.ts';
 import {
-  zodHeadersValidator,
   zodPathParametersValidator,
   zodQueryValidator,
   type ValidatedHeadersEvent,
@@ -20,9 +15,9 @@ import {
 } from '../../http/zod-validator.ts';
 import {
   buildJsonErrorResponse,
-  jsonHttpErrorHandler,
   type JsonErrorResponse,
 } from '../../http/errors.ts';
+import { endUserRequestHandler } from '../../http/end-user-request-handler.ts';
 import { logger } from '../../logging/logger.ts';
 import {
   lookupThread,
@@ -64,7 +59,7 @@ async function listMessages(
   if (!thread) {
     return buildJsonErrorResponse(404, { error: 'Thread not found' });
   }
-  logger.appendKeys({ threadId: thread.systemThreadId });
+  logger.appendKeys({ systemThreadId: thread.systemThreadId });
 
   const page = await getMessagePage(thread.systemThreadId, cursor);
 
@@ -92,18 +87,21 @@ async function listMessages(
   };
 }
 
-export const handler = middy()
-  .use(injectLambdaContext(logger, { resetKeys: true }))
-  .use(httpHeaderNormalizer())
-  .use(
-    zodHeadersValidator(ClientInputHeadersSchema, 'Messages retrieval error'),
-  )
-  .use(
-    zodPathParametersValidator(
-      ThreadMessagesPathParametersSchema,
-      'Messages retrieval error',
-    ),
-  )
-  .use(zodQueryValidator(ThreadMessagesQuerySchema, 'Messages retrieval error'))
-  .use(jsonHttpErrorHandler('Messages retrieval error'))
-  .handler(listMessages);
+export const handler = endUserRequestHandler({
+  errorMessage: 'Messages retrieval error',
+  addMiddlewares: (stack) =>
+    stack
+      .use(
+        zodPathParametersValidator(
+          ThreadMessagesPathParametersSchema,
+          'Messages retrieval error',
+        ),
+      )
+      .use(
+        zodQueryValidator(
+          ThreadMessagesQuerySchema,
+          'Messages retrieval error',
+        ),
+      ),
+  handler: listMessages,
+});

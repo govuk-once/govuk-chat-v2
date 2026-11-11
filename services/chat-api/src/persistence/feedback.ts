@@ -1,9 +1,5 @@
 import type { WhereAttributeSymbol } from 'electrodb';
-import {
-  cancellationCodes,
-  RETENTION_PERIOD_IN_SECONDS,
-  service,
-} from './service.ts';
+import { cancellationCodes, chatRegularRetention, service } from './service.ts';
 
 export interface FeedbackKey {
   systemThreadId: string;
@@ -57,7 +53,7 @@ export async function recordFeedback(
           messageId,
           reaction,
           createdAt: now.toISOString(),
-          expiresAt: nowSeconds + RETENTION_PERIOD_IN_SECONDS,
+          expiresAt: chatRegularRetention(now),
         })
         .commit(),
     ])
