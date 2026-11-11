@@ -151,15 +151,21 @@ message as well as writing the reaction.
 
 Following [ADR 0003](../adr/0003-use-dynamodb-via-electrodb-for-chat-api-persistence.md),
 a reaction is a new `feedback` entity in the ElectroDB service in
-`persistence/service.ts`, beside the message it belongs to:
+`persistence/service.ts`, keyed by the message it belongs to:
 
-| Attribute   | Value                                |
-| ----------- | ------------------------------------ |
-| `pk`        | `THREAD#${systemThreadId}`           |
-| `sk`        | `FEEDBACK#${messageId}`              |
-| `reaction`  | `positive` or `negative`             |
-| `createdAt` | ISO 8601 time the reaction was given |
-| `expiresAt` | a year after `createdAt`             |
+| Attribute   | Value                                    |
+| ----------- | ---------------------------------------- |
+| `pk`        | built by ElectroDB from `systemThreadId` |
+| `sk`        | built by ElectroDB from `messageId`      |
+| `reaction`  | `positive` or `negative`                 |
+| `createdAt` | ISO 8601 time the reaction was given     |
+| `expiresAt` | a year after `createdAt`                 |
+
+The keys have no templates, so ElectroDB builds them, as it does for the
+`byCreatedAt` index. A reaction therefore sits in a different partition from
+the `THREAD#${systemThreadId}` one that holds its message. Nothing depends on
+them sharing one: the transaction and the read both address a reaction by its
+key.
 
 The entity only has the primary index. It has no `gsi1` keys, so reactions
 never appear in the `byCreatedAt` query that pages messages, and can't take
