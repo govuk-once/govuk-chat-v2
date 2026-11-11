@@ -1,7 +1,8 @@
 import {
   absentOrExpired,
   cancellationCodes,
-  RETENTION_PERIOD_IN_SECONDS,
+  chatRegularRetention,
+  epochSeconds,
   service,
 } from './service.ts';
 
@@ -59,8 +60,7 @@ async function resolveThreadOnce(
   key: ThreadKey,
 ): Promise<ResolvedThread | undefined> {
   const now = new Date();
-  const nowSeconds = Math.floor(now.getTime() / 1000);
-  const expiresAt = nowSeconds + RETENTION_PERIOD_IN_SECONDS;
+  const expiresAt = chatRegularRetention(now);
 
   const { data: mapping } = await service.entities.threadMapping
     .get(key)
@@ -68,7 +68,7 @@ async function resolveThreadOnce(
 
   // TTL deletes expired items up to days late and one record at a time, so
   // an expired record is treated as absent here and overwritten by the create.
-  if (mapping && mapping.expiresAt > nowSeconds) {
+  if (mapping && mapping.expiresAt > epochSeconds(now)) {
     await refreshExpiry(key, mapping.systemThreadId, expiresAt);
     return { systemThreadId: mapping.systemThreadId };
   }
@@ -79,11 +79,11 @@ async function resolveThreadOnce(
     .write(({ threadMapping, thread }) => [
       threadMapping
         .put({ ...key, systemThreadId, createdAt, expiresAt })
-        .where(absentOrExpired(nowSeconds))
+        .where(absentOrExpired(now))
         .commit(),
       thread
         .put({ systemThreadId, endUserId: key.endUserId, createdAt, expiresAt })
-        .where(absentOrExpired(nowSeconds))
+        .where(absentOrExpired(now))
         .commit(),
     ])
     .go();
