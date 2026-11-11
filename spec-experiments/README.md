@@ -46,3 +46,5 @@ reading. The rest of `docs/specs` is similar: 1,100 to 3,600 words each.
   but repeating it in every clause adds length without adding decisions.
 
 ## Attempts
+
+1. [Tables and scenarios](01-tables-and-scenarios.md)
