@@ -50,3 +50,21 @@ reading. The rest of `docs/specs` is similar: 1,100 to 3,600 words each.
 1. [Tables and scenarios](01-tables-and-scenarios.md)
 1. [OpenSpec-style proposal, design and tasks](02-openspec-style.md)
 1. [Progressive disclosure](03-progressive-disclosure.md)
+1. [Recommended format](04-recommended.md)
+
+## Results
+
+| Attempt              | Words | Takeaway                                                         |
+| -------------------- | ----: | ---------------------------------------------------------------- |
+| Original             | 3,400 | —                                                                |
+| 1. Tables, scenarios | 1,200 | When/Then suits CI events; tables squeeze out reasons and diffs  |
+| 2. OpenSpec          | 1,400 | Take the proposal shape and "X over Y"; leave SHALL and deltas   |
+| 3. Layered           |   260 | One-line "decisions to agree" list is the biggest win            |
+| 4. Recommended       | 1,550 | About 310 words to know what changes and what you're agreeing to |
+
+Attempt 3's count is its first screen; the whole spec is about 1,300.
+
+Two earlier attempts were dropped as stepping stones. Rewriting in the
+current template, saying each fact once, halved the length (1,700 words),
+which showed most of the bloat was in the writing. A decision log for the
+design (1,600 words) became attempt 4's decisions section.
