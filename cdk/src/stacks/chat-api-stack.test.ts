@@ -115,6 +115,55 @@ describe('ChatApiStack', () => {
       });
     });
 
+    it('creates the feedback lambda', () => {
+      const template = stackTemplate();
+
+      const [tableId] = Object.keys(
+        template.findResources('AWS::DynamoDB::Table'),
+      );
+
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: Match.stringLikeRegexp('chat-api-threads-feedback-ts'),
+        Environment: {
+          Variables: Match.objectLike({
+            POWERTOOLS_SERVICE_NAME: 'chat-api',
+            CHAT_API_TABLE_NAME: { Ref: tableId },
+          }),
+        },
+      });
+    });
+
+    it('grants the feedback lambda read-write access to the table', () => {
+      const template = stackTemplate();
+
+      const [tableId] = Object.keys(
+        template.findResources('AWS::DynamoDB::Table'),
+      );
+      const functions = template.findResources('AWS::Lambda::Function', {
+        Properties: {
+          FunctionName: Match.stringLikeRegexp('chat-api-threads-feedback-ts'),
+        },
+      });
+      const roleId =
+        Object.values(functions)[0].Properties.Role['Fn::GetAtt'][0];
+
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith([
+                'dynamodb:ConditionCheckItem',
+                'dynamodb:PutItem',
+              ]),
+              Effect: 'Allow',
+              Resource: Match.arrayWith([{ 'Fn::GetAtt': [tableId, 'Arn'] }]),
+            }),
+          ]),
+        },
+        Roles: Match.arrayWith([Match.objectLike({ Ref: roleId })]),
+      });
+    });
+
     it('grants the agent-stream lambda access to the table', () => {
       const template = stackTemplate();
 
@@ -209,6 +258,31 @@ describe('ChatApiStack', () => {
       });
       template.hasResourceProperties('AWS::ApiGateway::Resource', {
         PathPart: 'messages',
+      });
+    });
+
+    it('requires Cognito auth on POST /v1/threads/{threadId}/messages/{messageId}/feedback', () => {
+      const template = stackTemplate();
+
+      const [messageIdResourceId] = Object.keys(
+        template.findResources('AWS::ApiGateway::Resource', {
+          Properties: { PathPart: '{messageId}' },
+        }),
+      );
+      const [feedbackResourceId] = Object.keys(
+        template.findResources('AWS::ApiGateway::Resource', {
+          Properties: {
+            PathPart: 'feedback',
+            ParentId: { Ref: messageIdResourceId },
+          },
+        }),
+      );
+
+      template.hasResourceProperties('AWS::ApiGateway::Method', {
+        HttpMethod: 'POST',
+        ResourceId: { Ref: feedbackResourceId },
+        AuthorizationType: 'COGNITO_USER_POOLS',
+        AuthorizationScopes: ['chat-api/invoke'],
       });
     });
 

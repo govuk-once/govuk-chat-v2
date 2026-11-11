@@ -262,6 +262,14 @@ export class ChatApiStack extends cdk.Stack {
 
     const messagesLambda = new apigateway.LambdaIntegration(messagesFunction);
 
+    const feedbackFunction = this.lambdaHandler('threads/feedback.ts', {
+      CHAT_API_TABLE_NAME: table.tableName,
+    });
+
+    table.grantReadWriteData(feedbackFunction);
+
+    const feedbackLambda = new apigateway.LambdaIntegration(feedbackFunction);
+
     const v1 = api.root.addResource('v1');
     const threads = v1.addResource('threads');
 
@@ -273,6 +281,12 @@ export class ChatApiStack extends cdk.Stack {
     const threadById = threads.addResource('{threadId}');
     const messages = threadById.addResource('messages');
     messages.addMethod('GET', messagesLambda);
+
+    // POST /v1/threads/{threadId}/messages/{messageId}/feedback
+    const feedback = messages
+      .addResource('{messageId}')
+      .addResource('feedback');
+    feedback.addMethod('POST', feedbackLambda);
 
     return api;
   }
