@@ -1,12 +1,19 @@
 import { service } from './service.ts';
 import type { ThreadKey, ResolvedThread } from './threads.ts';
+import type { Reaction } from './feedback.ts';
 import { Cursor } from '../schemas/message-cursor.ts';
+
+export interface MessageFeedback {
+  reaction: Reaction;
+  createdAt: string;
+}
 
 export interface StoredMessage {
   messageId: string;
   role: string;
   content: string;
   createdAt: string;
+  feedback?: MessageFeedback;
 }
 
 export interface MessagePage {
@@ -51,6 +58,42 @@ function queryFrom(systemThreadId: string, from?: Cursor) {
     : query.gt({ createdAt, messageId });
 }
 
+async function readFeedbackByMessageId(
+  systemThreadId: string,
+  messages: readonly StoredMessage[],
+): Promise<Map<string, MessageFeedback>> {
+  const keys = messages
+    .filter((message) => message.role === 'assistant')
+    .map(({ messageId }) => ({ systemThreadId, messageId }));
+  if (keys.length === 0) {
+    return new Map();
+  }
+
+  const { data, unprocessed } = await service.entities.feedback
+    .get(keys)
+    .go({ consistent: true });
+  if (unprocessed.length > 0) {
+    throw new Error(
+      `Feedback read left ${unprocessed.length} keys unprocessed`,
+    );
+  }
+
+  return new Map(
+    data.map(({ messageId, reaction, createdAt }) => [
+      messageId,
+      { reaction, createdAt },
+    ]),
+  );
+}
+
+function withFeedback(
+  message: StoredMessage,
+  feedbackByMessageId: ReadonlyMap<string, MessageFeedback>,
+): StoredMessage {
+  const feedback = feedbackByMessageId.get(message.messageId);
+  return feedback ? { ...message, feedback } : message;
+}
+
 export async function getMessagePage(
   systemThreadId: string,
   from?: Cursor,
@@ -66,7 +109,14 @@ export async function getMessagePage(
   const read = records
     .slice(0, MESSAGE_PAGE_SIZE)
     .map((record) => toStoredMessage(record));
-  const messages = isAscending ? read : read.toReversed();
+  const ordered = isAscending ? read : read.toReversed();
+  const feedbackByMessageId = await readFeedbackByMessageId(
+    systemThreadId,
+    ordered,
+  );
+  const messages = ordered.map((message) =>
+    withFeedback(message, feedbackByMessageId),
+  );
 
   const oldest = messages.at(0);
   const newest = messages.at(-1);

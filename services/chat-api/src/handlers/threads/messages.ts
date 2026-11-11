@@ -24,7 +24,11 @@ import {
   type JsonErrorResponse,
 } from '../../http/errors.ts';
 import { logger } from '../../logging/logger.ts';
-import { lookupThread, getMessagePage } from '../../persistence/messages.ts';
+import {
+  lookupThread,
+  getMessagePage,
+  type StoredMessage,
+} from '../../persistence/messages.ts';
 import type { Cursor } from '../../schemas/message-cursor.ts';
 
 type ListMessagesEvent = ValidatedHeadersEvent<ClientInputHeaders> &
@@ -33,6 +37,19 @@ type ListMessagesEvent = ValidatedHeadersEvent<ClientInputHeaders> &
 
 function messagesPageUrl(threadId: string, cursor: Cursor): string {
   return `/v1/threads/${threadId}/messages?cursor=${cursor.toString()}`;
+}
+
+function feedbackUrl(threadId: string, messageId: string): string {
+  return `/v1/threads/${threadId}/messages/${messageId}/feedback`;
+}
+
+function feedbackFields(threadId: string, message: StoredMessage) {
+  if (message.role !== 'assistant') {
+    return {};
+  }
+  return message.feedback
+    ? { feedback: message.feedback }
+    : { feedbackUrl: feedbackUrl(threadId, message.messageId) };
 }
 
 async function listMessages(
@@ -67,6 +84,7 @@ async function listMessages(
         role: message.role,
         content: message.content,
         createdAt: message.createdAt,
+        ...feedbackFields(threadId, message),
       })),
       earlierMessagesUrl,
       laterMessagesUrl,
