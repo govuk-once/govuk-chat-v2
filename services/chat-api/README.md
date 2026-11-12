@@ -72,6 +72,11 @@ recognised reaction. A reaction can't be changed once given.
 A reaction expires a year after it is given, so it can outlive the message
 it is for.
 
+In `GET /v1/threads/{threadId}/messages`, an assistant message with a
+reaction has `feedback`, with its `reaction` and `createdAt`. One without a
+reaction has a `feedbackUrl` instead, the relative path to give feedback on
+it. User messages have neither.
+
 ## Rate limits
 
 These limits apply at the API Gateway, before the lambda runs:

@@ -1,5 +1,6 @@
 import { service } from './service.ts';
 import type { ThreadKey, ResolvedThread } from './threads.ts';
+import { readFeedback, type MessageFeedback } from './feedback.ts';
 import { Cursor } from '../schemas/message-cursor.ts';
 
 export interface StoredMessage {
@@ -7,6 +8,7 @@ export interface StoredMessage {
   role: string;
   content: string;
   createdAt: string;
+  feedback?: MessageFeedback;
 }
 
 export interface MessagePage {
@@ -66,7 +68,18 @@ export async function getMessagePage(
   const read = records
     .slice(0, MESSAGE_PAGE_SIZE)
     .map((record) => toStoredMessage(record));
-  const messages = isAscending ? read : read.toReversed();
+  const ordered = isAscending ? read : read.toReversed();
+  const assistantMessageIds = ordered
+    .filter((message) => message.role === 'assistant')
+    .map(({ messageId }) => messageId);
+  const feedbackByMessageId = await readFeedback(
+    systemThreadId,
+    assistantMessageIds,
+  );
+  const messages = ordered.map((message) => {
+    const feedback = feedbackByMessageId.get(message.messageId);
+    return feedback ? { ...message, feedback } : message;
+  });
 
   const oldest = messages.at(0);
   const newest = messages.at(-1);

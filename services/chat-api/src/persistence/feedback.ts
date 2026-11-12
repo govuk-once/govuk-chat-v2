@@ -12,6 +12,11 @@ export interface FeedbackKey {
 
 export type Reaction = 'positive' | 'negative';
 
+export interface MessageFeedback {
+  reaction: Reaction;
+  createdAt: string;
+}
+
 export type FeedbackOutcome =
   | { status: 'recorded' }
   | { status: 'message-not-found' }
@@ -80,4 +85,29 @@ export async function recordFeedback(
     return { status: 'already-provided' };
   }
   throw new Error(`Feedback recording was cancelled: ${codes.join(', ')}`);
+}
+
+export async function readFeedback(
+  systemThreadId: string,
+  messageIds: readonly string[],
+): Promise<Map<string, MessageFeedback>> {
+  if (messageIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, unprocessed } = await service.entities.feedback
+    .get(messageIds.map((messageId) => ({ systemThreadId, messageId })))
+    .go({ consistent: true });
+  if (unprocessed.length > 0) {
+    throw new Error(
+      `Feedback read left ${unprocessed.length} keys unprocessed`,
+    );
+  }
+
+  return new Map(
+    data.map(({ messageId, reaction, createdAt }) => [
+      messageId,
+      { reaction, createdAt },
+    ]),
+  );
 }

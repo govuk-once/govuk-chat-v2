@@ -164,12 +164,6 @@ describe('successful retrieval', () => {
         content: 'Hello',
         createdAt: '2026-09-03T12:00:00.000Z',
       },
-      {
-        messageId: 'msg-2',
-        role: 'assistant',
-        content: 'Hi there',
-        createdAt: '2026-09-03T12:00:01.000Z',
-      },
     ];
     getMessagePage.mockResolvedValueOnce({ messages: storedMessages });
 
@@ -184,14 +178,57 @@ describe('successful retrieval', () => {
           content: 'Hello',
           createdAt: '2026-09-03T12:00:00.000Z',
         },
+      ],
+    });
+  });
+
+  it('returns the feedback, and no feedbackUrl, for an assistant message with a reaction', async () => {
+    const feedback = {
+      reaction: 'positive',
+      createdAt: '2026-09-03T12:00:02.000Z',
+    } as const;
+    getMessagePage.mockResolvedValueOnce({
+      messages: [
         {
-          id: 'msg-2',
+          messageId: 'msg-2',
+          role: 'assistant',
+          content: 'Hi there',
+          createdAt: '2026-09-03T12:00:01.000Z',
+          feedback,
+        },
+      ],
+    });
+
+    const response = await runHandler(validEvent());
+
+    expect(parsedBody(response)).toEqual({
+      messages: [expect.objectContaining({ feedback })],
+    });
+    expect(parsedBody(response)).not.toHaveProperty('messages.0.feedbackUrl');
+  });
+
+  it('returns a feedbackUrl, from the threadId and message id, for an assistant message without a reaction', async () => {
+    getMessagePage.mockResolvedValueOnce({
+      messages: [
+        {
+          messageId: 'msg-2',
           role: 'assistant',
           content: 'Hi there',
           createdAt: '2026-09-03T12:00:01.000Z',
         },
       ],
     });
+
+    const response = await runHandler(validEvent());
+
+    expect(parsedBody(response)).toEqual({
+      messages: [
+        expect.objectContaining({
+          feedbackUrl: `/v1/threads/${VALID_THREAD_ID}/messages/msg-2/feedback`,
+        }),
+      ],
+    });
+    expect(parsedBody(response)).not.toHaveProperty('messages.0.feedback');
   });
 
   it('resolves the thread using the end-user-id header and path threadId', async () => {
