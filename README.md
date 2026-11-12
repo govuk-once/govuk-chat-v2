@@ -26,6 +26,9 @@ Additionally, it differs from the GOV.UK Chat V1 by being:
 
 There's an [AGENTS.md](AGENTS.md) that is just as useful for humans as agents.
 
+The Claude Code skills for this repository are listed in
+[.claude/skills](.claude/skills/README.md).
+
 ## Technical documentation
 
 ### Installing dependencies
@@ -42,18 +45,6 @@ To set-up your environment with ZSH then run `source scripts/dev-prepare.zsh`
 
 If you don't use ZSH check the [scripts/dev-prepare.zsh](scripts/dev-prepare.zsh)
 script to check which commands to run.
-
-### Reviewing a pull request with Claude
-
-To have Claude review a pull request and leave its findings on GitHub, run this
-in [Claude Code](https://claude.com/claude-code), with the
-[GitHub CLI](https://cli.github.com/) authenticated:
-
-```text
-/draft-pr-review <PR number or URL>
-```
-
-Leave out the PR to review the one for your current branch.
 
 ## Decisions
 
