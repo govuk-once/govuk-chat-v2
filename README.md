@@ -26,6 +26,9 @@ Additionally, it differs from the GOV.UK Chat V1 by being:
 
 There's an [AGENTS.md](AGENTS.md) that is just as useful for humans as agents.
 
+The Claude Code skills for this repository are listed in
+[.claude/skills](.claude/skills/README.md).
+
 ## Technical documentation
 
 ### Installing dependencies
