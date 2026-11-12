@@ -6,7 +6,7 @@ import {
 import {
   getEnvironment,
   serviceMetadata,
-} from '@govuk-chat-v2/cdk/src/constants/environment.ts';
+} from '@govuk-chat-v2/cdk/environment';
 
 export interface ChatApiOutputs {
   gatewayUrl: string;
