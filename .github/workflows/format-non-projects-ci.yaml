@@ -10,12 +10,14 @@ on:
       - 'libs/**'
       - 'utilities/**'
       - 'cdk/**'
+      - 'cloud-tests/**'
   pull_request:
     paths-ignore:
       - 'services/**'
       - 'libs/**'
       - 'utilities/**'
       - 'cdk/**'
+      - 'cloud-tests/**'
 
 jobs:
   prettier_format:
