@@ -209,6 +209,23 @@ For code itself, prefer making it self-documenting over describing it:
   should give useful hints on usage without becoming something that has to be
   kept in sync with the code as it changes.
 
+#### Pull requests
+
+A human writes a short introduction to each pull request, since a human voice
+makes it more welcoming to review. Agent-written detail goes beneath it,
+collapsed.
+
+When an agent opens or edits a pull request, it should:
+
+- Put everything it writes, attribution line included, in one `<details>`
+  element with a `<summary>` saying Claude wrote it. Leave a blank line after
+  `</summary>` and before `</details>`, or GitHub won't render the markdown.
+- Before opening, ask the human for their introduction (a sentence or two on
+  what the change is and why) and put it above the `<details>` element. If
+  they decline, open without one and say so. When editing, leave any existing
+  introduction in place.
+- Write nothing else outside that element.
+
 ### Technology specific
 
 #### TypeScript
