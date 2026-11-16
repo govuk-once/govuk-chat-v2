@@ -164,6 +164,10 @@ for tests that are necessary and sufficient to test our logic paths.
 - LLMs tend to over-generate tests - really think about whether new tests or
   assertions meet the guidelines here.
 
+We use cloud tests for system testing and are opinionated on when we add
+them - see:
+[When to add a cloud test](cloud-tests/README.md#when-to-add-a-cloud-test).
+
 #### Documentation
 
 Documentation is valuable but it easily goes stale, so we keep it lean and put
