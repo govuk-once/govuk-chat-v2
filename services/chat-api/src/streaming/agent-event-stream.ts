@@ -35,7 +35,7 @@ export async function* relayAgentEventStream({
   let isOutcomeReported = false;
   // middy resets the logger's appended keys before it streams the body, so
   // anything logged from here has to carry its own context.
-  const logContext = { threadId: systemThreadId, userThreadId, runId };
+  const logContext = { systemThreadId, userThreadId, runId };
   const textDecoder = new TextDecoder('utf-8');
   const parsedEvents: RelayedEvent[] = [];
   const parser = createParser({

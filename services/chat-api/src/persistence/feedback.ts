@@ -1,7 +1,8 @@
 import type { WhereAttributeSymbol } from 'electrodb';
 import {
   cancellationCodes,
-  RETENTION_PERIOD_IN_SECONDS,
+  chatRegularRetention,
+  epochSeconds,
   service,
 } from './service.ts';
 
@@ -34,12 +35,12 @@ interface FeedbackTargetOperations {
 
 // Both comparisons fail when the message is absent, so no exists check is
 // needed alongside them.
-function unexpiredAssistantMessage(nowSeconds: number) {
+function unexpiredAssistantMessage(now: Date) {
   return (
     attribute: FeedbackTargetRecord,
     operation: FeedbackTargetOperations,
   ): string =>
-    `${operation.gt(attribute.expiresAt, nowSeconds)} AND ${operation.eq(attribute.role, 'assistant')}`;
+    `${operation.gt(attribute.expiresAt, epochSeconds(now))} AND ${operation.eq(attribute.role, 'assistant')}`;
 }
 
 export async function recordFeedback(
@@ -47,14 +48,13 @@ export async function recordFeedback(
   reaction: Reaction,
 ): Promise<FeedbackOutcome> {
   const now = new Date();
-  const nowSeconds = Math.floor(now.getTime() / 1000);
   const { systemThreadId, messageId } = key;
 
   const result = await service.transaction
     .write(({ message, feedback }) => [
       message
         .check({ systemThreadId, messageId })
-        .where(unexpiredAssistantMessage(nowSeconds))
+        .where(unexpiredAssistantMessage(now))
         .commit(),
       feedback
         .create({
@@ -62,7 +62,7 @@ export async function recordFeedback(
           messageId,
           reaction,
           createdAt: now.toISOString(),
-          expiresAt: nowSeconds + RETENTION_PERIOD_IN_SECONDS,
+          expiresAt: chatRegularRetention(now),
         })
         .commit(),
     ])

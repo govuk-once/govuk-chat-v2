@@ -1,4 +1,4 @@
-import { service } from './service.ts';
+import { epochSeconds, service } from './service.ts';
 import type { ThreadKey, ResolvedThread } from './threads.ts';
 import { readFeedback, type MessageFeedback } from './feedback.ts';
 import { Cursor } from '../schemas/message-cursor.ts';
@@ -20,13 +20,11 @@ export interface MessagePage {
 export async function lookupThread(
   key: ThreadKey,
 ): Promise<ResolvedThread | undefined> {
-  const nowSeconds = Math.floor(Date.now() / 1000);
-
   const { data: mapping } = await service.entities.threadMapping
     .get(key)
     .go({ consistent: true });
 
-  return !mapping || mapping.expiresAt <= nowSeconds
+  return !mapping || mapping.expiresAt <= epochSeconds(new Date())
     ? undefined
     : { systemThreadId: mapping.systemThreadId };
 }

@@ -2,7 +2,8 @@ import type { WhereAttributeSymbol } from 'electrodb';
 import {
   absentOrExpired,
   cancellationCodes,
-  RETENTION_PERIOD_IN_SECONDS,
+  chatRegularRetention,
+  epochSeconds,
   service,
 } from './service.ts';
 
@@ -45,7 +46,8 @@ function claimedBy(runId: string) {
 }
 
 export async function beginRun(key: RunKey): Promise<RunClaim> {
-  const nowSeconds = Math.floor(Date.now() / 1000);
+  const now = new Date();
+  const nowSeconds = epochSeconds(now);
   const { systemThreadId, runId, messageId } = key;
 
   const result = await service.transaction
@@ -61,13 +63,10 @@ export async function beginRun(key: RunKey): Promise<RunClaim> {
             `(${operation.notExists(attribute.runId)} OR ${operation.lte(attribute.expiresAt, nowSeconds)})`,
         )
         .commit(),
-      run
-        .check({ systemThreadId, runId })
-        .where(absentOrExpired(nowSeconds))
-        .commit(),
+      run.check({ systemThreadId, runId }).where(absentOrExpired(now)).commit(),
       message
         .check({ systemThreadId, messageId })
-        .where(absentOrExpired(nowSeconds))
+        .where(absentOrExpired(now))
         .commit(),
     ])
     .go();
@@ -98,8 +97,8 @@ export async function finishRun(
   key: RunKey,
   messages: MessageInput[],
 ): Promise<void> {
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  const expiresAt = nowSeconds + RETENTION_PERIOD_IN_SECONDS;
+  const now = new Date();
+  const expiresAt = chatRegularRetention(now);
   const { systemThreadId, runId } = key;
 
   const result = await service.transaction
@@ -108,10 +107,10 @@ export async function finishRun(
         .put({
           systemThreadId,
           runId,
-          createdAt: new Date().toISOString(),
+          createdAt: now.toISOString(),
           expiresAt,
         })
-        .where(absentOrExpired(nowSeconds))
+        .where(absentOrExpired(now))
         .commit(),
       ...messages.map((input) =>
         message
@@ -124,7 +123,7 @@ export async function finishRun(
             createdAt: input.createdAt,
             expiresAt,
           })
-          .where(absentOrExpired(nowSeconds))
+          .where(absentOrExpired(now))
           .commit(),
       ),
       runLock.delete({ systemThreadId }).where(claimedBy(runId)).commit(),
