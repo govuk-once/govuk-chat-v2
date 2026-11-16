@@ -42,6 +42,7 @@ ElectroDB 3.9.3.
   schemas before they are written.
 - `GET /v1/threads/{threadId}/messages` pages by turns, so a page holds whole
   runs, and paging still works as it does today.
+- The endpoint returns turns, each holding its AG-UI messages.
 - Reusing a message id in a thread still returns `409`.
 - Adding a message type doesn't change the keys or stored turns.
 
@@ -49,7 +50,6 @@ ElectroDB 3.9.3.
 
 - Building messages from the event stream, including reopened messages and
   merging metadata. That is later work, which builds on these turns.
-- Changing the messages response. That is part of the same later work.
 - Storing tool, activity or reasoning messages. This spec only shows how they
   fit (see [Adding other message types](#adding-other-message-types)).
 - Deciding which AG-UI message types we expose.
@@ -72,13 +72,14 @@ ElectroDB 3.9.3.
    Each must match its `@ag-ui/core` schema with no other fields.
 4. **R4:** Reusing a user message id in a thread returns `409`. An expired turn
    doesn't block its id.
-5. **R5:** `GET /v1/threads/{threadId}/messages` returns each turn's messages in
-   the order they are stored in the turn, with turns ordered by `createdAt`,
-   then by turn id.
+5. **R5:** `GET /v1/threads/{threadId}/messages` returns turns ordered by
+   `createdAt`, then by turn id. Each turn has its id, `sender`, `createdAt`
+   and messages, in the order they are stored in the turn. An assistant turn
+   also has `feedback` or `feedbackUrl`.
 6. **R6:** The pagination spec's requirements still hold, with turns in place of
-   messages. A page reads at most 101 turns and returns the messages of up to
-   50 whole runs, which is 100 turns. The response body doesn't change, and
-   each message's `createdAt` is its turn's.
+   messages. A page reads at most 101 turns and returns up to 50 whole runs,
+   which is 100 turns. The response keeps `earlierMessagesUrl` and
+   `laterMessagesUrl`.
 7. **R7:** A user turn's `createdAt` is the time the run was claimed. An
    assistant turn's `createdAt` is the time the run finished. An assistant
    turn's `firstOutputAt` is the time chat-api received the agent's first
@@ -229,9 +230,7 @@ return it. `getMessagePage` drops the cursor's turn from a forward page.
 
 A collection query returns turns grouped by entity, as
 `{ userTurn: [...], assistantTurn: [...] }`. `getMessagePage` merges the two
-lists by `createdAt`, then turn id, and returns turns. The messages handler
-lists each turn's messages in order, with the turn's `createdAt`, so the
-response body doesn't change (R6).
+lists by `createdAt`, then turn id, and returns turns.
 
 A page holds up to 100 turns. Every finished run has two turns, written in one
 transaction, and the run lock means the next run's turns sort after them. So
@@ -241,6 +240,57 @@ change this.
 
 While an assistant turn holds one message, a page holds up to 100 messages.
 Once answers hold several messages, a page can return more.
+
+### The messages response
+
+The messages handler returns the page's turns in place of a flat list of
+messages (R5, R6):
+
+```json
+{
+  "turns": [
+    {
+      "id": "b0000000-0000-4000-8000-000000000001",
+      "sender": "user",
+      "createdAt": "2026-11-09T10:00:00.040Z",
+      "messages": [
+        {
+          "id": "b0000000-0000-4000-8000-000000000001",
+          "role": "user",
+          "content": "How do I renew my passport?"
+        }
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000001",
+      "sender": "assistant",
+      "createdAt": "2026-11-09T10:00:03.500Z",
+      "messages": [
+        {
+          "id": "a0000000-0000-4000-8000-000000000001",
+          "role": "assistant",
+          "content": "You can renew your passport online on GOV.UK."
+        }
+      ],
+      "feedbackUrl": "/v1/threads/…/messages/a0000000-0000-4000-8000-000000000001/feedback"
+    }
+  ],
+  "earlierMessagesUrl": "/v1/threads/…/messages?cursor=…",
+  "laterMessagesUrl": "/v1/threads/…/messages?cursor=…"
+}
+```
+
+`createdAt` and `sender` belong to the turn, and no AG-UI message type has
+them. Returning turns keeps each message as the AG-UI object that was stored.
+A client that restores history as AG-UI messages lists each turn's messages
+in order. demo-ui's messages route does this, so its browser code doesn't
+change.
+
+The [feedback spec](./2026-10-19-store-end-user-feedback-on-answers.md) put
+`feedback` or `feedbackUrl` on each assistant message. They move to the
+assistant turn, as feedback attaches to the turn. `getMessagePage` still
+reads the reactions with `readFeedback`, using the assistant turns' ids,
+which are their messages' ids today.
 
 ### Cursors
 
@@ -292,8 +342,7 @@ An answer arrives over a period of time, so one time doesn't describe it. The
 assistant turn also stores `firstOutputAt`, the time chat-api received the
 agent's first message. `MessageAccumulator` records it on the first
 `TEXT_MESSAGE_START`, and `invoke` passes it to `finishRun`. When the agent
-sends no messages, it is left out. It is stored but not returned, as the
-response doesn't change (R6).
+sends no messages, it is left out. It is stored but not returned.
 
 ### Adding other message types
 
@@ -351,8 +400,9 @@ towards the item size.
 
 ## Implementation plan
 
-One pull request in `services/chat-api`. The steps depend on each other and
-the whole change is small. No CDK changes are needed.
+One pull request in `services/chat-api`, with small changes in
+`services/demo-ui` and `cloud-tests`. The steps depend on each other and the
+whole change is small. No CDK changes are needed.
 
 1. Take the user message's time just after the run is claimed (R7).
 2. Record the time of the agent's first message in `MessageAccumulator` (R7).
@@ -360,7 +410,9 @@ the whole change is small. No CDK changes are needed.
 4. Replace `Message` with `userTurn` and `assistantTurn`, and update
    `beginRun`, `finishRun`, `getMessagePage`, the cursor and the messages
    handler (R1, R2, R4, R5, R6, R7, R8, R9).
-5. Mark this spec implemented.
+5. Read turns from the messages response in demo-ui's messages route and in
+   cloud-tests (R5).
+6. Mark this spec implemented.
 
 ### Testing
 
@@ -385,13 +437,19 @@ the whole change is small. No CDK changes are needed.
   page merges user and assistant turns in `createdAt` order, then turn id,
   that a short response is followed by another query from its cursor, and
   that a forward page leaves out the cursor's turn (R5, R6).
-- `src/handlers/threads/messages.test.ts`: a page of turns becomes a list of
-  their messages in order, each with its turn's `createdAt` (R5, R6).
+- `src/handlers/threads/messages.test.ts`: a page of turns is returned in
+  order, each with its id, `sender`, `createdAt` and messages. The feedback
+  tests move from assistant messages to assistant turns (R5, R6).
 - `src/schemas/message-cursor.test.ts`: the existing tests stay, with `turnId`
   (R8).
 - `src/handlers/threads/invoke.test.ts`: the user turn's `createdAt` is the time
   the claim returned, using fake timers (R7).
-- Run `scripts/dev-checks.sh` in `services/chat-api`.
+- `services/demo-ui/src/app/api/chat/messages/route.test.ts`: the route
+  returns each turn's messages in order (R5).
+- `cloud-tests/src/api/thread-journey.test.ts`: a run stores a user turn and
+  an assistant turn (R1, R5). It runs against a deployed environment.
+- Run `scripts/dev-checks.sh` in `services/chat-api`, `services/demo-ui` and
+  `cloud-tests`.
 - Manual check in a dev environment, using the pagination spec's steps: build a
   thread of more than 100 turns, page back until `earlierMessagesUrl` is
   absent, then forwards until `laterMessagesUrl` is absent, and check that no
@@ -402,9 +460,10 @@ the whole change is small. No CDK changes are needed.
 No infrastructure changes, because `gsi1` keeps its fields. Existing messages
 stop being returned (R9). They stay in the table until they expire or the
 stack is deleted, and their ids no longer return `409`. Cursors from before
-this change return `422`, and no client pages yet. Threads carry on, and the
-agent still remembers them through AgentCore memory. Every stack is a
-short-lived dev stack.
+this change return `422`, and no client pages yet. demo-ui and cloud-tests
+are the only readers of the response, and both change in the same pull
+request. Threads carry on, and the agent still remembers them through
+AgentCore memory. Every stack is a short-lived dev stack.
 
 ## Risks
 
@@ -466,7 +525,7 @@ The ids are valid UUIDs chosen to be easy to follow:
    turn and the assistant turn, and it deletes the run lock. That time is the
    assistant turn's `createdAt`.
 4. `GET /v1/threads/{threadId}/messages` reads turns from `gsi1` in
-   `createdAt` order, and lists each turn's messages.
+   `createdAt` order, and returns them.
 
 ### Example 1: a question and a text answer
 
@@ -548,9 +607,8 @@ Things to check against the request and events:
   `TEXT_MESSAGE_CONTENT` deltas joined.
 - Both turns have the run id as `runId`, which ties them to the same run.
 
-The messages endpoint returns the two messages in that order, each with its
-turn's `createdAt`, in the same response body as today (R6). `firstOutputAt`
-is stored but not returned.
+The messages endpoint returns the two turns in that order (R5).
+`firstOutputAt` is stored but not returned.
 
 ### Example 2: an answer that uses a search tool
 
