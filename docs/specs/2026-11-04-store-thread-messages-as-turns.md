@@ -62,14 +62,14 @@ ElectroDB 3.9.3.
 1. **R1:** Every finished run stores a user turn, holding the user's message,
    and an assistant turn, holding the messages the agent sent back. When the
    agent sends no text, the assistant turn's list is empty.
-2. **R2:** Turns are stored as a `turn` entity, which replaces `Message`, under
-   the primary key `THREAD#${systemThreadId}`, `TURN#${turnId}`. A user turn's
-   id is the user message's id. An assistant turn's id is the run id. Each turn
-   has a `sender` of `user` or `assistant`.
+2. **R2:** Turns are stored as `userTurn` and `assistantTurn` entities, which
+   replace `Message`, keyed by `systemThreadId` and `turnId`. A user turn's id
+   is the user message's id. An assistant turn's id is the run id. Each entity
+   has a fixed `sender` of `user` or `assistant`.
 3. **R3:** A turn's `messages` attribute holds AG-UI message objects. Writing a
-   turn fails unless its messages match its `sender`: exactly one user message
-   for `user`, or any number of assistant messages for `assistant`. Each must
-   match its `@ag-ui/core` schema with no other fields.
+   turn fails unless its messages match its entity: exactly one user message
+   in a user turn, or any number of assistant messages in an assistant turn.
+   Each must match its `@ag-ui/core` schema with no other fields.
 4. **R4:** Reusing a user message id in a thread returns `409`. An expired turn
    doesn't block its id.
 5. **R5:** `GET /v1/threads/{threadId}/messages` returns each turn's messages in
@@ -106,22 +106,24 @@ with the run id as its id and the joined text as its content, as `finishRun`
 writes now. When the agent sends no text, the assistant turn is still written,
 with an empty list (R1).
 
-### The turn entity
+### The turn entities
 
-`turn` replaces `Message` (R2). Its `messages` attribute holds the AG-UI
-objects as a DynamoDB list. ElectroDB's `CustomAttributeType` gives it the type
-the schema infers, so code reading a turn gets typed messages:
+`userTurn` and `assistantTurn` replace `Message` (R2). The two kinds of turn
+hold different messages and have different fields, so each entity only
+accepts its own. Their `messages` attribute holds the AG-UI objects as a
+DynamoDB list. ElectroDB's `CustomAttributeType` gives it the type the
+entity's schema infers, so code reading a turn gets typed messages:
 
 ```ts
-const Turn = new Entity({
-  model: { service: 'chat-api', entity: 'turn', version: '1' },
+const AssistantTurn = new Entity({
+  model: { service: 'chat-api', entity: 'assistantTurn', version: '1' },
   attributes: {
     systemThreadId: { type: 'string', required: true },
     turnId: { type: 'string', required: true },
-    sender: { type: ['user', 'assistant'] as const, required: true },
+    sender: { type: ['assistant'] as const, required: true },
     runId: { type: 'string', required: true },
     messages: {
-      type: CustomAttributeType<TurnContent['messages']>('any'),
+      type: CustomAttributeType<AssistantTurnMessages>('any'),
       required: true,
     },
     createdAt: { type: 'string', required: true, readOnly: true },
@@ -130,27 +132,33 @@ const Turn = new Entity({
   },
   indexes: {
     primary: {
-      pk: {
-        field: 'pk',
-        composite: ['systemThreadId'],
-        template: 'THREAD#${systemThreadId}',
-        casing: 'none',
-      },
-      sk: {
-        field: 'sk',
-        composite: ['turnId'],
-        template: 'TURN#${turnId}',
-        casing: 'none',
-      },
+      pk: { field: 'pk', composite: ['systemThreadId'] },
+      sk: { field: 'sk', composite: ['turnId'] },
     },
     byCreatedAt: {
       index: 'gsi1',
+      collection: 'threadTurns',
+      type: 'clustered',
       pk: { field: 'gsi1pk', composite: ['systemThreadId'] },
       sk: { field: 'gsi1sk', composite: ['createdAt', 'turnId'] },
     },
   },
 });
 ```
+
+`userTurn` has the same indexes and base attributes, with these differences:
+
+- `entity` is `userTurn`
+- `sender` only allows `user`
+- `messages` is typed as `UserTurnMessages`
+- it has no `firstOutputAt`
+
+ElectroDB 3.9.3 rejects a `userTurn` with a `sender` of `assistant`. It drops
+`firstOutputAt` from a `userTurn`, as the entity doesn't have it.
+
+The keys use ElectroDB's default format, like the feedback entity's. The
+entity name is part of the sort key, so a user turn and an assistant turn
+with the same id are separate items.
 
 `sender` says which side of the run a turn's messages came from: the client's
 request, or the agent's output. It is named apart from AG-UI's `role`, which
@@ -160,40 +168,34 @@ The API returns each message's own `role` from its AG-UI object.
 
 The [feedback spec](./2026-10-19-store-end-user-feedback-on-answers.md) checks
 that a message's `role` is `assistant` in the same transaction as it writes a
-reaction. That check moves to the assistant turn, as a check that its
-`sender` is `assistant`. The assistant turn's id is the run id, which is also
-the id of the assistant message returned today.
+reaction. That check moves to the assistant turn, as a check on
+`assistantTurn` that its `sender` is `assistant`. The assistant turn's id is
+the run id, which is also the id of the assistant message returned today.
 
 ### Checking messages
 
 `@ag-ui/core/schemas` exports a Zod schema for each AG-UI message type.
-`src/schemas/turn-content.ts` builds what each `sender` may hold from them
-(R3):
+`src/schemas/turn-messages.ts` builds what each kind of turn may hold from
+them (R3):
 
 ```ts
-export const TurnContentSchema = z.discriminatedUnion('sender', [
-  z.object({
-    sender: z.literal('user'),
-    messages: z.tuple([UserMessageSchema.strict()]),
-  }),
-  z.object({
-    sender: z.literal('assistant'),
-    messages: z.array(AssistantMessageSchema.strict()),
-  }),
-]);
+export const UserTurnMessagesSchema = z.tuple([UserMessageSchema.strict()]);
 
-export type TurnContent = z.infer<typeof TurnContentSchema>;
+export const AssistantTurnMessagesSchema = z.array(
+  AssistantMessageSchema.strict(),
+);
+
+export type UserTurnMessages = z.infer<typeof UserTurnMessagesSchema>;
+export type AssistantTurnMessages = z.infer<typeof AssistantTurnMessagesSchema>;
 ```
 
 AG-UI's schemas let unknown fields through, so a user message with
 `toolCalls` would pass. `.strict()` rejects any field the message type doesn't
 have.
 
-`finishRun` parses each turn's `sender` and `messages` with
-`TurnContentSchema` before it builds the transaction. ElectroDB's `validate`
-only sees the attribute it is on, so it can't check messages against
-`sender`. `parse` throws on a mismatch, so nothing reaches DynamoDB.
-`finishRun` already treats a failed write as a failed run.
+`finishRun` parses each turn's `messages` with its entity's schema before it
+builds the transaction. `parse` throws on a mismatch, so nothing reaches
+DynamoDB. `finishRun` already treats a failed write as a failed run.
 
 Everything AG-UI defines on a message is kept, including `metadata`, where
 ag_ui_strands puts citations. Nothing writes `metadata` until messages are
@@ -201,10 +203,11 @@ built from events.
 
 ### Keys and order
 
-`gsi1` keeps its fields and ElectroDB's default key format. The entity name is
-part of that format, so sort keys start `$turn_1#` rather than `$message_1#`.
-A query on the index only matches turns, and messages stored before this
-change aren't read (R9).
+`gsi1` keeps its fields and ElectroDB's default key format. Both entities
+join the clustered collection `threadTurns` on it, so one query reads both
+kinds of turn (R5). Sort keys on the index start `$threadturns#` rather than
+`$message_1#`. A query on the collection only matches turns, and messages
+stored before this change aren't read (R9).
 
 Turns sort by `createdAt`, then by turn id (R5). Within an assistant turn, the
 list keeps the order the messages arrived in, which is AG-UI's order. That
@@ -213,10 +216,22 @@ millisecond, such as the results of a parallel tool batch, stay in order.
 
 ### Reading a page
 
-`getMessagePage` queries `turn` on `byCreatedAt` with the same `limit` and
-`count` as today, and returns turns. The messages handler lists each turn's
-messages in order, with the turn's `createdAt`, so the response body doesn't
-change (R6).
+`getMessagePage` queries the `threadTurns` collection with the same `limit`
+as today, and no `count`. In ElectroDB 3.9.3 a collection query ignores
+`count` and reads the whole index. DynamoDB can return fewer items than
+`limit` when a page passes 1 MB, so `getMessagePage` queries again from the
+returned cursor until it has 101 turns or there are none left.
+
+In ElectroDB 3.9.3, `gt` on a clustered collection also returns the turn at
+the cursor. A clustered key ends with the entity name, which the bound
+leaves out, so the cursor's own key sorts after the bound. `lt` doesn't
+return it. `getMessagePage` drops the cursor's turn from a forward page.
+
+A collection query returns turns grouped by entity, as
+`{ userTurn: [...], assistantTurn: [...] }`. `getMessagePage` merges the two
+lists by `createdAt`, then turn id, and returns turns. The messages handler
+lists each turn's messages in order, with the turn's `createdAt`, so the
+response body doesn't change (R6).
 
 A page holds up to 100 turns. Every finished run has two turns, written in one
 transaction, and the run lock means the next run's turns sort after them. So
@@ -236,10 +251,11 @@ also the id of the assistant message returned today.
 
 ### Duplicate message ids
 
-`beginRun` checks for a turn at `TURN#${messageId}`, using the user message's
-id, in the same transaction as today (R4). Its cancellation handling doesn't
-change. A user message id that matches an earlier run id also returns `409`, as
-it does today. Ids of messages inside an assistant turn aren't keys, so they
+`beginRun` checks for a `userTurn` and an `assistantTurn` with the user
+message's id, in the same transaction as today (R4). It needs both, as the
+two entities' keys differ. A failed check on either is a duplicate message.
+A user message id that matches an earlier run id also returns `409`, as it
+does today. Ids of messages inside an assistant turn aren't keys, so they
 don't block a user message id.
 
 `MessageInput` and `StoredMessage` become `TurnInput` and `StoredTurn`.
@@ -308,9 +324,14 @@ towards the item size.
   format a forward page repeats the message at the cursor. It would make a
   change to an earlier run's message an update by key (see
   [example 5](#example-5-a-run-that-changes-an-earlier-runs-message)).
-- **An entity per kind of turn**, `userTurn` and `assistantTurn`. Reading both
-  in one query needs the same collection. One entity whose messages are
-  checked by schema doesn't.
+- **One entity for both kinds of turn**, with a `sender` of `user` or
+  `assistant`. `getMessagePage` would keep `count` and need no merge.
+  Not chosen because the fields that differ, such as `firstOutputAt`, would
+  be optional on every turn, and nothing would stop the wrong mix.
+- **A query per entity, merged, with no collection.** Each query would read
+  a page of its own entity's turns. Which turns made up the merged page would
+  rely on every run having one turn of each kind, which
+  [example 4](#example-4-a-tool-that-needs-the-users-approval) doesn't.
 - **One item per run**, holding the user's message and the answer. The
   duplicate check looks up the user message by id, so it needs to be a key.
 - **Migrate existing messages.** They are in short-lived dev stacks, so it
@@ -323,32 +344,35 @@ the whole change is small. No CDK changes are needed.
 
 1. Take the user message's time just after the run is claimed (R7).
 2. Record the time of the agent's first message in `MessageAccumulator` (R7).
-3. Add `TurnContentSchema` (R3, R10).
-4. Replace `Message` with `turn`, and update `beginRun`, `finishRun`,
-   `getMessagePage`, the cursor and the messages handler (R1, R2, R4, R5, R6,
-   R7, R8, R9).
+3. Add `UserTurnMessagesSchema` and `AssistantTurnMessagesSchema` (R3, R10).
+4. Replace `Message` with `userTurn` and `assistantTurn`, and update
+   `beginRun`, `finishRun`, `getMessagePage`, the cursor and the messages
+   handler (R1, R2, R4, R5, R6, R7, R8, R9).
 5. Mark this spec implemented.
 
 ### Testing
 
-- `src/schemas/turn-content.test.ts`: a user turn with one user message, and
-  an assistant turn with a list of assistant messages or an empty list, pass.
-  A user turn with an assistant message, an assistant turn with a user
-  message, two user messages and a message with a field its type doesn't have
-  fail (R3).
+- `src/schemas/turn-messages.test.ts`: one user message for a user turn, and
+  a list of assistant messages or an empty list for an assistant turn, pass.
+  An assistant message for a user turn, a user message for an assistant turn,
+  two user messages and a message with a field its type doesn't have fail
+  (R3).
 - `src/streaming/message-accumulator.test.ts`: the first output time is the
   time of the first `TEXT_MESSAGE_START`, and is absent before one (R7).
 - `src/persistence/runs.test.ts`:
-  - `finishRun` writes a user turn under the user message's id and an
-    assistant turn under the run id, each with its `sender` (R1, R2)
+  - `finishRun` writes a `userTurn` under the user message's id and an
+    `assistantTurn` under the run id (R1, R2)
   - `finishRun` writes an assistant turn with an empty list and no
     `firstOutputAt` when the agent sent no text (R1, R7)
-  - `finishRun` rejects a turn whose messages don't match its `sender`,
-    without sending the write (R3)
-  - `beginRun`'s check uses the turn key, and a failed check is
-    `duplicate-message` (R4)
+  - `finishRun` rejects a turn whose messages don't match its entity's
+    schema, without sending the write (R3)
+  - `beginRun` checks both turn entities for the user message's id, and a
+    failed check on either is `duplicate-message` (R4)
 - `src/persistence/messages.test.ts`: the existing tests stay, with turn
-  fixtures and `$turn_1` sort keys (R6, R8, R9).
+  fixtures and `$threadturns` sort keys (R6, R8, R9). New tests check that a
+  page merges user and assistant turns in `createdAt` order, then turn id,
+  that a short response is followed by another query from its cursor, and
+  that a forward page leaves out the cursor's turn (R5, R6).
 - `src/handlers/threads/messages.test.ts`: a page of turns becomes a list of
   their messages in order, each with its turn's `createdAt` (R5, R6).
 - `src/schemas/message-cursor.test.ts`: the existing tests stay, with `turnId`
@@ -408,9 +432,9 @@ additions, without changing the keys or stored turns. Example 5 is a case
 this design doesn't support, where a run changes an earlier run's message.
 
 The JSON was checked by running it through chat-api's request schema,
-`@ag-ui/core`'s schemas, `MessageAccumulator`, and the `turn` entity above
+`@ag-ui/core`'s schemas, `MessageAccumulator`, and the turn entities above
 with ElectroDB 3.9.3. Turns are shown with the attributes the examples are
-about. Their keys are as in [The turn entity](#the-turn-entity).
+about. Their keys are as in [The turn entities](#the-turn-entities).
 
 The ids are valid UUIDs chosen to be easy to follow:
 
@@ -712,8 +736,8 @@ tool, so it's in the assistant turn. In example 3 the client ran it, so it's
 in the user turn.
 
 Fitting this is an addition, like a new message type (R10).
-`TurnContentSchema` accepts a tool message in a user turn. Keys and stored
-turns don't change.
+`UserTurnMessagesSchema` accepts a tool message. Keys and stored turns don't
+change.
 
 ### Example 4: a tool that needs the user's approval
 
@@ -794,10 +818,9 @@ Fitting this is a set of additions:
 - a user turn with no message takes another id from the request, such as the
   resume entry's `interruptId`, if AG-UI makes those unique in a thread
 
-The key template doesn't change, and neither do stored turns. The duplicate
-message check runs only when the request has a new message. `beginRun`
-already rejects a reused run id, so retrying the second request still
-returns `409`.
+The keys don't change, and neither do stored turns. The duplicate message
+check runs only when the request has a new message. `beginRun` already
+rejects a reused run id, so retrying the second request still returns `409`.
 
 ### Example 5: a run that changes an earlier run's message
 
