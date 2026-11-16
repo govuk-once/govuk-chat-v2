@@ -22,6 +22,9 @@ workflows:
     '.github/workflows/chat-api-ci.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v6.2.0'
+    '.github/workflows/cloud-tests-ci.yaml':
+        - 'actions/checkout@v7.0.1'
+        - 'actions/setup-node@v6.2.0'
     '.github/workflows/demo-ui-ci.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v6.2.0'

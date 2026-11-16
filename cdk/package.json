@@ -2,6 +2,9 @@
   "name": "@govuk-chat-v2/cdk",
   "type": "module",
   "private": true,
+  "exports": {
+    "./environment": "./src/constants/environment.ts"
+  },
   "scripts": {
     "dev-checks": "scripts/dev-checks.sh",
     "format": "scripts/format.sh",

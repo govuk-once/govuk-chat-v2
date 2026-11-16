@@ -148,9 +148,15 @@ If it finds no stacks for that environment, it fails with a message naming
 the environment (R2).
 
 Looking stacks up by tag means the tests don't need to know how CDK builds
-stack names. Rebuilding the names would mean importing CDK code across
-package boundaries. Running `cdk ls`, as `fetch-cdk-output.sh` does,
-synthesises the whole app, which is slow and needs a GitHub token.
+stack names. Running `cdk ls`, as `fetch-cdk-output.sh` does, synthesises the
+whole app, which is slow and needs a GitHub token.
+
+The environment name and service name come from CDK's
+`cdk/src/constants/environment.ts`, through a workspace dependency on the
+`cdk` package, so the tests can't drift from what CDK tags stacks with. This
+reaches across a package boundary, but the module only uses `node:` imports.
+Moving it to `libs/typescript` was tried and judged too heavy for two
+functions; it can move there if another repo needs it.
 
 ### API test
 
@@ -342,9 +348,9 @@ repository secret, `AWS_DEV_DEPLOY_ROLE_ARN`, holding the role's ARN.
 - **Put the package in `utilities/` or alongside each service.**
   `utilities/` is for dev tooling, and per-service tests can't easily share
   one deploy and one run.
-- **Find stacks with `fetch-cdk-output.sh` or by importing the CDK naming
-  helpers.** The script synthesises the app, and importing reaches across
-  package boundaries.
+- **Find stacks with `fetch-cdk-output.sh` or by rebuilding CDK's stack
+  names.** The script synthesises the app, and rebuilding the names ties the
+  tests to CDK's naming scheme.
 
 ## Implementation plan
 

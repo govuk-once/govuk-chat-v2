@@ -2,6 +2,7 @@
 # by prettier formatters
 
 /cdk
+/cloud-tests
 /libs
 /services
 /utilities
