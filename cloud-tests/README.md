@@ -8,6 +8,38 @@ The suite is deliberately small. It checks the protocol and persistence around
 the agent's answers, not what the agent says, so differences between LLM runs
 don't make it flaky.
 
+## When to add a cloud test
+
+Cloud tests are a form of
+[system testing](https://en.wikipedia.org/wiki/System_testing), testing, from
+the perspective of a user interacting with the system, that the system can
+operate as expected. They are slow to setup, slow to run, hard to debug why
+they fail and they have real infrastructure costs; however they provide an
+insight that unit tests alone don't cover: the integration of services with
+real AWS components.
+
+Due to this we should add them sparingly and carefully, they should:
+
+- test numerous integrations at once, ideally following a user happy path,
+  covering all the services/components in a key user journey
+- test functionality that couldn't be tested in other ways
+- cover critical user journeys that affect multiple services
+
+Don't add one:
+
+- for logic a unit test could cover, such as branches, validation and error
+  handling — test it in its package
+- to test that an AWS service works as documented — test how our code
+  integrates with it
+- to assert on non-deterministic AI output, since responses vary between runs
+- for a variation on a journey that's already covered, such as more input
+  permutations - unit tests' role is to explore each path of code
+- if it depends on data or configuration the environment doesn't set up for
+  itself
+
+Cloud tests failing without an associated unit test may indicate a missing unit
+test, consider adding them before additional cloud test checks.
+
 ## Running the tests
 
 The tests run against whatever is already deployed; they don't deploy
