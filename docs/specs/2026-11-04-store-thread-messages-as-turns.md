@@ -256,7 +256,17 @@ message's id, in the same transaction as today (R4). It needs both, as the
 two entities' keys differ. A failed check on either is a duplicate message.
 A user message id that matches an earlier run id also returns `409`, as it
 does today. Ids of messages inside an assistant turn aren't keys, so they
-don't block a user message id.
+don't block a user message id. While each turn holds one message, that
+message's id is the turn's id, so every stored message id is checked.
+
+Once messages are built from events, an assistant turn holds several
+messages with the agent's ids, and those aren't keys or checked. AG-UI lets
+a producer reopen a message, or restate it in a `MESSAGES_SNAPSHOT`, by its
+id. Our agent does neither. ag_ui_strands 0.2.4 gives every message a new
+UUID, and agui-agent turns snapshots off
+(`services/agui-agent/src/agui_agent/main.py`). If an agent did repeat ids,
+a pointer item per message at `MESSAGE#${messageId}`, holding the turn id,
+would let `finishRun` reject or find them.
 
 `MessageInput` and `StoredMessage` become `TurnInput` and `StoredTurn`.
 Repositories still don't expose ElectroDB types, as
@@ -304,6 +314,8 @@ z.array(
 - **Activity and reasoning messages** are added the same way as tool results.
 - **Turns over 400 KB.** An S3 pointer would be an optional attribute on the
   turn. The keys don't change.
+- **Several messages in an assistant turn.** Their ids aren't keys, so
+  nothing checks them (see [Duplicate message ids](#duplicate-message-ids)).
 
 ### Security
 
