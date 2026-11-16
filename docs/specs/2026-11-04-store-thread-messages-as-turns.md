@@ -30,7 +30,7 @@ written when the run finishes, joined into one string under the run id.
 This comes before the work to store each AG-UI message the agent streams,
 which will build on this storage.
 
-Versions referred to below: `@ag-ui/core` 1.0.2, the
+Versions referred to below: `@ag-ui/core` 1.0.3, the
 [AG-UI 1.0 spec](https://docs.ag-ui.com/spec/1.0/basic), Zod 4.6.7 and
 ElectroDB 3.9.3.
 
