@@ -29,18 +29,32 @@ describe('DemoUiStack', () => {
     return new DemoUiStack(app, 'TestStack', baseProps);
   }
 
-  // The custom resource's SDK call, as JSON text without its CloudFormation
-  // references.
-  function signInClientSettings(): string {
-    const template = Template.fromStack(createStack());
+  type CloudFormationReference =
+    { Ref: string } | { 'Fn::GetAtt': [string, string] };
+
+  function referencePlaceholder(reference: CloudFormationReference): string {
+    return 'Ref' in reference
+      ? `<${reference.Ref}>`
+      : `<${reference['Fn::GetAtt'].join('.')}>`;
+  }
+
+  // The custom resource's SDK call, as JSON text with each CloudFormation
+  // reference replaced by a placeholder naming it.
+  function signInClientSettings(
+    template = Template.fromStack(createStack()),
+  ): string {
     const [customResource] = Object.values(
       template.findResources('Custom::AWS'),
     );
     const [, parts] = customResource.Properties.Update['Fn::Join'] as [
       string,
-      unknown[],
+      (string | CloudFormationReference)[],
     ];
-    return parts.filter((part) => typeof part === 'string').join('');
+    return parts
+      .map((part) =>
+        typeof part === 'string' ? part : referencePlaceholder(part),
+      )
+      .join('');
   }
 
   describe('Stack tags', () => {
@@ -168,8 +182,23 @@ describe('DemoUiStack', () => {
       expect(signInClientSettings()).toContain('"AllowedOAuthFlows":["code"]');
     });
 
-    it('allows a localhost callback in ephemeral environments', () => {
-      expect(signInClientSettings()).toContain('http://localhost:3000');
+    it('allows localhost and the service as origins in ephemeral environments', () => {
+      const template = Template.fromStack(createStack());
+      const [serviceId] = Object.keys(
+        template.findResources('AWS::ECS::ExpressGatewayService'),
+      );
+      const serviceOrigin = `<${serviceId}.Endpoint>`;
+
+      const { parameters } = JSON.parse(signInClientSettings(template));
+
+      expect(parameters.CallbackURLs).toEqual([
+        'http://localhost:3000/api/auth/callback',
+        `${serviceOrigin}/api/auth/callback`,
+      ]);
+      expect(parameters.LogoutURLs).toEqual([
+        'http://localhost:3000/',
+        `${serviceOrigin}/`,
+      ]);
     });
 
     it('allows no localhost callback in non-ephemeral environments', () => {

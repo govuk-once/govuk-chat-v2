@@ -129,7 +129,7 @@ export class DemoUiStack extends cdk.Stack {
   ): void {
     const origins = [
       ...(isEphemeralEnvironment() ? [LOCAL_DEV_ORIGIN] : []),
-      `https://${service.attrEndpoint}`,
+      service.attrEndpoint,
     ];
 
     const updateSignInClient: cr.AwsSdkCall = {
