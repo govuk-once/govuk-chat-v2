@@ -83,7 +83,7 @@ ElectroDB 3.9.3.
 7. **R7:** A user turn's `createdAt` is the time the run was claimed. An
    assistant turn's `createdAt` is the time the run finished. An assistant
    turn's `firstOutputAt` is the time chat-api received the agent's first
-   message, and is absent when the agent sent none.
+   message, and is the same as `createdAt` when the agent sent none.
 8. **R8:** A cursor holds `createdAt` and `turnId` in place of `createdAt` and
    `messageId`.
 9. **R9:** Messages stored before this change aren't returned or migrated.
@@ -128,7 +128,7 @@ const AssistantTurn = new Entity({
       required: true,
     },
     createdAt: { type: 'string', required: true, readOnly: true },
-    firstOutputAt: { type: 'string', readOnly: true },
+    firstOutputAt: { type: 'string', required: true, readOnly: true },
     expiresAt: { type: 'number', required: true },
   },
   indexes: {
@@ -154,7 +154,8 @@ const AssistantTurn = new Entity({
 - `messages` is typed as `UserTurnMessages`
 - it has no `firstOutputAt`
 
-ElectroDB 3.9.3 rejects a `userTurn` with a `sender` of `assistant`. It drops
+ElectroDB 3.9.3 rejects a `userTurn` with a `sender` of `assistant`, and an
+`assistantTurn` without `firstOutputAt`. It drops
 `firstOutputAt` from a `userTurn`, as the entity doesn't have it.
 
 The keys use ElectroDB's default format, like the feedback entity's. The
@@ -342,7 +343,8 @@ An answer arrives over a period of time, so one time doesn't describe it. The
 assistant turn also stores `firstOutputAt`, the time chat-api received the
 agent's first message. `MessageAccumulator` records it on the first
 `TEXT_MESSAGE_START`, and `invoke` passes it to `finishRun`. When the agent
-sends no messages, it is left out. It is stored but not returned.
+sends no messages, `finishRun` uses the finish time, so it is the same as
+`createdAt`. It is stored but not returned.
 
 ### Adding other message types
 
@@ -382,9 +384,7 @@ towards the item size.
   run would need a stored position. Reading several entities in one query
   also needs a clustered ElectroDB collection. In ElectroDB 3.9.3 a collection
   query ignores `count` and reads the whole index, and with the default key
-  format a forward page repeats the message at the cursor. It would make a
-  change to an earlier run's message an update by key (see
-  [example 5](#example-5-a-run-that-changes-an-earlier-runs-message)).
+  format a forward page repeats the message at the cursor.
 - **One entity for both kinds of turn**, with a `sender` of `user` or
   `assistant`. `getMessagePage` would keep `count` and need no merge.
   Not chosen because the fields that differ, such as `firstOutputAt`, would
@@ -426,8 +426,9 @@ whole change is small. No CDK changes are needed.
 - `src/persistence/runs.test.ts`:
   - `finishRun` writes a `userTurn` under the user message's id and an
     `assistantTurn` under the run id (R1, R2)
-  - `finishRun` writes an assistant turn with an empty list and no
-    `firstOutputAt` when the agent sent no text (R1, R7)
+  - `finishRun` writes an assistant turn with an empty list, and
+    `firstOutputAt` equal to `createdAt`, when the agent sent no text (R1,
+    R7)
   - `finishRun` rejects a turn whose messages don't match its entity's
     schema, without sending the write (R3)
   - `beginRun` checks both turn entities for the user message's id, and a
@@ -472,7 +473,8 @@ AgentCore memory. Every stack is a short-lived dev stack.
   the limit. A turn over it fails `finishRun`, so the run ends with
   `RUN_ERROR` and stores nothing. A page of large turns could also pass
   Lambda's 6 MB response limit. Both wait until tools are planned, and an S3
-  pointer would fit without changing keys.
+  pointer would fit without changing keys. This is tracked in
+  [#483](https://github.com/govuk-once/govuk-chat-v2/issues/483).
 - **Clocks decide the order of turns.** Turns sort by `createdAt`, which
   depends on Lambda clocks, as today. Order within a turn doesn't depend on a
   clock.
@@ -488,10 +490,6 @@ AgentCore memory. Every stack is a short-lived dev stack.
   messages are built from events, each keeps the agent's id, so that work
   points the endpoint at the turn id instead. The server builds
   `feedbackUrl`, so clients don't change.
-- **Changes to an earlier run's message.** AG-UI lets a later run reopen a
-  message, and nothing finds which turn holds it (see
-  [example 5](#example-5-a-run-that-changes-an-earlier-runs-message)). Our
-  agent doesn't do this.
 
 ## Appendix: AG-UI scenarios
 
@@ -499,8 +497,7 @@ These examples follow a run from the client's request to the turns it stores.
 Each shows the request, the events the agent streams, the turns `finishRun`
 writes, and when each time is taken. Examples 1 and 2 fit this design.
 Examples 3 and 4 need requests chat-api rejects today. They would fit with
-additions, without changing the keys or stored turns. Example 5 is a case
-this design doesn't support, where a run changes an earlier run's message.
+additions, without changing the keys or stored turns.
 
 The JSON was checked by running it through chat-api's request schema,
 `@ag-ui/core`'s schemas, `MessageAccumulator`, and the turn entities above
@@ -864,20 +861,11 @@ The second run runs the tool and answers:
 {"type":"RUN_FINISHED","threadId":"11111111-1111-4111-8111-111111111111","runId":"a0000000-0000-4000-8000-000000000006"}
 ```
 
-The thread's turns, in `createdAt` order:
-
-| `createdAt`  | `sender`    | `turnId` | Messages                  |
-| ------------ | ----------- | -------- | ------------------------- |
-| 10:15:00.040 | `user`      | `b…05`   | user                      |
-| 10:15:02.000 | `assistant` | `a…05`   | assistant with tool call  |
-| not stored   | `user`      | none     | none, only a resume entry |
-| 10:15:12.000 | `assistant` | `a…06`   | tool, assistant           |
-
 The interrupt and the resume entry aren't messages, so this spec's turns
-can't hold them. A reloaded thread would show the tool call, then its
-result, without the question or the user's approval between them. The second
-run's request has no new message, so there's no message id to use as its
-user turn's `turnId`.
+can't hold them. Without them, a reloaded thread would show the tool call,
+then its result, without the question or the user's approval between them.
+The second run's request has no new message, so there's no message id to use
+as its user turn's `turnId`.
 
 Fitting this is a set of additions:
 
@@ -885,75 +873,22 @@ Fitting this is a set of additions:
   attribute
 - the user turn stores `resume` beside `messages`, and its list of messages
   can be empty
-- a user turn with no message takes another id from the request, such as the
-  resume entry's `interruptId`, if AG-UI makes those unique in a thread
+- a user turn with no message needs another id. The resume entry's
+  `interruptId` can't be it, as AG-UI only makes interrupt ids unique within
+  a run. Choosing one is left to that work.
+
+With those additions, the thread's turns, in `createdAt` order:
+
+| `createdAt`  | `sender`    | `turnId`       | Holds                               |
+| ------------ | ----------- | -------------- | ----------------------------------- |
+| 10:15:00.040 | `user`      | `b…05`         | user message                        |
+| 10:15:02.000 | `assistant` | `a…05`         | assistant with tool call, interrupt |
+| 10:15:10.040 | `user`      | not yet chosen | no messages, resume entry           |
+| 10:15:12.000 | `assistant` | `a…06`         | tool, assistant                     |
 
 The keys don't change, and neither do stored turns. The duplicate message
 check runs only when the request has a new message. `beginRun` already
 rejects a reused run id, so retrying the second request still returns `409`.
-
-### Example 5: a run that changes an earlier run's message
-
-AG-UI message ids belong to the thread, not the run. A message id "MUST be
-unique within its thread"
-([basic types](https://docs.ag-ui.com/spec/1.0/basic)), and a later run can
-change a message an earlier run sent. A producer may
-reopen a closed message with a new `TEXT_MESSAGE_START` for the same id, and
-the content that follows is appended to it
-([text messages](https://docs.ag-ui.com/spec/1.0/events/text-messages)).
-
-As in example 2, the turns here are as they'd be once messages are built from
-events. Run `a…07`'s answer stops part way through, and its assistant turn
-holds:
-
-```json
-{
-  "turnId": "a0000000-0000-4000-8000-000000000007",
-  "sender": "assistant",
-  "runId": "a0000000-0000-4000-8000-000000000007",
-  "createdAt": "2026-11-09T10:20:03.000Z",
-  "firstOutputAt": "2026-11-09T10:20:01.200Z",
-  "messages": [
-    {
-      "id": "c0000000-0000-4000-8000-000000000010",
-      "role": "assistant",
-      "content": "You'll need your old passport "
-    }
-  ]
-}
-```
-
-The user asks the agent to carry on. In run `a…08`, the agent reopens `c…10`
-rather than starting a new message:
-
-```
-{"type":"RUN_STARTED","threadId":"11111111-1111-4111-8111-111111111111","runId":"a0000000-0000-4000-8000-000000000008"}
-{"type":"TEXT_MESSAGE_START","messageId":"c0000000-0000-4000-8000-000000000010","role":"assistant"}
-{"type":"TEXT_MESSAGE_CONTENT","messageId":"c0000000-0000-4000-8000-000000000010","delta":"and a recent photo."}
-{"type":"TEXT_MESSAGE_END","messageId":"c0000000-0000-4000-8000-000000000010"}
-{"type":"RUN_FINISHED","threadId":"11111111-1111-4111-8111-111111111111","runId":"a0000000-0000-4000-8000-000000000008"}
-```
-
-A client applying these events shows one message, "You'll need your old
-passport and a recent photo." Today chat-api stores the new text as its own
-message under run `a…08`'s id, so a reloaded thread shows the answer split
-in two.
-
-Once messages are built from events, run `a…08`'s events only hold the new
-text. To store what the client shows, `finishRun` would update `c…10` in run
-`a…07`'s turn. Nothing finds which turn holds a message id, short of reading
-the thread's turns. Storing it in run `a…08`'s turn instead would put the
-same id in two turns, and a page could hold one without the other. With one
-item per message, the rejected alternative, this would be an update by key.
-
-Activity messages may have the same cost. An `ACTIVITY_SNAPSHOT` for an id
-the thread already has replaces that activity's content, and AG-UI doesn't
-say whether it can target an earlier run's activity.
-
-This spec doesn't support either. ag_ui_strands gives every message it sends
-a new id, so it never reopens one from an earlier run, and it doesn't send
-activity events. If an agent did, chat-api would need a way to find a
-message's turn, such as an item per message id that points to it.
 
 ### Every AG-UI message type
 
@@ -986,8 +921,8 @@ of the run sent it. The turn's `sender` does.
 
 In this spec:
 
-- **No text from the agent.** The assistant turn has `messages: []` and no
-  `firstOutputAt`.
+- **No text from the agent.** The assistant turn has `messages: []`, and
+  `firstOutputAt` equal to `createdAt`.
 - **Citations.** They go in the assistant message's `metadata`, which the
   schema keeps.
 - **A reused user message id.** `beginRun` returns `409`, and nothing is
@@ -1016,7 +951,9 @@ Additions this design allows, not built as chat-api rejects the requests:
 
 Not supported:
 
-- **A change to an earlier run's message.** See example 5.
+- **A change to an earlier run's message.** AG-UI lets a producer reopen or
+  restate a message by its id, and our agent does neither (see
+  [Duplicate message ids](#duplicate-message-ids)).
 
 Not designed yet:
 
