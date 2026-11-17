@@ -5,8 +5,11 @@ chat that sends each message to the Chat API through a server-side route and
 streams the answer back. The server keeps the conversation's thread in a
 cookie, so refreshing the page carries on the same conversation. The page
 shows the conversation's earlier messages when it loads. The "New
-conversation" button starts a new one. It also serves a `/api/health` route,
-and a `/api/chat/messages` route that returns the conversation's messages.
+conversation" button starts a new one. Each finished answer has 👍 and 👎
+buttons for giving feedback on it once, and shows the reaction given. It
+also serves a `/api/health` route, a `/api/chat/messages` route that
+returns the conversation's messages, and a
+`/api/chat/messages/{messageId}/feedback` route that gives feedback on one.
 
 ## Usage
 
