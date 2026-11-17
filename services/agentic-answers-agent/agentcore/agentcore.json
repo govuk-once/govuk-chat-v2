@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.agentcore.aws.dev/v1/agentcore.json",
+  "name": "AgenticAnswersAgent",
+  "version": 1,
+  "managedBy": "CDK",
+  "runtimes": [
+    {
+      "name": "AgenticAnswersAgent",
+      "build": "CodeZip",
+      "entrypoint": "src/agentic_answers_agent/main.py",
+      "codeLocation": ".",
+      "runtimeVersion": "PYTHON_3_14",
+      "networkMode": "PUBLIC",
+      "protocol": "AGUI"
+    }
+  ],
+  "memories": [
+    {
+      "name": "AgenticAnswersAgentMemory",
+      "eventExpiryDuration": 365
+    }
+  ]
+}

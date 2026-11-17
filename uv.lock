@@ -5,6 +5,7 @@ requires-python = ">=3.14.9"
 [manifest]
 members = [
     "agentcore-cli-wrapper",
+    "agentic-answers-agent",
     "agui-agent",
     "govuk-chat-v2",
 ]
@@ -68,6 +69,49 @@ requires-dist = [{ name = "click", specifier = ">=8.5.0" }]
 dev = [
     { name = "pyright", specifier = ">=1.1.414" },
     { name = "pytest", specifier = ">=9.2.0" },
+    { name = "ruff", specifier = ">=0.17.3" },
+]
+
+[[package]]
+name = "agentic-answers-agent"
+version = "0.1.0"
+source = { editable = "services/agentic-answers-agent" }
+dependencies = [
+    { name = "ag-ui-protocol" },
+    { name = "ag-ui-strands" },
+    { name = "aws-opentelemetry-distro" },
+    { name = "bedrock-agentcore" },
+    { name = "govuk-chat-v2-private" },
+    { name = "strands-agents" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "agentcore-cli-wrapper" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "ag-ui-protocol", specifier = ">=1.0.0" },
+    { name = "ag-ui-strands", specifier = ">=1.0.2" },
+    { name = "aws-opentelemetry-distro", specifier = ">=0.22.0" },
+    { name = "bedrock-agentcore", specifier = ">=1.25.3" },
+    { name = "govuk-chat-v2-private", git = "https://github.com/govuk-once/govuk-chat-v2-private.git" },
+    { name = "strands-agents", specifier = ">=1.64.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "agentcore-cli-wrapper", editable = "libs/python/agentcore-cli-wrapper" },
+    { name = "pyright", specifier = ">=1.1.414" },
+    { name = "pytest", specifier = ">=9.2.0" },
+    { name = "pytest-asyncio", specifier = ">=1.4.1.post1" },
+    { name = "pytest-mock", specifier = ">=3.17.0" },
     { name = "ruff", specifier = ">=0.17.3" },
 ]
 
