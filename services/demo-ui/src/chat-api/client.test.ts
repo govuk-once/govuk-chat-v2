@@ -1,5 +1,9 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { InvokeThreadInput, ThreadInput } from './client.ts';
+import type {
+  GiveFeedbackInput,
+  InvokeThreadInput,
+  ThreadInput,
+} from './client.ts';
 
 const CHAT_API_URL = 'https://api.example.com/dev/';
 const TOKEN_ENDPOINT = 'https://auth.example.com/oauth2/token';
@@ -17,6 +21,7 @@ const fetchMock = vi.fn<typeof fetch>();
 const testEnv = {} as {
   invokeThread: (input: InvokeThreadInput) => Promise<Response>;
   listThreadMessages: (input: ThreadInput) => Promise<Response>;
+  giveFeedback: (input: GiveFeedbackInput) => Promise<Response>;
 };
 
 function invokeInput(): InvokeThreadInput {
@@ -61,6 +66,7 @@ beforeEach(async () => {
   const clientModule = await import('./client.ts');
   testEnv.invokeThread = clientModule.invokeThread;
   testEnv.listThreadMessages = clientModule.listThreadMessages;
+  testEnv.giveFeedback = clientModule.giveFeedback;
 });
 
 afterAll(() => {
@@ -158,6 +164,29 @@ describe('listThreadMessages', () => {
       Authorization: `Bearer ${ACCESS_TOKEN}`,
       'end-user-id': input.endUserId,
     });
+    expect(await response.text()).toBe('upstream');
+  });
+});
+
+describe('giveFeedback', () => {
+  it('posts the reaction to the message feedback endpoint and returns the response', async () => {
+    const input = {
+      threadId: crypto.randomUUID(),
+      messageId: crypto.randomUUID(),
+      endUserId: crypto.randomUUID(),
+      reaction: 'positive' as const,
+      signal: new AbortController().signal,
+    };
+
+    const response = await testEnv.giveFeedback(input);
+
+    const [url, init] = fetchMock.mock.calls.at(-1)!;
+    expect(url).toBe(
+      `${CHAT_API_URL}v1/threads/${input.threadId}/messages/${input.messageId}/feedback`,
+    );
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBe(JSON.stringify({ reaction: 'positive' }));
+    expect(init?.signal).toBe(input.signal);
     expect(await response.text()).toBe('upstream');
   });
 });

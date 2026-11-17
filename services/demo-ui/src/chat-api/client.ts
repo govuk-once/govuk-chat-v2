@@ -32,11 +32,19 @@ export interface InvokeThreadInput extends ThreadInput {
   content: string;
 }
 
+export type Reaction = 'positive' | 'negative';
+
+export interface GiveFeedbackInput extends ThreadInput {
+  messageId: string;
+  reaction: Reaction;
+}
+
 export interface ThreadMessage {
   id: string;
   role: string;
   content: string;
   createdAt: string;
+  feedback?: { reaction: Reaction; createdAt: string };
 }
 
 // A property rather than a top-level `let`, which unicorn's lint rules reject.
@@ -139,5 +147,20 @@ export async function listThreadMessages(
     `/v1/threads/${input.threadId}/messages`,
     input.endUserId,
     { signal: input.signal },
+  );
+}
+
+export async function giveFeedback(
+  input: GiveFeedbackInput,
+): Promise<Response> {
+  return requestChatApi(
+    `/v1/threads/${input.threadId}/messages/${input.messageId}/feedback`,
+    input.endUserId,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reaction: input.reaction }),
+      signal: input.signal,
+    },
   );
 }
