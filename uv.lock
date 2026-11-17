@@ -672,7 +672,7 @@ source = { virtual = "." }
 [[package]]
 name = "govuk-chat-v2-private"
 version = "0.1.0"
-source = { git = "https://github.com/govuk-once/govuk-chat-v2-private.git#37d3d02f35ccb35cd3c040a8734654c4a25ecd29" }
+source = { git = "https://github.com/govuk-once/govuk-chat-v2-private.git#d0e36a10f3f315f8b7a55dfed535160082c150bd" }
 dependencies = [
     { name = "pyyaml" },
 ]
