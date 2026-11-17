@@ -10,6 +10,11 @@ from strands import Agent
 from strands.agent.conversation_manager import SlidingWindowConversationManager
 from strands.models import BedrockModel
 
+from agentic_answers_agent.tools.search_govuk.tool import (
+    chunked_content_retriever,
+    search_govuk_content,
+)
+
 MODEL_ID = "eu.anthropic.claude-sonnet-5-5"
 MAX_TOKENS = 16_000
 THINKING_EFFORT = "low"
@@ -19,6 +24,8 @@ THINKING_EFFORT = "low"
 CONVERSATION_WINDOW_SIZE = 40
 
 system_prompt = load_prompts()["agentic_answers_agent"]["system_prompt"]
+
+chunked_content_retriever()
 
 
 def get_memory_session_manager(
@@ -64,7 +71,7 @@ agent = Agent(
         },
     ),
     system_prompt=system_prompt,
-    tools=[],
+    tools=[search_govuk_content],
     conversation_manager=SlidingWindowConversationManager(
         window_size=CONVERSATION_WINDOW_SIZE
     ),
