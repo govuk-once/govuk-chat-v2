@@ -22,8 +22,9 @@ ENVIRONMENT=test-pr-123 cloud-tests/scripts/test.sh  # another environment
 ```
 
 The tests find the environment's stacks by the `Environment` and
-`ServiceName` tags CDK gives them, and read the URLs and Cognito IDs they need
-from the stacks' outputs.
+`ServiceName` tags CDK gives them (see
+[`cdk/src/constants/environment.ts`](../cdk/src/constants/environment.ts)),
+and read the URLs and Cognito IDs they need from the stacks' outputs.
 
 `scripts/test-api.sh` runs only the API tests. Both scripts pass their
 arguments to the test runner, for example a test name filter with `-t`.
