@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -eo pipefail
 
 CHECK_CREDENTIALS=true
 POSITIONAL=()
@@ -22,30 +22,42 @@ STACK_NAME="${POSITIONAL[0]}"
 OUTPUT_NAME="${POSITIONAL[1]}"
 
 PROJECT_DIR="$(dirname "${BASH_SOURCE[0]}")/.."
+REPO_ROOT="$PROJECT_DIR/../.."
 
 if [ "$CHECK_CREDENTIALS" = true ];  then
-  $PROJECT_DIR/../../scripts/check-dev-aws-credentials.sh --quiet
+  "$REPO_ROOT/scripts/check-dev-aws-credentials.sh" --quiet
 fi
 
-cd "$PROJECT_DIR/../../cdk"
+# Find the stack by the tags CDK gives it (see
+# cdk/src/constants/environment.ts). Running `cdk ls` instead would synthesise
+# the whole app, which is slow and needs a GITHUB_TOKEN.
+STACK_TAGS=$(node "$REPO_ROOT/cdk/bin/print-environment-tags.ts")
+IFS=$'\t' read -r ENVIRONMENT_NAME SERVICE_NAME <<< "$STACK_TAGS"
 
-# Convert CDK stack name to the actual Cloudformation namespaced stack name
-# e.g. AguiAgentStack -> alicesmith-govuk-chat-AguiAgentStack
-FULL_STACK_NAME=$(pnpm exec cdk ls -l --json | jq -r --arg stack "$STACK_NAME" '.[] | select(.name | endswith($stack)) | .name')
+STACK=$(aws cloudformation describe-stacks --output json | jq -c \
+  --arg environment "$ENVIRONMENT_NAME" \
+  --arg service "$SERVICE_NAME" \
+  --arg suffix "-$STACK_NAME" '
+  def has_tag($key; $value):
+    any(.Tags[]?; .Key == $key and .Value == $value);
+  first(
+    .Stacks[]
+    | select(has_tag("Environment"; $environment))
+    | select(has_tag("ServiceName"; $service))
+    | select(.StackName | endswith($suffix))
+  ) // empty')
 
-if [ -z "$FULL_STACK_NAME" ]; then
-  echo "'$STACK_NAME' stack not found" >&2
+if [ -z "$STACK" ]; then
+  echo "'$STACK_NAME' stack not found for environment '$ENVIRONMENT_NAME'" >&2
   exit 1
 fi
 
-OUTPUT_VALUE=$(aws cloudformation describe-stacks \
-  --stack-name "$FULL_STACK_NAME" \
-  --query "Stacks[0].Outputs[?OutputKey=='$OUTPUT_NAME'].OutputValue" \
-  --output text)
+OUTPUT_VALUE=$(jq -r --arg output "$OUTPUT_NAME" \
+  '.Outputs[]? | select(.OutputKey == $output) | .OutputValue' <<< "$STACK")
 
 if [ -z "$OUTPUT_VALUE" ]; then
   echo "No output found with key '$OUTPUT_NAME'" >&2
   exit 1
 fi
 
-echo $OUTPUT_VALUE
+echo "$OUTPUT_VALUE"
