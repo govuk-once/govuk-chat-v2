@@ -1,0 +1,74 @@
+name: Cloud Tests PR Environment Cleanup
+
+# No path filter, as a PR may have deployed in an earlier commit and later
+# dropped the changes that matched cloud-tests-pr-environment.yaml's filter
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  contents: read
+  id-token: write
+
+# Shares the deploy workflow's group, so closing a PR cancels a deploy still
+# in progress before destroying its stacks
+concurrency:
+  group: cloud-tests-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  destroy:
+    name: Destroy PR environment
+    # Fork PRs get no OIDC token, so they can't deploy
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ENVIRONMENT: test-pr-${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: aws-actions/configure-aws-credentials@v6.2.4
+        with:
+          audience: sts.amazonaws.com
+          role-to-assume: ${{ secrets.AWS_DEV_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      # Most PRs never deploy, so check before spending time on setup. The
+      # check only needs Node to read CDK's tag values, not dependencies.
+      - uses: actions/setup-node@v6.2.0
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Check for stacks
+        id: stacks
+        run: |
+          stacks="$(cloud-tests/scripts/list-environment-stacks.sh --skip-credentials)"
+          if [ -n "$stacks" ]; then
+            echo "Found stacks:"
+            echo "$stacks"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No stacks found for $ENVIRONMENT"
+          fi
+
+      - if: steps.stacks.outputs.found == 'true'
+        uses: $/.github/actions/setup-node-pnpm-env
+
+      - name: Create private repo token
+        if: steps.stacks.outputs.found == 'true'
+        id: private-repo-token
+        uses: actions/create-github-app-token@v3.3.0
+        with:
+          client-id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
+          owner: govuk-once
+          repositories: govuk-chat-v2-private
+          permission-contents: read
+
+      - name: Destroy
+        if: steps.stacks.outputs.found == 'true'
+        env:
+          GITHUB_TOKEN: ${{ steps.private-repo-token.outputs.token }}
+        run: cloud-tests/scripts/destroy.sh --skip-credentials
