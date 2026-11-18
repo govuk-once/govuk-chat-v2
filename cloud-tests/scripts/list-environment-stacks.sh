@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-# Prints the names of the stacks deployed for the environment named by
-# ENVIRONMENT, or your own $USER stacks by default, one per line. Prints
-# nothing if the environment has no stacks. Pass --skip-credentials where AWS
-# credentials come from somewhere other than the GDS CLI, such as CI.
+# Prints the name and status, tab-separated, of each stack deployed for the
+# environment named by ENVIRONMENT, or your own $USER stacks by default, one per
+# line. Prints nothing if the environment has no stacks. Pass
+# --skip-credentials where AWS credentials come from somewhere other than the
+# GDS CLI, such as CI.
 
 CHECK_CREDENTIALS=true
 
@@ -34,4 +35,4 @@ aws cloudformation describe-stacks --output json | jq -r \
   .Stacks[]
   | select(has_tag("Environment"; $environment))
   | select(has_tag("ServiceName"; $service))
-  | .StackName'
+  | "\(.StackName)\t\(.StackStatus)"'

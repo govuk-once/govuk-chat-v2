@@ -29,6 +29,9 @@ if [ -z "$STACKS" ]; then
   exit 0
 fi
 
+# A deploy cancelled by closing the PR can leave a stack still updating
+"$SCRIPTS_DIR/wait-for-environment-stacks.sh" --skip-credentials
+
 cd "$SCRIPTS_DIR/../../cdk"
 
 pnpm exec cdk destroy --all --force "${CDK_ARGS[@]}"

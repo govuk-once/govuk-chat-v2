@@ -22,6 +22,9 @@ if [ "$CHECK_CREDENTIALS" = true ]; then
   "$PROJECT_DIR/../scripts/check-dev-aws-credentials.sh" --quiet
 fi
 
+# A cancelled deploy can leave a stack still updating
+"$PROJECT_DIR/scripts/wait-for-environment-stacks.sh" --skip-credentials
+
 cd "$PROJECT_DIR/../cdk"
 
 # No outputs file, as the tests read outputs from CloudFormation. Validation is
