@@ -19,6 +19,10 @@ export const serviceMetadata = {
   repositoryUrl: 'https://github.com/govuk-once/govuk-chat-v2',
 };
 
+// Every stack is tagged Environment=getEnvironment() and
+// ServiceName=serviceMetadata.serviceName. Tooling that needs a deployed
+// environment's stacks finds them by those tags, reading both values from
+// here so it can't drift from what CDK tags.
 export const getEnvironment = (): string => {
   const env = process.env.ENVIRONMENT || process.env.USER;
   if (!env) {

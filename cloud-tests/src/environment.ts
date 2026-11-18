@@ -18,6 +18,7 @@ export interface ChatApiOutputs {
 const hasTag = (stack: Stack, key: string, value: string): boolean =>
   stack.Tags?.some((tag) => tag.Key === key && tag.Value === value) ?? false;
 
+// Follows the tag rule described in cdk/src/constants/environment.ts
 async function findEnvironmentStacks(environment: string): Promise<Stack[]> {
   const client = new CloudFormationClient({});
   const pages = paginateDescribeStacks({ client }, {});
