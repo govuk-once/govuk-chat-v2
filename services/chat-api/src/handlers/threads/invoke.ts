@@ -141,11 +141,14 @@ async function invokeAgent(
       onRunFinished: () => {
         const assistantContent = accumulator.getContent();
 
+        // The run's text messages are stored as one, under the id of the
+        // last, which is the one a client streaming several shows the answer
+        // in. The run id stands in if the agent never started one.
         const messages = assistantContent
           ? [
               userMessage,
               {
-                messageId: body.runId,
+                messageId: accumulator.getLastMessageId() ?? body.runId,
                 role: 'assistant',
                 content: assistantContent,
                 createdAt: new Date().toISOString(),

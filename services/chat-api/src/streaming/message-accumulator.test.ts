@@ -66,4 +66,21 @@ describe('MessageAccumulator', () => {
 
     expect(accumulator.getContent()).toBe('First\n\nSecond');
   });
+
+  it('keeps the id of the last message started', () => {
+    const accumulator = new MessageAccumulator();
+
+    accumulator.process({
+      type: EventType.TEXT_MESSAGE_START,
+      messageId: 'msg-1',
+      role: 'assistant',
+    });
+    accumulator.process({
+      type: EventType.TEXT_MESSAGE_START,
+      messageId: 'msg-2',
+      role: 'assistant',
+    });
+
+    expect(accumulator.getLastMessageId()).toBe('msg-2');
+  });
 });

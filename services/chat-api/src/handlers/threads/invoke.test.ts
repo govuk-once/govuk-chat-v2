@@ -282,7 +282,7 @@ describe('handler', () => {
       );
     });
 
-    it('collates multiple assistant messages into one with double-newline separators', async () => {
+    it("stores multiple assistant messages as one, with double-newline separators, under the last message's id", async () => {
       const events: BaseEvent[] = [
         {
           type: EventType.RUN_STARTED,
@@ -338,12 +338,48 @@ describe('handler', () => {
             createdAt: expect.any(String),
           },
           {
-            messageId: VALID_RUN_ID,
+            messageId: 'msg-2',
             role: 'assistant',
             content: 'Searching for SSP\n\nSSP is a weekly payment.',
             createdAt: expect.any(String),
           },
         ],
+      );
+    });
+
+    it('stores the answer under the run id when the agent starts no text message', async () => {
+      send.mockResolvedValueOnce({
+        response: aguiEventStream([
+          {
+            type: EventType.RUN_STARTED,
+            threadId: SYSTEM_THREAD_ID,
+            runId: VALID_RUN_ID,
+          },
+          {
+            type: EventType.TEXT_MESSAGE_CONTENT,
+            messageId: 'msg-1',
+            delta: 'SSP is a weekly payment.',
+          },
+          {
+            type: EventType.RUN_FINISHED,
+            threadId: SYSTEM_THREAD_ID,
+            runId: VALID_RUN_ID,
+          },
+        ]),
+      });
+
+      await runHandler(
+        apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+      );
+
+      expect(finishRun).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.arrayContaining([
+          expect.objectContaining({
+            messageId: VALID_RUN_ID,
+            role: 'assistant',
+          }),
+        ]),
       );
     });
   });
