@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Repository development tooling for agents"
 readme = "README.md"
 dependencies = [
-    "click>=8.5.0",
+    "click>=8.5.1",
 ]
 
 [project.scripts]
@@ -14,7 +14,7 @@ agentcore-inspector = "agentcore_cli_wrapper.cli:main"
 dev = [
     "pyright>=1.1.414",
     "pytest>=9.2.0",
-    "ruff>=0.17.3",
+    "ruff>=0.17.4",
 ]
 
 [build-system]
