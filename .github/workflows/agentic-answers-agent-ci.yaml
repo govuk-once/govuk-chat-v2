@@ -1,0 +1,94 @@
+name: Agentic Answers Agent CI
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/agentic-answers-agent-ci.yaml'
+      - 'uv.lock'
+      - '.nvmrc'
+      - '.python-version'
+      - 'pnpm-lock.yaml'
+      - 'services/agentic-answers-agent/**'
+  pull_request:
+    paths:
+      - '.github/actions/setup-python-uv-env/*'
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/agentic-answers-agent-ci.yaml'
+      - 'uv.lock'
+      - '.nvmrc'
+      - '.python-version'
+      - 'pnpm-lock.yaml'
+      - 'services/agentic-answers-agent/**'
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: $/.github/actions/setup-python-uv-env
+        with:
+          private_repo_app_client_id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private_repo_app_private_key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
+
+      - name: Run tests
+        run: services/agentic-answers-agent/scripts/test.sh
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: $/.github/actions/setup-python-uv-env
+        with:
+          private_repo_app_client_id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private_repo_app_private_key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
+
+      - name: Run linter
+        run: services/agentic-answers-agent/scripts/lint.sh
+
+  ruff_format:
+    name: Ruff formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: $/.github/actions/setup-python-uv-env
+        with:
+          private_repo_app_client_id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private_repo_app_private_key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
+
+      - name: Run formatter
+        run: services/agentic-answers-agent/scripts/format-ruff.sh
+
+  prettier_format:
+    name: Prettier formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: $/.github/actions/setup-node-pnpm-env
+
+      - name: Run Prettier
+        run: services/agentic-answers-agent/scripts/format-prettier.sh
+
+  typing:
+    name: Type checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: $/.github/actions/setup-python-uv-env
+        with:
+          private_repo_app_client_id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private_repo_app_private_key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
+
+      - name: Run type checks
+        run: services/agentic-answers-agent/scripts/type-check.sh

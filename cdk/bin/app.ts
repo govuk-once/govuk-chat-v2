@@ -5,6 +5,7 @@ import {
   getResourceNamePrefix,
   serviceMetadata,
 } from '../src/constants/environment.ts';
+import { AgenticAnswersAgentStack } from '../src/stacks/agentic-answers-agent-stack.ts';
 import { AguiAgentStack } from '../src/stacks/agui-agent-stack.ts';
 import { ChatApiStack } from '../src/stacks/chat-api-stack.ts';
 import { DemoUiStack } from '../src/stacks/demo-ui-stack.ts';
@@ -27,6 +28,14 @@ const aguiAgentStack = new AguiAgentStack(app, 'AguiAgentStack', {
   environment: getEnvironment(),
   githubToken: githubToken,
   stackName: `${getResourceNamePrefix()}-AguiAgentStack`,
+  ...serviceMetadata,
+});
+
+new AgenticAnswersAgentStack(app, 'AgenticAnswersAgentStack', {
+  env: env,
+  environment: getEnvironment(),
+  githubToken: githubToken,
+  stackName: `${getResourceNamePrefix()}-AgenticAnswersAgentStack`,
   ...serviceMetadata,
 });
 

@@ -9,6 +9,12 @@ workflows:
         - 'actions/setup-node@v6.2.0'
         - 'actions/setup-python@v6.0.0'
         - 'astral-sh/setup-uv@v7.1.0'
+    '.github/workflows/agentic-answers-agent-ci.yaml':
+        - 'actions/checkout@v7.0.1'
+        - 'actions/create-github-app-token@v3.3.0'
+        - 'actions/setup-node@v6.2.0'
+        - 'actions/setup-python@v6.0.0'
+        - 'astral-sh/setup-uv@v7.1.0'
     '.github/workflows/agui-agent-ci.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/create-github-app-token@v3.3.0'

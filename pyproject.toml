@@ -8,6 +8,7 @@ dependencies = []
 
 [tool.uv.workspace]
 members = [
+    "services/agentic-answers-agent",
     "services/agui-agent",
     "libs/python/*",
 ]
