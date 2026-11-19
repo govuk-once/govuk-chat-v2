@@ -2,3 +2,12 @@ packages:
   - cdk
   - cloud-tests
   - services/*
+
+strictPeerDependencies: true
+saveExact: true
+engineStrict: true
+
+peerDependencyRules:
+  allowedVersions:
+    eslint-plugin-import>eslint: '10'
+    eslint-plugin-react>eslint: '10'
