@@ -19,6 +19,7 @@ The ids are valid UUIDs chosen to be easy to follow:
 - `1111…` is the client's thread id
 - `a…` ids are run ids
 - `b…` ids come from the client, and `c…` ids come from the agent
+- `d…` and `e…` ids are user and assistant turn ids, which chat-api mints
 
 ## How a run is written
 
@@ -28,10 +29,13 @@ The ids are valid UUIDs chosen to be easy to follow:
 2. The agent streams events. chat-api relays each one to the client, with the
    client's thread id, and `MessageAccumulator` collects the text. The time of
    the first `TEXT_MESSAGE_START` is the assistant turn's `firstOutputAt`.
-3. On `RUN_FINISHED`, `finishRun` writes one transaction: the run, the user
-   turn and the assistant turn, and it deletes the run lock. That time is the
+3. On `RUN_FINISHED`, `finishRun` mints an id for each turn and writes one
+   transaction: the run, the user turn, the assistant turn and the user
+   message's pointer, and it deletes the run lock. That time is the
    assistant turn's `createdAt`.
-4. `GET /v1/threads/{threadId}/messages` reads turns from `gsi1` in
+4. chat-api sends a `CUSTOM` event with both turns' ids, then
+   `RUN_FINISHED`.
+5. `GET /v1/threads/{threadId}/turns` reads turns from `gsi1` in
    `createdAt` order, and returns them.
 
 ## Example 1: a question and a text answer
@@ -78,7 +82,7 @@ The turns `finishRun` writes:
 ```json
 [
   {
-    "turnId": "b0000000-0000-4000-8000-000000000001",
+    "turnId": "d0000000-0000-4000-8000-000000000001",
     "sender": "user",
     "runId": "a0000000-0000-4000-8000-000000000001",
     "createdAt": "2026-11-09T10:00:00.040Z",
@@ -91,14 +95,14 @@ The turns `finishRun` writes:
     ]
   },
   {
-    "turnId": "a0000000-0000-4000-8000-000000000001",
+    "turnId": "e0000000-0000-4000-8000-000000000001",
     "sender": "assistant",
     "runId": "a0000000-0000-4000-8000-000000000001",
     "createdAt": "2026-11-09T10:00:03.500Z",
     "firstOutputAt": "2026-11-09T10:00:01.200Z",
     "messages": [
       {
-        "id": "a0000000-0000-4000-8000-000000000001",
+        "id": "c0000000-0000-4000-8000-000000000001",
         "role": "assistant",
         "content": "You can renew your passport online on GOV.UK."
       }
@@ -109,12 +113,13 @@ The turns `finishRun` writes:
 
 Things to check against the request and events:
 
-- The user turn's id and message are the request's last message.
-- The assistant message's id is the run id. Its content is the
+- The user turn's message is the request's last message. Each turn's id is
+  one chat-api minted.
+- The assistant message's id is the agent's message id. Its content is the
   `TEXT_MESSAGE_CONTENT` deltas joined.
 - Both turns have the run id as `runId`, which ties them to the same run.
 
-The messages endpoint returns the two turns in that order (see
+The turns endpoint returns the two turns in that order (see
 [Response](../2026-11-04-store-thread-messages-as-turns.md#response)).
 `firstOutputAt` is stored but not returned.
 
@@ -143,13 +148,13 @@ in the order ag_ui_strands sends them:
 it answers.
 
 This spec stores only text, as chat-api does today. `MessageAccumulator` joins
-the two text messages, and the tool call and its result aren't stored. The
-assistant turn's `messages`:
+the two text messages under the last one's id, and the tool call and its
+result aren't stored. The assistant turn's `messages`:
 
 ```json
 [
   {
-    "id": "a0000000-0000-4000-8000-000000000002",
+    "id": "c0000000-0000-4000-8000-000000000004",
     "role": "assistant",
     "content": "Let me check GOV.UK.\n\nYou can renew your passport online on GOV.UK."
   }
@@ -160,7 +165,7 @@ Once messages are built from events, the same assistant turn holds:
 
 ```json
 {
-  "turnId": "a0000000-0000-4000-8000-000000000002",
+  "turnId": "e0000000-0000-4000-8000-000000000002",
   "sender": "assistant",
   "runId": "a0000000-0000-4000-8000-000000000002",
   "createdAt": "2026-11-09T10:05:06.300Z",
@@ -280,12 +285,12 @@ the tool call. The client sends the same message back in the second
 request's history.
 
 The second run's user turn would hold the tool message. The client sent it,
-so its `sender` is `user`, and its id is the tool message's id. The user
-turn's schema would need to accept tool messages:
+so its `sender` is `user`. The user turn's schema would need to accept tool
+messages:
 
 ```json
 {
-  "turnId": "b0000000-0000-4000-8000-000000000004",
+  "turnId": "d0000000-0000-4000-8000-000000000004",
   "sender": "user",
   "runId": "a0000000-0000-4000-8000-000000000004",
   "createdAt": "2026-11-09T10:10:15.040Z",
@@ -304,10 +309,10 @@ The thread's turns, in `createdAt` order:
 
 | `createdAt`  | `sender`    | `turnId` | Messages                 |
 | ------------ | ----------- | -------- | ------------------------ |
-| 10:10:00.040 | `user`      | `b…03`   | user                     |
-| 10:10:02.000 | `assistant` | `a…03`   | assistant with tool call |
-| 10:10:15.040 | `user`      | `b…04`   | tool                     |
-| 10:10:19.000 | `assistant` | `a…04`   | assistant                |
+| 10:10:00.040 | `user`      | `d…03`   | user                     |
+| 10:10:02.000 | `assistant` | `e…03`   | assistant with tool call |
+| 10:10:15.040 | `user`      | `d…04`   | tool                     |
+| 10:10:19.000 | `assistant` | `e…04`   | assistant                |
 
 Examples 2 and 3 both store a `tool` message. In example 2 the agent ran the
 tool, so it's in the assistant turn. In example 3 the client ran it, so it's
@@ -376,8 +381,8 @@ The second run runs the tool and answers:
 The interrupt and the resume entry aren't messages, so this spec's turns
 can't hold them. Without them, a reloaded thread would show the tool call,
 then its result, without the question or the user's approval between them.
-The second run's request has no new message, so there's no message id to use
-as its user turn's `turnId`.
+The second run's request has no new message, but its user turn still gets a
+minted id.
 
 Fitting this is a set of additions:
 
@@ -385,21 +390,19 @@ Fitting this is a set of additions:
   attribute
 - the user turn stores `resume` beside `messages`, and its list of messages
   can be empty
-- a user turn with no message needs another id. The resume entry's
-  `interruptId` can't be it, as AG-UI only makes interrupt ids unique within
-  a run. Choosing one is left to that work.
 
 With those additions, the thread's turns, in `createdAt` order:
 
-| `createdAt`  | `sender`    | `turnId`       | Holds                               |
-| ------------ | ----------- | -------------- | ----------------------------------- |
-| 10:15:00.040 | `user`      | `b…05`         | user message                        |
-| 10:15:02.000 | `assistant` | `a…05`         | assistant with tool call, interrupt |
-| 10:15:10.040 | `user`      | not yet chosen | no messages, resume entry           |
-| 10:15:12.000 | `assistant` | `a…06`         | tool, assistant                     |
+| `createdAt`  | `sender`    | `turnId` | Holds                               |
+| ------------ | ----------- | -------- | ----------------------------------- |
+| 10:15:00.040 | `user`      | `d…05`   | user message                        |
+| 10:15:02.000 | `assistant` | `e…05`   | assistant with tool call, interrupt |
+| 10:15:10.040 | `user`      | `d…06`   | no messages, resume entry           |
+| 10:15:12.000 | `assistant` | `e…06`   | tool, assistant                     |
 
 The keys don't change, and neither do stored turns. The duplicate message
-check runs only when the request has a new message. `beginRun` already
+check runs only when the request has a new message, as only then is there a
+pointer to check. `beginRun` already
 rejects a reused run id, so retrying the second request still returns `409`.
 
 ## Every AG-UI message type
@@ -433,16 +436,14 @@ of the run sent it. The turn's `sender` does.
 
 In this spec:
 
-- **No text from the agent.** The assistant turn has `messages: []`, and
-  `firstOutputAt` equal to `createdAt`.
+- **No text from the agent.** The run ends with `RUN_ERROR`, and nothing is
+  written.
 - **Citations.** They go in the assistant message's `metadata`, which the
   schema keeps.
-- **A reused user message id.** `beginRun` returns `409`, and nothing is
-  written.
+- **A reused user message id.** `beginRun` finds its pointer and returns
+  `409`, and nothing is written.
 - **A failed run.** The run ends with `RUN_ERROR`, or the stream stops before
   `RUN_FINISHED`. Nothing is written.
-- **A cancelled run.** chat-api writes both turns on any `RUN_FINISHED`, so
-  the assistant turn holds what the agent sent before it stopped.
 
 Once messages are built from events, in the assistant turn as in example 2:
 
@@ -465,7 +466,7 @@ Not supported:
 
 - **A change to an earlier run's message.** AG-UI lets a producer reopen or
   restate a message by its id, and our agent does neither (see
-  [decision 3](../2026-11-04-store-thread-messages-as-turns.md#3-is-it-fine-not-to-check-the-agents-message-ids)).
+  [decision 3](../2026-11-04-store-thread-messages-as-turns.md#3-should-turns-have-their-own-ids)).
 
 Not designed yet:
 
