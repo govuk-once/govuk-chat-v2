@@ -7,6 +7,11 @@ strictPeerDependencies: true
 saveExact: true
 engineStrict: true
 
+allowBuilds:
+  '@aws/agentcore': false
+  esbuild: false
+  protobufjs: false
+
 peerDependencyRules:
   allowedVersions:
     eslint-plugin-import>eslint: '10'
