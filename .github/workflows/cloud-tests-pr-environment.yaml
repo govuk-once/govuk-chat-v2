@@ -1,0 +1,63 @@
+name: Cloud Tests PR Environment
+
+on:
+  pull_request:
+    paths:
+      - '.github/actions/setup-node-pnpm-env/*'
+      - '.github/workflows/cloud-tests-pr-environment.yaml'
+      - '.nvmrc'
+      - '.python-version'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.json'
+      - 'uv.lock'
+      - 'cdk/**'
+      - 'cloud-tests/**'
+      - 'services/**'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cloud-tests-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy PR environment
+    # Fork PRs get no OIDC token, so they can't deploy
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ENVIRONMENT: test-pr-${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: $/.github/actions/setup-node-pnpm-env
+
+      - name: Create private repo token
+        id: private-repo-token
+        uses: actions/create-github-app-token@v3.3.0
+        with:
+          client-id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
+          owner: govuk-once
+          repositories: govuk-chat-v2-private
+          permission-contents: read
+
+      - uses: aws-actions/configure-aws-credentials@v6.2.4
+        with:
+          audience: sts.amazonaws.com
+          role-to-assume: ${{ secrets.AWS_DEV_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      - name: Log in to public ECR
+        run: |
+          aws ecr-public get-login-password --region us-east-1 |
+            docker login --username AWS --password-stdin public.ecr.aws
+
+      - name: Deploy
+        env:
+          GITHUB_TOKEN: ${{ steps.private-repo-token.outputs.token }}
+        run: cloud-tests/scripts/deploy.sh --skip-credentials

@@ -61,6 +61,21 @@ and read the URLs and Cognito IDs they need from the stacks' outputs.
 `scripts/test-api.sh` runs only the API tests. Both scripts pass their
 arguments to the test runner, for example a test name filter with `-t`.
 
+### Testing in a separate environment
+
+To keep your own stacks for work in progress, deploy all the stacks to a
+separate environment, test it, and destroy it afterwards. CI uses the same
+scripts to deploy an environment for each pull request.
+
+```
+ENVIRONMENT=$USER-cloud cloud-tests/scripts/deploy.sh
+ENVIRONMENT=$USER-cloud cloud-tests/scripts/test.sh
+ENVIRONMENT=$USER-cloud cloud-tests/scripts/destroy.sh
+```
+
+`scripts/list-environment-stacks.sh` lists an environment's stacks, and
+`destroy.sh` succeeds without doing anything if there are none.
+
 ## Development
 
 Run the checks CI runs with:
