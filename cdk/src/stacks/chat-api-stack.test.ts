@@ -164,6 +164,58 @@ describe('ChatApiStack', () => {
       });
     });
 
+    it.each(['threads-turns-ts', 'threads-turn-feedback-ts'])(
+      'creates the %s lambda',
+      (nameSuffix) => {
+        const template = stackTemplate();
+
+        const [tableId] = Object.keys(
+          template.findResources('AWS::DynamoDB::Table'),
+        );
+
+        template.hasResourceProperties('AWS::Lambda::Function', {
+          FunctionName: Match.stringLikeRegexp(`chat-api-${nameSuffix}`),
+          Environment: {
+            Variables: Match.objectLike({
+              POWERTOOLS_SERVICE_NAME: 'chat-api',
+              CHAT_API_TABLE_NAME: { Ref: tableId },
+            }),
+          },
+        });
+      },
+    );
+
+    it.each([
+      ['threads-turns-ts', 'dynamodb:Query'],
+      ['threads-turn-feedback-ts', 'dynamodb:PutItem'],
+    ])('grants the %s lambda %s on the table', (nameSuffix, action) => {
+      const template = stackTemplate();
+
+      const [tableId] = Object.keys(
+        template.findResources('AWS::DynamoDB::Table'),
+      );
+      const functions = template.findResources('AWS::Lambda::Function', {
+        Properties: {
+          FunctionName: Match.stringLikeRegexp(`chat-api-${nameSuffix}`),
+        },
+      });
+      const roleId =
+        Object.values(functions)[0].Properties.Role['Fn::GetAtt'][0];
+
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith([action]),
+              Effect: 'Allow',
+              Resource: Match.arrayWith([{ 'Fn::GetAtt': [tableId, 'Arn'] }]),
+            }),
+          ]),
+        },
+        Roles: Match.arrayWith([Match.objectLike({ Ref: roleId })]),
+      });
+    });
+
     it('grants the agent-stream lambda access to the table', () => {
       const template = stackTemplate();
 
@@ -274,6 +326,46 @@ describe('ChatApiStack', () => {
           Properties: {
             PathPart: 'feedback',
             ParentId: { Ref: messageIdResourceId },
+          },
+        }),
+      );
+
+      template.hasResourceProperties('AWS::ApiGateway::Method', {
+        HttpMethod: 'POST',
+        ResourceId: { Ref: feedbackResourceId },
+        AuthorizationType: 'COGNITO_USER_POOLS',
+        AuthorizationScopes: ['chat-api/invoke'],
+      });
+    });
+
+    it('exposes a GET /v1/threads/{threadId}/turns method', () => {
+      const template = stackTemplate();
+
+      const [turnsResourceId] = Object.keys(
+        template.findResources('AWS::ApiGateway::Resource', {
+          Properties: { PathPart: 'turns' },
+        }),
+      );
+
+      template.hasResourceProperties('AWS::ApiGateway::Method', {
+        HttpMethod: 'GET',
+        ResourceId: { Ref: turnsResourceId },
+      });
+    });
+
+    it('requires Cognito auth on POST /v1/threads/{threadId}/turns/{turnId}/feedback', () => {
+      const template = stackTemplate();
+
+      const [turnIdResourceId] = Object.keys(
+        template.findResources('AWS::ApiGateway::Resource', {
+          Properties: { PathPart: '{turnId}' },
+        }),
+      );
+      const [feedbackResourceId] = Object.keys(
+        template.findResources('AWS::ApiGateway::Resource', {
+          Properties: {
+            PathPart: 'feedback',
+            ParentId: { Ref: turnIdResourceId },
           },
         }),
       );

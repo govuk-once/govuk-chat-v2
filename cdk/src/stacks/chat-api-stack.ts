@@ -270,6 +270,25 @@ export class ChatApiStack extends cdk.Stack {
 
     const feedbackLambda = new apigateway.LambdaIntegration(feedbackFunction);
 
+    const turnsFunction = this.lambdaHandler('threads/turns.ts', {
+      CHAT_API_TABLE_NAME: table.tableName,
+    });
+
+    table.grantReadData(turnsFunction);
+
+    const turnsLambda = new apigateway.LambdaIntegration(turnsFunction);
+
+    const turnFeedbackFunction = this.lambdaHandler(
+      'threads/turn-feedback.ts',
+      { CHAT_API_TABLE_NAME: table.tableName },
+    );
+
+    table.grantReadWriteData(turnFeedbackFunction);
+
+    const turnFeedbackLambda = new apigateway.LambdaIntegration(
+      turnFeedbackFunction,
+    );
+
     const v1 = api.root.addResource('v1');
     const threads = v1.addResource('threads');
 
@@ -287,6 +306,14 @@ export class ChatApiStack extends cdk.Stack {
       .addResource('{messageId}')
       .addResource('feedback');
     feedback.addMethod('POST', feedbackLambda);
+
+    // GET /v1/threads/{threadId}/turns
+    const turns = threadById.addResource('turns');
+    turns.addMethod('GET', turnsLambda);
+
+    // POST /v1/threads/{threadId}/turns/{turnId}/feedback
+    const turnFeedback = turns.addResource('{turnId}').addResource('feedback');
+    turnFeedback.addMethod('POST', turnFeedbackLambda);
 
     return api;
   }
