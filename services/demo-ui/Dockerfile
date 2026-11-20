@@ -5,7 +5,7 @@
 
 FROM public.ecr.aws/docker/library/node:24-slim AS deps
 WORKDIR /repo
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN npm install -g "$(node -p "require('./package.json').packageManager")"
 COPY services/demo-ui/package.json services/demo-ui/
 RUN pnpm install --frozen-lockfile --filter @govuk-chat-v2/demo-ui
