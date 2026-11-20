@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CursorSchema } from './message-cursor.ts';
+import { TurnCursorSchema } from './turn-cursor.ts';
 
 // We may want to use JSON schema validaiton or use an OpenAPI spec
 // for request and response validation. These are quite easy to convert to
@@ -55,6 +56,20 @@ export const ThreadMessagesQuerySchema = z.object({
 });
 
 export type ThreadMessagesQuery = z.infer<typeof ThreadMessagesQuerySchema>;
+
+export const ThreadTurnsPathParametersSchema = z.object({
+  threadId: z.uuid({ message: 'threadId must be a valid UUID' }),
+});
+
+export type ThreadTurnsPathParameters = z.infer<
+  typeof ThreadTurnsPathParametersSchema
+>;
+
+export const ThreadTurnsQuerySchema = z.object({
+  cursor: TurnCursorSchema.optional(),
+});
+
+export type ThreadTurnsQuery = z.infer<typeof ThreadTurnsQuerySchema>;
 
 export const MessageFeedbackPathParametersSchema =
   ThreadMessagesPathParametersSchema.extend({
