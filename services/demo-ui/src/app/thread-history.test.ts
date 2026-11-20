@@ -6,13 +6,11 @@ const MESSAGES = [
     id: crypto.randomUUID(),
     role: 'user',
     content: 'Tell me about SSP',
-    createdAt: '2026-09-30T12:00:00.000Z',
   },
   {
     id: crypto.randomUUID(),
     role: 'assistant',
     content: 'SSP is...',
-    createdAt: '2026-09-30T12:00:05.000Z',
   },
 ];
 

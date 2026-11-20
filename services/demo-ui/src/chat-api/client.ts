@@ -32,11 +32,9 @@ export interface InvokeThreadInput extends ThreadInput {
   content: string;
 }
 
-export interface ThreadMessage {
-  id: string;
-  role: string;
-  content: string;
-  createdAt: string;
+// Each message is an AG-UI message object, which the browser converts itself.
+export interface ThreadTurn {
+  messages: unknown[];
 }
 
 // A property rather than a top-level `let`, which unicorn's lint rules reject.
@@ -132,11 +130,9 @@ export async function invokeThread(
   });
 }
 
-export async function listThreadMessages(
-  input: ThreadInput,
-): Promise<Response> {
+export async function listThreadTurns(input: ThreadInput): Promise<Response> {
   return requestChatApi(
-    `/v1/threads/${input.threadId}/messages`,
+    `/v1/threads/${input.threadId}/turns`,
     input.endUserId,
     { signal: input.signal },
   );

@@ -13,7 +13,7 @@ describe('a thread journey', () => {
     client = await ChatApiClient.connect();
   });
 
-  it('streams a run, then stores its messages', async () => {
+  it('streams a run, then stores it as a user turn and an assistant turn', async () => {
     const threadId = randomUUID();
 
     const eventTypes = await client.invokeThread(threadId, PROMPT);
@@ -22,10 +22,8 @@ describe('a thread journey', () => {
     expect(eventTypes).toContain('TEXT_MESSAGE_CONTENT');
     expect(eventTypes.at(-1)).toBe('RUN_FINISHED');
 
-    const messages = await client.listMessages(threadId);
+    const turns = await client.listTurns(threadId);
 
-    expect(messages.map((message) => message.role)).toEqual(
-      expect.arrayContaining(['user', 'assistant']),
-    );
+    expect(turns.map((turn) => turn.sender)).toEqual(['user', 'assistant']);
   });
 });

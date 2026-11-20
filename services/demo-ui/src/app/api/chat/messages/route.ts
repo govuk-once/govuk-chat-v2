@@ -1,14 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { readSession } from '../../../../auth/session.ts';
 import {
-  listThreadMessages,
-  type ThreadMessage,
+  listThreadTurns,
+  type ThreadTurn,
 } from '../../../../chat-api/client.ts';
 import { endUserIdFor } from '../../../../chat-api/end-user-id.ts';
 import { readThreadId, setThreadId } from '../cookies.ts';
 
-interface ThreadMessagesBody {
-  messages: ThreadMessage[];
+interface ThreadTurnsBody {
+  turns: ThreadTurn[];
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ messages: [] });
   }
 
-  const upstream = await listThreadMessages({
+  const upstream = await listThreadTurns({
     threadId,
     endUserId: endUserIdFor(session.sub),
     signal: request.signal,
@@ -40,9 +40,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { messages } = (await upstream.json()) as ThreadMessagesBody;
+  const { turns } = (await upstream.json()) as ThreadTurnsBody;
   const response = NextResponse.json(
-    { messages },
+    { messages: turns.flatMap((turn) => turn.messages) },
     { headers: { 'Cache-Control': 'no-store' } },
   );
   setThreadId(response, threadId);
