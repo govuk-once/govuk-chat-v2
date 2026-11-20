@@ -83,6 +83,32 @@ function validRequest(): string {
   });
 }
 
+function completedRunEvents(): BaseEvent[] {
+  return [
+    {
+      type: EventType.RUN_STARTED,
+      threadId: SYSTEM_THREAD_ID,
+      runId: VALID_RUN_ID,
+    },
+    {
+      type: EventType.TEXT_MESSAGE_START,
+      messageId: 'msg-1',
+      role: 'assistant',
+    },
+    {
+      type: EventType.TEXT_MESSAGE_CONTENT,
+      messageId: 'msg-1',
+      delta: 'SSP is a weekly payment.',
+    },
+    { type: EventType.TEXT_MESSAGE_END, messageId: 'msg-1' },
+    {
+      type: EventType.RUN_FINISHED,
+      threadId: SYSTEM_THREAD_ID,
+      runId: VALID_RUN_ID,
+    },
+  ];
+}
+
 function fieldErrorResponse(fields: string[]): unknown {
   return expect.objectContaining({
     error: 'Agent invocation error',
@@ -397,6 +423,37 @@ describe('handler', () => {
         runId: VALID_RUN_ID,
         messageId: VALID_MESSAGES.at(-1)?.id,
       });
+    });
+
+    it('times the user message from when the claim returns', async () => {
+      const claimedAt = new Date('2026-11-09T10:00:00.040Z');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      beginRun.mockImplementationOnce(async () => {
+        vi.setSystemTime(claimedAt);
+        return { status: 'claimed' };
+      });
+      send.mockImplementationOnce(async () => {
+        vi.setSystemTime(new Date('2026-11-09T10:00:02.000Z'));
+        return { response: aguiEventStream(completedRunEvents()) };
+      });
+
+      try {
+        await runHandler(
+          apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(finishRun).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.arrayContaining([
+          expect.objectContaining({
+            role: 'user',
+            createdAt: claimedAt.toISOString(),
+          }),
+        ]),
+      );
     });
 
     it.each([

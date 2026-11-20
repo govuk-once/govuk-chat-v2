@@ -94,6 +94,10 @@ async function invokeAgent(
     });
   }
 
+  // The claim means the thread's last run has finished, so a question timed
+  // from here sorts after that run's answer.
+  const userMessageCreatedAt = new Date().toISOString();
+
   const payload = {
     threadId: systemThreadId,
     runId: body.runId,
@@ -129,7 +133,7 @@ async function invokeAgent(
       messageId: lastMessage.id,
       role: lastMessage.role,
       content: lastMessage.content,
-      createdAt: new Date().toISOString(),
+      createdAt: userMessageCreatedAt,
     };
 
     const accumulator = new MessageAccumulator();
