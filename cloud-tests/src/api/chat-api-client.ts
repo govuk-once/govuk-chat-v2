@@ -6,10 +6,9 @@ import {
 import { EventSourceParserStream } from 'eventsource-parser/stream';
 import { chatApiOutputs, type ChatApiOutputs } from '../environment.ts';
 
-export interface StoredMessage {
+export interface StoredTurn {
   id: string;
-  role: string;
-  content: string;
+  sender: string;
 }
 
 async function fetchAppClientSecret({
@@ -114,11 +113,9 @@ export class ChatApiClient {
     return eventTypes;
   }
 
-  async listMessages(threadId: string): Promise<StoredMessage[]> {
-    const response = await this.request(`/v1/threads/${threadId}/messages`);
-    const { messages } = (await response.json()) as {
-      messages: StoredMessage[];
-    };
-    return messages;
+  async listTurns(threadId: string): Promise<StoredTurn[]> {
+    const response = await this.request(`/v1/threads/${threadId}/turns`);
+    const { turns } = (await response.json()) as { turns: StoredTurn[] };
+    return turns;
   }
 }
