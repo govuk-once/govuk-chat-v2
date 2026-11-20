@@ -144,7 +144,8 @@ async function invokeAgent(
       runId: body.runId,
       onRunFinished: async () => {
         const assistantMessageId = accumulator.getLastMessageId();
-        if (!assistantMessageId) {
+        const firstOutputAt = accumulator.getFirstOutputAt();
+        if (!assistantMessageId || !firstOutputAt) {
           throw new Error('The agent finished the run without a message');
         }
         const assistantContent = accumulator.getContent();
@@ -164,7 +165,28 @@ async function invokeAgent(
             ]
           : [userMessage];
 
-        return finishRun(runKey, messages);
+        return finishRun(runKey, messages, {
+          userTurn: {
+            createdAt: userMessageCreatedAt,
+            messages: [
+              {
+                id: lastMessage.id,
+                role: 'user',
+                content: lastMessage.content,
+              },
+            ],
+          },
+          assistantTurn: {
+            firstOutputAt,
+            messages: [
+              {
+                id: assistantMessageId,
+                role: 'assistant',
+                content: assistantContent,
+              },
+            ],
+          },
+        });
       },
       onRunFailed: () => releaseRun(runKey),
       onEvent: (event) => accumulator.process(event),

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { send, stubDynamoDBDocumentClient } from '../test-utils/dynamodb.ts';
-import type { beginRun, finishRun, releaseRun } from './runs.ts';
+import type { beginRun, finishRun, releaseRun, TurnInput } from './runs.ts';
 
 const NOW = new Date('2026-09-08T12:00:00.000Z');
 const NOW_SECONDS = Math.floor(NOW.getTime() / 1000);
@@ -13,6 +13,8 @@ const KEY = {
   messageId: 'message-1',
 };
 const THREAD_PK = 'THREAD#thread-1';
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 const testEnv = {} as {
   beginRun: typeof beginRun;
@@ -146,13 +148,25 @@ describe('finishRun', () => {
       createdAt: '2026-09-08T12:00:01.000Z',
     },
   ];
+  const TURNS = {
+    userTurn: {
+      createdAt: '2026-09-08T11:59:58.000Z',
+      messages: [{ id: KEY.messageId, role: 'user', content: 'Hi' }],
+    },
+    assistantTurn: {
+      firstOutputAt: '2026-09-08T11:59:59.000Z',
+      messages: [{ id: 'message-2', role: 'assistant', content: 'Hi there' }],
+    },
+  } as const satisfies TurnInput;
 
   it('records the run, assistant messages and releases the lock in one transaction', async () => {
     send.mockResolvedValueOnce({});
 
-    await testEnv.finishRun(KEY, ASSISTANT_MESSAGES);
+    await testEnv.finishRun(KEY, ASSISTANT_MESSAGES, TURNS);
 
-    const [run, assistantMessage, lock] = transactItems();
+    const items = transactItems();
+    const [run, assistantMessage] = items;
+    const lock = items.at(-1)!;
     expect(run.Put?.Item).toMatchObject({
       pk: THREAD_PK,
       sk: 'RUN#run-1',
@@ -177,9 +191,82 @@ describe('finishRun', () => {
       transactionCancelled(['None', 'None', 'ConditionalCheckFailed']),
     );
 
-    await expect(testEnv.finishRun(KEY, ASSISTANT_MESSAGES)).rejects.toThrow(
-      'Run completion was cancelled',
+    await expect(
+      testEnv.finishRun(KEY, ASSISTANT_MESSAGES, TURNS),
+    ).rejects.toThrow('Run completion was cancelled');
+  });
+
+  it('writes both turns under new ids, and points the user message at its turn', async () => {
+    send.mockResolvedValueOnce({});
+
+    await testEnv.finishRun(KEY, ASSISTANT_MESSAGES, TURNS);
+
+    const [userTurn, assistantTurn, pointer] = transactItems()
+      .slice(2, 5)
+      .map((item) => item.Put);
+    const userTurnId = userTurn?.Item?.turnId;
+    const assistantTurnId = assistantTurn?.Item?.turnId;
+    expect(userTurnId).toMatch(UUID);
+    expect(assistantTurnId).toMatch(UUID);
+    expect(userTurnId).not.toBe(assistantTurnId);
+
+    expect(userTurn?.Item).toMatchObject({
+      __edb_e__: 'userTurn',
+      sender: 'user',
+      runId: KEY.runId,
+      messages: TURNS.userTurn.messages,
+      createdAt: TURNS.userTurn.createdAt,
+      expiresAt: A_YEAR_AHEAD,
+      gsi1sk: expect.stringMatching(/^\$threadturns#/),
+    });
+    expect(assistantTurn?.Item).toMatchObject({
+      __edb_e__: 'assistantTurn',
+      sender: 'assistant',
+      runId: KEY.runId,
+      messages: TURNS.assistantTurn.messages,
+      createdAt: NOW.toISOString(),
+      firstOutputAt: TURNS.assistantTurn.firstOutputAt,
+      expiresAt: A_YEAR_AHEAD,
+      gsi1sk: expect.stringMatching(/^\$threadturns#/),
+    });
+    expect(pointer?.Item).toMatchObject({
+      __edb_e__: 'messagePointer',
+      messageId: KEY.messageId,
+      turnId: userTurnId,
+      expiresAt: A_YEAR_AHEAD,
+    });
+    expect(pointer?.ConditionExpression).toMatch(
+      /attribute_not_exists\(.+\) OR .+ <= /,
     );
+  });
+
+  it.each([
+    [
+      'user',
+      {
+        ...TURNS,
+        userTurn: {
+          ...TURNS.userTurn,
+          messages: [{ ...TURNS.userTurn.messages[0], createdAt: 'x' }],
+        },
+      },
+    ],
+    [
+      'assistant',
+      {
+        ...TURNS,
+        assistantTurn: {
+          ...TURNS.assistantTurn,
+          messages: [{ ...TURNS.assistantTurn.messages[0], createdAt: 'x' }],
+        },
+      },
+    ],
+  ])('writes nothing when the %s turn fails its schema', async (_, turns) => {
+    await expect(
+      testEnv.finishRun(KEY, ASSISTANT_MESSAGES, turns as TurnInput),
+    ).rejects.toThrow();
+
+    expect(send).not.toHaveBeenCalled();
   });
 });
 

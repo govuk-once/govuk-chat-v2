@@ -3,7 +3,12 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 import { EventType, type BaseEvent } from '@ag-ui/core';
 import { logger } from '../../logging/logger.ts';
 import type { ResolvedThread, ThreadKey } from '../../persistence/threads.ts';
-import type { MessageInput, RunClaim, RunKey } from '../../persistence/runs.ts';
+import type {
+  MessageInput,
+  RunClaim,
+  RunKey,
+  TurnInput,
+} from '../../persistence/runs.ts';
 import {
   send,
   encoder,
@@ -53,7 +58,9 @@ const resolveThread = vi
   .mockResolvedValue({ systemThreadId: SYSTEM_THREAD_ID });
 const beginRun = vi.fn<(key: RunKey) => Promise<RunClaim>>();
 const finishRun =
-  vi.fn<(key: RunKey, messages: MessageInput[]) => Promise<void>>();
+  vi.fn<
+    (key: RunKey, messages: MessageInput[], turns: TurnInput) => Promise<void>
+  >();
 const releaseRun = vi.fn<(key: Omit<RunKey, 'messageId'>) => Promise<void>>();
 
 beforeAll(async () => {
@@ -370,6 +377,28 @@ describe('handler', () => {
             createdAt: expect.any(String),
           },
         ],
+        {
+          userTurn: {
+            createdAt: expect.any(String),
+            messages: [
+              {
+                id: VALID_MESSAGES[0].id,
+                role: 'user',
+                content: 'Tell me about SSP',
+              },
+            ],
+          },
+          assistantTurn: {
+            firstOutputAt: expect.any(String),
+            messages: [
+              {
+                id: 'msg-2',
+                role: 'assistant',
+                content: 'Searching for SSP\n\nSSP is a weekly payment.',
+              },
+            ],
+          },
+        },
       );
     });
   });
@@ -389,7 +418,7 @@ describe('handler', () => {
       });
     });
 
-    it('times the user message from when the claim returns', async () => {
+    it('times the user message and turn from when the claim returns', async () => {
       const claimedAt = new Date('2026-11-09T10:00:00.040Z');
       vi.useFakeTimers({ toFake: ['Date'] });
       beginRun.mockImplementationOnce(async () => {
@@ -417,6 +446,11 @@ describe('handler', () => {
             createdAt: claimedAt.toISOString(),
           }),
         ]),
+        expect.objectContaining({
+          userTurn: expect.objectContaining({
+            createdAt: claimedAt.toISOString(),
+          }),
+        }),
       );
     });
 
