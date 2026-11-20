@@ -16,7 +16,7 @@ const fetchMock = vi.fn<typeof fetch>();
 
 const testEnv = {} as {
   invokeThread: (input: InvokeThreadInput) => Promise<Response>;
-  listThreadMessages: (input: ThreadInput) => Promise<Response>;
+  listThreadTurns: (input: ThreadInput) => Promise<Response>;
 };
 
 function invokeInput(): InvokeThreadInput {
@@ -60,7 +60,7 @@ beforeEach(async () => {
   vi.doMock('../lib/cognito-client-secret.ts', () => ({ fetchClientSecret }));
   const clientModule = await import('./client.ts');
   testEnv.invokeThread = clientModule.invokeThread;
-  testEnv.listThreadMessages = clientModule.listThreadMessages;
+  testEnv.listThreadTurns = clientModule.listThreadTurns;
 });
 
 afterAll(() => {
@@ -141,18 +141,18 @@ describe('invokeThread', () => {
   });
 });
 
-describe('listThreadMessages', () => {
-  it('gets the thread messages endpoint and returns the response', async () => {
+describe('listThreadTurns', () => {
+  it('gets the thread turns endpoint and returns the response', async () => {
     const input = {
       threadId: crypto.randomUUID(),
       endUserId: crypto.randomUUID(),
       signal: new AbortController().signal,
     };
 
-    const response = await testEnv.listThreadMessages(input);
+    const response = await testEnv.listThreadTurns(input);
 
     const [url, init] = fetchMock.mock.calls.at(-1)!;
-    expect(url).toBe(`${CHAT_API_URL}v1/threads/${input.threadId}/messages`);
+    expect(url).toBe(`${CHAT_API_URL}v1/threads/${input.threadId}/turns`);
     expect(init?.signal).toBe(input.signal);
     expect(init?.headers).toEqual({
       Authorization: `Bearer ${ACCESS_TOKEN}`,
