@@ -186,9 +186,27 @@ describe('successful retrieval', () => {
           sender: 'assistant',
           createdAt: ASSISTANT_TURN.createdAt,
           messages: ASSISTANT_TURN.messages,
+          feedbackUrl: `/v1/threads/${VALID_THREAD_ID}/turns/${ASSISTANT_TURN.turnId}/feedback`,
         },
       ],
     });
+  });
+
+  it('returns the feedback, and no feedbackUrl, for an assistant turn with a reaction', async () => {
+    const feedback = {
+      reaction: 'positive',
+      createdAt: '2026-09-03T12:00:02.000Z',
+    } as const;
+    getTurnPage.mockResolvedValueOnce({
+      turns: [{ ...ASSISTANT_TURN, feedback } as StoredTurn],
+    });
+
+    const response = await runHandler(validEvent());
+
+    expect(parsedBody(response)).toEqual({
+      turns: [expect.objectContaining({ feedback })],
+    });
+    expect(parsedBody(response)).not.toHaveProperty('turns.0.feedbackUrl');
   });
 
   it('resolves the thread using the end-user-id header and path threadId', async () => {

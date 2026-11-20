@@ -1,4 +1,5 @@
 import { service } from './service.ts';
+import { readTurnFeedback, type TurnFeedback } from './feedback.ts';
 import { TurnCursor } from '../schemas/turn-cursor.ts';
 import type {
   AssistantTurnMessages,
@@ -15,6 +16,7 @@ export type StoredTurn =
   | (TurnPosition & {
       sender: 'assistant';
       messages: AssistantTurnMessages;
+      feedback?: TurnFeedback;
     });
 
 export interface TurnPage {
@@ -119,6 +121,23 @@ async function readTurns(
   return turns.toSorted(byPosition(order));
 }
 
+async function withFeedback(
+  systemThreadId: string,
+  turns: StoredTurn[],
+): Promise<StoredTurn[]> {
+  const assistantTurnIds = turns
+    .filter(({ sender }) => sender === 'assistant')
+    .map(({ turnId }) => turnId);
+  const feedbackByTurnId = await readTurnFeedback(
+    systemThreadId,
+    assistantTurnIds,
+  );
+  return turns.map((turn) => {
+    const feedback = feedbackByTurnId.get(turn.turnId);
+    return feedback ? { ...turn, feedback } : turn;
+  });
+}
+
 export async function getTurnPage(
   systemThreadId: string,
   from?: TurnCursor,
@@ -132,7 +151,10 @@ export async function getTurnPage(
 
   const hasMoreInPagedDirection = read.length > TURN_PAGE_SIZE;
   const page = read.slice(0, TURN_PAGE_SIZE);
-  const turns = isAscending ? page : page.toReversed();
+  const turns = await withFeedback(
+    systemThreadId,
+    isAscending ? page : page.toReversed(),
+  );
 
   const oldest = turns.at(0);
   const newest = turns.at(-1);

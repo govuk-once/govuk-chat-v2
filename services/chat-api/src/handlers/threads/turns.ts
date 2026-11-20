@@ -33,12 +33,26 @@ function turnsPageUrl(threadId: string, cursor: TurnCursor): string {
   return `/v1/threads/${threadId}/turns?cursor=${cursor.toString()}`;
 }
 
-function toResponseTurn(turn: StoredTurn) {
+function feedbackUrl(threadId: string, turnId: string): string {
+  return `/v1/threads/${threadId}/turns/${turnId}/feedback`;
+}
+
+function feedbackFields(threadId: string, turn: StoredTurn) {
+  if (turn.sender !== 'assistant') {
+    return {};
+  }
+  return turn.feedback
+    ? { feedback: turn.feedback }
+    : { feedbackUrl: feedbackUrl(threadId, turn.turnId) };
+}
+
+function toResponseTurn(threadId: string, turn: StoredTurn) {
   return {
     id: turn.turnId,
     sender: turn.sender,
     createdAt: turn.createdAt,
     messages: turn.messages,
+    ...feedbackFields(threadId, turn),
   };
 }
 
@@ -62,7 +76,7 @@ async function listTurns(
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      turns: page.turns.map((turn) => toResponseTurn(turn)),
+      turns: page.turns.map((turn) => toResponseTurn(threadId, turn)),
       earlierTurnsUrl: page.earlier && turnsPageUrl(threadId, page.earlier),
       laterTurnsUrl: page.later && turnsPageUrl(threadId, page.later),
     }),

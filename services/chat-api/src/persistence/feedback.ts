@@ -111,3 +111,91 @@ export async function readFeedback(
     ]),
   );
 }
+
+export interface TurnFeedbackKey {
+  systemThreadId: string;
+  turnId: string;
+}
+
+export interface TurnFeedback {
+  reaction: Reaction;
+  createdAt: string;
+}
+
+export type TurnFeedbackOutcome =
+  | { status: 'recorded' }
+  | { status: 'turn-not-found' }
+  | { status: 'already-provided' };
+
+export async function recordTurnFeedback(
+  key: TurnFeedbackKey,
+  reaction: Reaction,
+): Promise<TurnFeedbackOutcome> {
+  const now = new Date();
+  const { systemThreadId, turnId } = key;
+
+  const result = await service.transaction
+    .write(({ assistantTurn, turnFeedback }) => [
+      // The comparison fails when the turn is absent, so it needs no exists
+      // check alongside it.
+      assistantTurn
+        .check({ systemThreadId, turnId })
+        .where((attribute, operation) =>
+          operation.gt(attribute.expiresAt, epochSeconds(now)),
+        )
+        .commit(),
+      turnFeedback
+        .create({
+          systemThreadId,
+          turnId,
+          reaction,
+          createdAt: now.toISOString(),
+          expiresAt: chatRegularRetention(now),
+        })
+        .commit(),
+    ])
+    .go();
+
+  if (!result.canceled) {
+    return { status: 'recorded' };
+  }
+
+  const codes = cancellationCodes(result.data);
+  const [turnCode, feedbackCode] = codes;
+
+  if (turnCode === 'ConditionalCheckFailed') {
+    return { status: 'turn-not-found' };
+  }
+  if (
+    feedbackCode === 'ConditionalCheckFailed' ||
+    codes.includes('TransactionConflict')
+  ) {
+    return { status: 'already-provided' };
+  }
+  throw new Error(`Feedback recording was cancelled: ${codes.join(', ')}`);
+}
+
+export async function readTurnFeedback(
+  systemThreadId: string,
+  turnIds: readonly string[],
+): Promise<Map<string, TurnFeedback>> {
+  if (turnIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, unprocessed } = await service.entities.turnFeedback
+    .get(turnIds.map((turnId) => ({ systemThreadId, turnId })))
+    .go({ consistent: true });
+  if (unprocessed.length > 0) {
+    throw new Error(
+      `Feedback read left ${unprocessed.length} keys unprocessed`,
+    );
+  }
+
+  return new Map(
+    data.map(({ turnId, reaction, createdAt }) => [
+      turnId,
+      { reaction, createdAt },
+    ]),
+  );
+}

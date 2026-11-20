@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { send, stubDynamoDBDocumentClient } from '../test-utils/dynamodb.ts';
 import { TurnCursor } from '../schemas/turn-cursor.ts';
 import type { getTurnPage } from './turns.ts';
@@ -23,6 +31,11 @@ beforeAll(async () => {
 
 afterAll(() => {
   vi.useRealTimers();
+});
+
+// Reading reactions follows each query that returns an assistant turn
+beforeEach(() => {
+  send.mockResolvedValue(batchGetResponse());
 });
 
 function storedTurn(
@@ -58,6 +71,24 @@ function threadOf(count: number) {
       new Date(NOW.getTime() + index * 1000).toISOString(),
     ),
   );
+}
+
+function storedFeedback(turnId: string, reaction: 'positive' | 'negative') {
+  return {
+    pk: THREAD_PK,
+    sk: `$feedback_2#turnid_${turnId}`,
+    systemThreadId: SYSTEM_THREAD_ID,
+    turnId,
+    reaction,
+    createdAt: NOW.toISOString(),
+    expiresAt: NOW_SECONDS + 31_536_000,
+    __edb_e__: 'feedback',
+    __edb_v__: '2',
+  };
+}
+
+function batchGetResponse(items: ReturnType<typeof storedFeedback>[] = []) {
+  return { Responses: { 'test-chat-api': items }, UnprocessedKeys: {} };
 }
 
 function lastEvaluatedKey(turn: ReturnType<typeof storedTurn>) {
@@ -142,7 +173,6 @@ describe('getTurnPage', () => {
 
       const result = await testEnv.getTurnPage(SYSTEM_THREAD_ID);
 
-      expect(send).toHaveBeenCalledTimes(2);
       expect(sentQueryInput(1).ExclusiveStartKey).toEqual(
         lastEvaluatedKey(thread[49]),
       );
@@ -261,4 +291,56 @@ describe('getTurnPage', () => {
       expect(result).toEqual({ turns: [] });
     },
   );
+
+  describe('feedback', () => {
+    it('attaches each reaction to its assistant turn, read consistently', async () => {
+      const thread = threadOf(4);
+      const feedback = storedFeedback(thread[3].turnId, 'positive');
+      send
+        .mockResolvedValueOnce({ Items: thread.toReversed() })
+        .mockResolvedValueOnce(batchGetResponse([feedback]));
+
+      const result = await testEnv.getTurnPage(SYSTEM_THREAD_ID);
+
+      expect(send.mock.calls[1][0]).toMatchObject({
+        input: {
+          RequestItems: { 'test-chat-api': { ConsistentRead: true } },
+        },
+      });
+      expect(
+        result.turns.map((turn) =>
+          turn.sender === 'assistant' ? turn.feedback : undefined,
+        ),
+      ).toEqual([
+        undefined,
+        undefined,
+        undefined,
+        { reaction: 'positive', createdAt: feedback.createdAt },
+      ]);
+    });
+
+    it('skips reading reactions when the page has no assistant turns', async () => {
+      send.mockResolvedValueOnce({ Items: threadOf(1) });
+
+      await testEnv.getTurnPage(SYSTEM_THREAD_ID);
+
+      expect(send).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws when any reaction keys come back unprocessed', async () => {
+      const thread = threadOf(2);
+      send.mockResolvedValueOnce({ Items: thread }).mockResolvedValueOnce({
+        Responses: { 'test-chat-api': [] },
+        UnprocessedKeys: {
+          'test-chat-api': {
+            Keys: [
+              { pk: THREAD_PK, sk: `$feedback_2#turnid_${thread[1].turnId}` },
+            ],
+          },
+        },
+      });
+
+      await expect(testEnv.getTurnPage(SYSTEM_THREAD_ID)).rejects.toThrow();
+    });
+  });
 });

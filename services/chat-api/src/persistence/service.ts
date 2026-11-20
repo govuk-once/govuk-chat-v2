@@ -251,6 +251,25 @@ const Feedback = new Entity({
   },
 });
 
+// Version 2 keys a reaction by the assistant turn it's for, in place of a
+// message. Version 1 stays for the messages endpoint until it's removed.
+const TurnFeedback = new Entity({
+  model: { service: 'chat-api', entity: 'feedback', version: '2' },
+  attributes: {
+    systemThreadId: { type: 'string', required: true },
+    turnId: { type: 'string', required: true },
+    reaction: { type: ['positive', 'negative'] as const, required: true },
+    createdAt: { type: 'string', required: true, readOnly: true },
+    expiresAt: { type: 'number', required: true },
+  },
+  indexes: {
+    primary: {
+      pk: { field: 'pk', composite: ['systemThreadId'] },
+      sk: { field: 'sk', composite: ['turnId'] },
+    },
+  },
+});
+
 export const service = new Service(
   {
     threadMapping: ThreadMapping,
@@ -262,6 +281,7 @@ export const service = new Service(
     assistantTurn: AssistantTurn,
     messagePointer: MessagePointer,
     feedback: Feedback,
+    turnFeedback: TurnFeedback,
   },
   { table, client },
 );

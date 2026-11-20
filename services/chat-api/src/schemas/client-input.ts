@@ -87,3 +87,20 @@ export const MessageFeedbackBodySchema = z
   .strict();
 
 export type MessageFeedbackBody = z.infer<typeof MessageFeedbackBodySchema>;
+
+export const TurnFeedbackPathParametersSchema =
+  ThreadTurnsPathParametersSchema.extend({
+    turnId: z.uuid({ message: 'turnId must be a valid UUID' }),
+  });
+
+export type TurnFeedbackPathParameters = z.infer<
+  typeof TurnFeedbackPathParametersSchema
+>;
+
+export const TurnFeedbackBodySchema = z
+  .object({
+    reaction: z.enum(['positive', 'negative']),
+  })
+  .strict();
+
+export type TurnFeedbackBody = z.infer<typeof TurnFeedbackBodySchema>;
