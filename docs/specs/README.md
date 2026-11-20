@@ -41,6 +41,39 @@ spec was first written. The title describes the feature, e.g.
 If a spec needs supporting files such as diagrams, put them in a directory with
 the same name as the spec, without the `.md` extension.
 
+## A briefing and a build sheet
+
+A spec has two readers, so it has two parts:
+
+- **The briefing** is for reviewers. It says what will be different, what
+  they're being asked to agree to, and what could go wrong. Keep it to a
+  3-minute read at most (about 600–900 words).
+- **The build sheet** is for whoever implements it. It's terse reference: the
+  work in each pull request, the edge cases to handle and the checks that show
+  it works. It records agreed facts, not arguments — anything with a "because"
+  belongs in the briefing or nowhere. Reviewers don't need to read it.
+
+The author sorts the decisions, so reviewers don't have to read everything to
+find the ones that matter:
+
+- **Decide** is for real trade-offs a reviewer might choose differently. Each
+  is a question with a recommendation and its main alternative. Have no more
+  than three; if there are more, the work probably wants splitting into more
+  than one spec.
+- **Know** is for decisions that are consequential but not contentious, a line
+  or two each.
+- **Following precedent** names the existing patterns the work follows, in a
+  sentence or two for all of them, so a reviewer can object without reading
+  about each.
+
+Decisions about security, privacy or accessibility go in Decide or Know, never
+in Following precedent. Anything needed to roll out safely, such as migrations,
+feature flags or ordering between services, goes in Know or Delivery.
+
+Put what a reviewer will experience before any mechanism: the before and after,
+then a walkthrough in the second person. Say each fact once. Leave out any
+briefing section that would be empty rather than writing "None".
+
 ## Review and status
 
 A spec's status is set in the pull request that changes it, so the merged spec
@@ -55,18 +88,20 @@ is always accurate without a follow-up edit:
   that explains why, linking to any spec that replaces it.
 
 An open spec pull request is the proposal, so there is no status for it. Review
-it before implementation starts. Reviewers should check that the spec solves
-the stated problem, that its requirements are testable, and that open questions
-are either answered or explicitly carried forward. Implementation pull requests
-should link to the spec they deliver. Where the work is split across several
-pull requests, set **implemented** in the last of them.
+it before implementation starts. Reviewers should read the briefing and check
+that the Decide items are the real decisions, that nothing under Know or
+Following precedent deserves arguing about, that the risks are the right ones,
+and that anything being waited on is either resolved or explicitly carried
+forward. Implementation pull requests should link to the spec they deliver.
+Where the work is split across several pull requests, set **implemented** in
+the last of them.
 
 Spec pull requests are an exception to curating history by amending and
 rebasing (see [Git](../../AGENTS.md#git)). A spec has no tests or CI to show
 whether a revision matters, so reviewers need to see what changed since they
 last looked. Commit each round of review changes separately instead of
-amending, and keep those commits when merging. Each message should say which requirement or section
-changed and why.
+amending, and keep those commits when merging. Each message should say which
+decision or section changed and why.
 
 Likewise, when the plan changes during implementation, update the spec in its
 own commit, separate from the code, saying what diverged and why.
@@ -77,69 +112,86 @@ own commit, separate from the code, saying what diverged and why.
 # Title of the feature
 
 **Date:** YYYY-MM-DD
-
 **Status:** accepted
+**Ticket:** link to Jira ticket, if there is one
 
-## Problem
+## In one sentence
 
-What problem we are solving, for whom, and why now. Link to any tickets or
-supporting research.
+What will be different, and why it's worth doing.
 
-## Goals
+## Before and after
 
-- What a successful outcome looks like.
+| Today               | After                       |
+| ------------------- | --------------------------- |
+| How things work now | How they'll work once built |
 
-## Non-goals
+## What you'll experience
+
+What a developer or user will see and do once this is built, in the second
+person: "you run…, it checks…".
+
+## Decide
+
+### 1. A question a reviewer might answer differently?
+
+**Recommended:** the answer we propose.
+
+Why, and what it costs.
+
+- **Alternative:** the main alternative, and why we don't recommend it.
+
+## Know
+
+- **A consequential decision that isn't contentious,** in a line or two.
+
+## Following precedent
+
+The existing patterns this work follows, named in a sentence or two.
+
+## Not in this change
 
 - What is deliberately out of scope, so reviewers don't assume it is covered.
 
-## Requirements
+## Waiting on
 
-Numbered so tests, the plan and pull requests can refer to them.
+Who or what the work is blocked on, and what can go ahead in the meantime.
 
-1. **R1:** A testable statement of required behaviour.
+## What could bite us
 
-## Design
+- **A risk that could sink or delay the work,** and how we'll find out or
+  mitigate it.
 
-How the feature will work: the packages and services involved, changes to
-APIs, data or infrastructure, and how it fits the existing architecture. Cover
-security, privacy and accessibility where they apply.
+## Delivery
 
-## Alternatives considered
+1. What the first pull request delivers.
 
-Approaches that were rejected, and why.
+Split the work into a pull request for each change a reviewer can assess on
+its own, ordered as they will merge, and say why the split helps. One pull
+request is fine when the work reads as a single change.
 
-## Implementation plan
+---
 
-The affected packages and files, and the steps to deliver the work, ordered as
-they will be committed. Note which requirements each step delivers.
+## Build sheet
 
-Plan the pull requests to suit reviewers. One pull request is fine when the
-work reads as a single change. Where it breaks down into distinct changes that
-a reviewer can assess on their own, such as an API endpoint, then the service
-that calls it, then the UI that uses it, split it into a pull request for each,
-ordered as they will merge; later ones can build on earlier ones. When split,
-group the steps under a heading per pull request saying what it delivers, and
-say why it helps.
+Reference for the implementer. Terse by design: it records agreed facts, not
+arguments.
 
-1. Step one (R1)
+### Steps
 
-### Testing
+The work in each pull request in Delivery, as a list under its number.
 
-How the requirements will be verified — unit tests, tests that need cloud
+### Edge cases
+
+- If something happens, then what the code does.
+
+### Checks
+
+How each pull request is verified — unit tests, tests that need cloud
 infrastructure, and any manual checks.
 
-### Rollout
+### Open questions
 
-Anything needed to deploy safely: infrastructure changes, migrations, feature
-flags, ordering between services. Write "None" if there is nothing.
-
-## Risks
-
-What could go wrong, and how we will mitigate or monitor it.
-
-## Open questions
-
-Questions that need an answer before or during implementation, and who can
-answer them. Remove this section once there are none.
+Detail on anything in Waiting on, or that needs answering during
+implementation, and who can answer it. Remove this section once there are
+none.
 ```

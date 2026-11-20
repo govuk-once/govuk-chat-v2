@@ -40,35 +40,44 @@ Find what the spec needs to be grounded in the code as it is today:
 Use subagents for broad searches so the conversation keeps the conclusions, not
 the file dumps.
 
-## 3. Draft
+## 3. Sort the decisions
+
+List the decisions the design makes and ask the user which ones colleagues
+would argue about. Don't guess: whether a decision is contentious is a
+judgement about the team. Propose a bin for each — Decide, Know or Following
+precedent, as the README defines them — and let the user move them.
+
+Check that every decision touching security, privacy or accessibility is in
+Decide or Know. If more than three end up in Decide, suggest splitting the
+work into more than one spec rather than moving some to Know.
+
+## 4. Draft
 
 Write the spec to `docs/specs/YYYY-MM-DD-title-in-kebab-case.md`, using today's
 date and status **accepted**.
 
-- **Don't invent content.** Requirements, goals and rationale come from the
-  user or the codebase. Where you would be guessing, add an open question
-  instead.
-- Make each requirement testable, and reference requirement numbers from the
-  implementation plan and testing sections.
-- Order the implementation plan as atomic commits, following the repo's
-  conventions for packages, tests and CDK. Where splitting the work into
-  several pull requests would help reviewers, as the template describes,
-  propose the split and say why.
+- **Don't invent content.** Goals, decisions and rationale come from the user
+  or the codebase. Where you would be guessing, add it to Waiting on or the
+  open questions instead.
+- Keep the briefing within the README's reading time, and state the reading
+  time and number of decisions at the top. Count the words rather than
+  estimating.
+- Give the bulk of the briefing's words to the Decide items.
 - Treat prompts as sensitive: don't write production prompts into a spec.
 - If the design includes an architectural decision, say so to the user and ask
   whether it warrants an ADR. Don't write one unprompted.
 
-## 4. Review
+## 5. Review
 
-Summarise the spec for the user, lead with the open questions and riskiest
-assumptions, and iterate on their feedback. When they are happy, offer to
-commit it and open a pull request for team review — the spec is accepted when
-that pull request merges.
+Summarise the spec for the user, leading with the Decide items, and ask them to
+confirm the sort before anything is committed. Then iterate on their feedback.
+When they are happy, offer to commit it and open a pull request for team
+review — the spec is accepted when that pull request merges.
 
 Once the spec is committed, make each round of requested changes a new commit
 rather than amending. This overrides the usual advice to
 curate history, so reviewers can see what changed since they last looked (see
-the README). Name the requirement or section changed, and why, in each commit
+the README). Name the decision or section changed, and why, in each commit
 message.
 
 Start the pull request description by linking to the rendered spec, so
