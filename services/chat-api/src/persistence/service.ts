@@ -1,6 +1,15 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { Entity, Service, type WhereAttributeSymbol } from 'electrodb';
+import {
+  CustomAttributeType,
+  Entity,
+  Service,
+  type WhereAttributeSymbol,
+} from 'electrodb';
+import type {
+  AssistantTurnMessages,
+  UserTurnMessages,
+} from '../schemas/turn-messages.ts';
 
 const table = process.env.CHAT_API_TABLE_NAME;
 if (!table) {
@@ -150,6 +159,81 @@ const Message = new Entity({
   },
 });
 
+const UserTurn = new Entity({
+  model: { service: 'chat-api', entity: 'userTurn', version: '1' },
+  attributes: {
+    systemThreadId: { type: 'string', required: true },
+    turnId: { type: 'string', required: true },
+    sender: { type: ['user'] as const, required: true },
+    runId: { type: 'string', required: true },
+    messages: {
+      type: CustomAttributeType<UserTurnMessages>('any'),
+      required: true,
+    },
+    createdAt: { type: 'string', required: true, readOnly: true },
+    expiresAt: { type: 'number', required: true },
+  },
+  indexes: {
+    primary: {
+      pk: { field: 'pk', composite: ['systemThreadId'] },
+      sk: { field: 'sk', composite: ['turnId'] },
+    },
+    byCreatedAt: {
+      index: 'gsi1',
+      collection: 'threadTurns',
+      type: 'clustered',
+      pk: { field: 'gsi1pk', composite: ['systemThreadId'] },
+      sk: { field: 'gsi1sk', composite: ['createdAt', 'turnId'] },
+    },
+  },
+});
+
+const AssistantTurn = new Entity({
+  model: { service: 'chat-api', entity: 'assistantTurn', version: '1' },
+  attributes: {
+    systemThreadId: { type: 'string', required: true },
+    turnId: { type: 'string', required: true },
+    sender: { type: ['assistant'] as const, required: true },
+    runId: { type: 'string', required: true },
+    messages: {
+      type: CustomAttributeType<AssistantTurnMessages>('any'),
+      required: true,
+    },
+    createdAt: { type: 'string', required: true, readOnly: true },
+    firstOutputAt: { type: 'string', required: true, readOnly: true },
+    expiresAt: { type: 'number', required: true },
+  },
+  indexes: {
+    primary: {
+      pk: { field: 'pk', composite: ['systemThreadId'] },
+      sk: { field: 'sk', composite: ['turnId'] },
+    },
+    byCreatedAt: {
+      index: 'gsi1',
+      collection: 'threadTurns',
+      type: 'clustered',
+      pk: { field: 'gsi1pk', composite: ['systemThreadId'] },
+      sk: { field: 'gsi1sk', composite: ['createdAt', 'turnId'] },
+    },
+  },
+});
+
+const MessagePointer = new Entity({
+  model: { service: 'chat-api', entity: 'messagePointer', version: '1' },
+  attributes: {
+    systemThreadId: { type: 'string', required: true },
+    messageId: { type: 'string', required: true },
+    turnId: { type: 'string', required: true, readOnly: true },
+    expiresAt: { type: 'number', required: true },
+  },
+  indexes: {
+    primary: {
+      pk: { field: 'pk', composite: ['systemThreadId'] },
+      sk: { field: 'sk', composite: ['messageId'] },
+    },
+  },
+});
+
 const Feedback = new Entity({
   model: { service: 'chat-api', entity: 'feedback', version: '1' },
   attributes: {
@@ -174,6 +258,9 @@ export const service = new Service(
     runLock: RunLock,
     run: Run,
     message: Message,
+    userTurn: UserTurn,
+    assistantTurn: AssistantTurn,
+    messagePointer: MessagePointer,
     feedback: Feedback,
   },
   { table, client },

@@ -94,6 +94,10 @@ async function invokeAgent(
     });
   }
 
+  // The claim means the thread's last run has finished, so a question timed
+  // from here sorts after that run's answer.
+  const userMessageCreatedAt = new Date().toISOString();
+
   const payload = {
     threadId: systemThreadId,
     runId: body.runId,
@@ -129,7 +133,7 @@ async function invokeAgent(
       messageId: lastMessage.id,
       role: lastMessage.role,
       content: lastMessage.content,
-      createdAt: new Date().toISOString(),
+      createdAt: userMessageCreatedAt,
     };
 
     const accumulator = new MessageAccumulator();
@@ -138,17 +142,22 @@ async function invokeAgent(
       userThreadId: body.threadId,
       systemThreadId,
       runId: body.runId,
-      onRunFinished: () => {
+      onRunFinished: async () => {
+        const assistantMessageId = accumulator.getLastMessageId();
+        const firstOutputAt = accumulator.getFirstOutputAt();
+        if (!assistantMessageId || !firstOutputAt) {
+          throw new Error('The agent finished the run without a message');
+        }
         const assistantContent = accumulator.getContent();
 
         // The run's text messages are stored as one, under the id of the
         // last, which is the one a client streaming several shows the answer
-        // in. The run id stands in if the agent never started one.
+        // in.
         const messages = assistantContent
           ? [
               userMessage,
               {
-                messageId: accumulator.getLastMessageId() ?? body.runId,
+                messageId: assistantMessageId,
                 role: 'assistant',
                 content: assistantContent,
                 createdAt: new Date().toISOString(),
@@ -156,7 +165,28 @@ async function invokeAgent(
             ]
           : [userMessage];
 
-        return finishRun(runKey, messages);
+        return finishRun(runKey, messages, {
+          userTurn: {
+            createdAt: userMessageCreatedAt,
+            messages: [
+              {
+                id: lastMessage.id,
+                role: 'user',
+                content: lastMessage.content,
+              },
+            ],
+          },
+          assistantTurn: {
+            firstOutputAt,
+            messages: [
+              {
+                id: assistantMessageId,
+                role: 'assistant',
+                content: assistantContent,
+              },
+            ],
+          },
+        });
       },
       onRunFailed: () => releaseRun(runKey),
       onEvent: (event) => accumulator.process(event),

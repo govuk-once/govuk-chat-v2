@@ -3,7 +3,12 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 import { EventType, type BaseEvent } from '@ag-ui/core';
 import { logger } from '../../logging/logger.ts';
 import type { ResolvedThread, ThreadKey } from '../../persistence/threads.ts';
-import type { MessageInput, RunClaim, RunKey } from '../../persistence/runs.ts';
+import type {
+  MessageInput,
+  RunClaim,
+  RunKey,
+  TurnInput,
+} from '../../persistence/runs.ts';
 import {
   send,
   encoder,
@@ -53,7 +58,9 @@ const resolveThread = vi
   .mockResolvedValue({ systemThreadId: SYSTEM_THREAD_ID });
 const beginRun = vi.fn<(key: RunKey) => Promise<RunClaim>>();
 const finishRun =
-  vi.fn<(key: RunKey, messages: MessageInput[]) => Promise<void>>();
+  vi.fn<
+    (key: RunKey, messages: MessageInput[], turns: TurnInput) => Promise<void>
+  >();
 const releaseRun = vi.fn<(key: Omit<RunKey, 'messageId'>) => Promise<void>>();
 
 beforeAll(async () => {
@@ -81,6 +88,32 @@ function validRequest(): string {
     runId: VALID_RUN_ID,
     messages: VALID_MESSAGES,
   });
+}
+
+function completedRunEvents(): BaseEvent[] {
+  return [
+    {
+      type: EventType.RUN_STARTED,
+      threadId: SYSTEM_THREAD_ID,
+      runId: VALID_RUN_ID,
+    },
+    {
+      type: EventType.TEXT_MESSAGE_START,
+      messageId: 'msg-1',
+      role: 'assistant',
+    },
+    {
+      type: EventType.TEXT_MESSAGE_CONTENT,
+      messageId: 'msg-1',
+      delta: 'SSP is a weekly payment.',
+    },
+    { type: EventType.TEXT_MESSAGE_END, messageId: 'msg-1' },
+    {
+      type: EventType.RUN_FINISHED,
+      threadId: SYSTEM_THREAD_ID,
+      runId: VALID_RUN_ID,
+    },
+  ];
 }
 
 function fieldErrorResponse(fields: string[]): unknown {
@@ -344,42 +377,28 @@ describe('handler', () => {
             createdAt: expect.any(String),
           },
         ],
-      );
-    });
-
-    it('stores the answer under the run id when the agent starts no text message', async () => {
-      send.mockResolvedValueOnce({
-        response: aguiEventStream([
-          {
-            type: EventType.RUN_STARTED,
-            threadId: SYSTEM_THREAD_ID,
-            runId: VALID_RUN_ID,
+        {
+          userTurn: {
+            createdAt: expect.any(String),
+            messages: [
+              {
+                id: VALID_MESSAGES[0].id,
+                role: 'user',
+                content: 'Tell me about SSP',
+              },
+            ],
           },
-          {
-            type: EventType.TEXT_MESSAGE_CONTENT,
-            messageId: 'msg-1',
-            delta: 'SSP is a weekly payment.',
+          assistantTurn: {
+            firstOutputAt: expect.any(String),
+            messages: [
+              {
+                id: 'msg-2',
+                role: 'assistant',
+                content: 'Searching for SSP\n\nSSP is a weekly payment.',
+              },
+            ],
           },
-          {
-            type: EventType.RUN_FINISHED,
-            threadId: SYSTEM_THREAD_ID,
-            runId: VALID_RUN_ID,
-          },
-        ]),
-      });
-
-      await runHandler(
-        apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
-      );
-
-      expect(finishRun).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.arrayContaining([
-          expect.objectContaining({
-            messageId: VALID_RUN_ID,
-            role: 'assistant',
-          }),
-        ]),
+        },
       );
     });
   });
@@ -397,6 +416,42 @@ describe('handler', () => {
         runId: VALID_RUN_ID,
         messageId: VALID_MESSAGES.at(-1)?.id,
       });
+    });
+
+    it('times the user message and turn from when the claim returns', async () => {
+      const claimedAt = new Date('2026-11-09T10:00:00.040Z');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      beginRun.mockImplementationOnce(async () => {
+        vi.setSystemTime(claimedAt);
+        return { status: 'claimed' };
+      });
+      send.mockImplementationOnce(async () => {
+        vi.setSystemTime(new Date('2026-11-09T10:00:02.000Z'));
+        return { response: aguiEventStream(completedRunEvents()) };
+      });
+
+      try {
+        await runHandler(
+          apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(finishRun).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.arrayContaining([
+          expect.objectContaining({
+            role: 'user',
+            createdAt: claimedAt.toISOString(),
+          }),
+        ]),
+        expect.objectContaining({
+          userTurn: expect.objectContaining({
+            createdAt: claimedAt.toISOString(),
+          }),
+        }),
+      );
     });
 
     it.each([
@@ -502,6 +557,33 @@ describe('handler', () => {
         expect(relayed).toContain(EventType.RUN_STARTED);
         expect(relayed).toContain(VALID_THREAD_ID);
         expect(relayed).toContain(EventType.RUN_ERROR);
+      });
+
+      it('ends the run with RUN_ERROR and stores nothing when the agent sends no message', async () => {
+        send.mockResolvedValueOnce({
+          response: aguiEventStream([
+            {
+              type: EventType.RUN_STARTED,
+              threadId: SYSTEM_THREAD_ID,
+              runId: VALID_RUN_ID,
+            },
+            {
+              type: EventType.RUN_FINISHED,
+              threadId: SYSTEM_THREAD_ID,
+              runId: VALID_RUN_ID,
+            },
+          ]),
+        });
+
+        await runHandler(
+          apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+        );
+
+        const relayed = testEnv.responseStream.read();
+        expect(relayed).toContain(EventType.RUN_ERROR);
+        expect(relayed).not.toContain(EventType.RUN_FINISHED);
+        expect(finishRun).not.toHaveBeenCalled();
+        expect(releaseRun).toHaveBeenCalled();
       });
     });
   });
