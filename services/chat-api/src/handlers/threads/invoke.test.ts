@@ -372,42 +372,6 @@ describe('handler', () => {
         ],
       );
     });
-
-    it('stores the answer under the run id when the agent starts no text message', async () => {
-      send.mockResolvedValueOnce({
-        response: aguiEventStream([
-          {
-            type: EventType.RUN_STARTED,
-            threadId: SYSTEM_THREAD_ID,
-            runId: VALID_RUN_ID,
-          },
-          {
-            type: EventType.TEXT_MESSAGE_CONTENT,
-            messageId: 'msg-1',
-            delta: 'SSP is a weekly payment.',
-          },
-          {
-            type: EventType.RUN_FINISHED,
-            threadId: SYSTEM_THREAD_ID,
-            runId: VALID_RUN_ID,
-          },
-        ]),
-      });
-
-      await runHandler(
-        apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
-      );
-
-      expect(finishRun).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.arrayContaining([
-          expect.objectContaining({
-            messageId: VALID_RUN_ID,
-            role: 'assistant',
-          }),
-        ]),
-      );
-    });
   });
 
   describe('run claims', () => {
@@ -559,6 +523,33 @@ describe('handler', () => {
         expect(relayed).toContain(EventType.RUN_STARTED);
         expect(relayed).toContain(VALID_THREAD_ID);
         expect(relayed).toContain(EventType.RUN_ERROR);
+      });
+
+      it('ends the run with RUN_ERROR and stores nothing when the agent sends no message', async () => {
+        send.mockResolvedValueOnce({
+          response: aguiEventStream([
+            {
+              type: EventType.RUN_STARTED,
+              threadId: SYSTEM_THREAD_ID,
+              runId: VALID_RUN_ID,
+            },
+            {
+              type: EventType.RUN_FINISHED,
+              threadId: SYSTEM_THREAD_ID,
+              runId: VALID_RUN_ID,
+            },
+          ]),
+        });
+
+        await runHandler(
+          apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+        );
+
+        const relayed = testEnv.responseStream.read();
+        expect(relayed).toContain(EventType.RUN_ERROR);
+        expect(relayed).not.toContain(EventType.RUN_FINISHED);
+        expect(finishRun).not.toHaveBeenCalled();
+        expect(releaseRun).toHaveBeenCalled();
       });
     });
   });
