@@ -1,12 +1,14 @@
 import {
   EventType,
   type BaseEvent,
+  type CustomEvent,
   type RunErrorEvent,
   type RunStartedEvent,
 } from '@ag-ui/core';
 import { EventEncoder } from '@ag-ui/encoder';
 import { createParser, type EventSourceMessage } from 'eventsource-parser';
 import { logger } from '../logging/logger.ts';
+import type { TurnIds } from '../persistence/runs.ts';
 
 const encoder = new EventEncoder();
 
@@ -17,9 +19,13 @@ export interface RelayAgentEventStreamParameters {
   userThreadId: string;
   systemThreadId: string;
   runId: string;
-  onRunFinished: () => Promise<void>;
+  onRunFinished: () => Promise<TurnIds>;
   onRunFailed: () => Promise<void>;
   onEvent?: (event: RelayedEvent) => void;
+}
+
+function turnIdsEvent(turnIds: TurnIds): CustomEvent {
+  return { type: EventType.CUSTOM, name: 'turnIds', value: turnIds };
 }
 
 export async function* relayAgentEventStream({
@@ -79,8 +85,9 @@ export async function* relayAgentEventStream({
           event.threadId = userThreadId;
         }
         if (event.type === EventType.RUN_FINISHED) {
-          await onRunFinished();
+          const turnIds = await onRunFinished();
           isOutcomeReported = true;
+          yield encoder.encodeSSE(turnIdsEvent(turnIds));
         }
         if (event.type === EventType.RUN_ERROR) {
           await releaseThread();

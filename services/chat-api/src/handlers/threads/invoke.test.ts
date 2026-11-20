@@ -7,6 +7,7 @@ import type {
   MessageInput,
   RunClaim,
   RunKey,
+  TurnIds,
   TurnInput,
 } from '../../persistence/runs.ts';
 import {
@@ -38,7 +39,7 @@ beforeEach(() => {
   testEnv.responseStream = createResponseStream();
   resolveThread.mockResolvedValue({ systemThreadId: SYSTEM_THREAD_ID });
   beginRun.mockResolvedValue({ status: 'claimed' });
-  finishRun.mockResolvedValue();
+  finishRun.mockResolvedValue(TURN_IDS);
   releaseRun.mockResolvedValue();
 });
 
@@ -49,6 +50,10 @@ const SYSTEM_THREAD_ID = crypto.randomUUID();
 const END_USER_ID_HEADER = { 'end-user-id': VALID_USER_ID };
 const AGENT_RUNTIME_ARN =
   'arn:aws:bedrock-agentcore:eu-west-1:123456789012:runtime/test';
+const TURN_IDS = {
+  userTurnId: crypto.randomUUID(),
+  assistantTurnId: crypto.randomUUID(),
+};
 const VALID_MESSAGES = [
   { id: crypto.randomUUID(), role: 'user', content: 'Tell me about SSP' },
 ];
@@ -59,7 +64,11 @@ const resolveThread = vi
 const beginRun = vi.fn<(key: RunKey) => Promise<RunClaim>>();
 const finishRun =
   vi.fn<
-    (key: RunKey, messages: MessageInput[], turns: TurnInput) => Promise<void>
+    (
+      key: RunKey,
+      messages: MessageInput[],
+      turns: TurnInput,
+    ) => Promise<TurnIds>
   >();
 const releaseRun = vi.fn<(key: Omit<RunKey, 'messageId'>) => Promise<void>>();
 
@@ -287,8 +296,14 @@ describe('handler', () => {
         ),
       );
 
+      const relayed = eventsForThread(VALID_THREAD_ID);
+      const turnIdsEvent = {
+        type: EventType.CUSTOM,
+        name: 'turnIds',
+        value: TURN_IDS,
+      } as BaseEvent;
       expect(testEnv.responseStream.read()).toBe(
-        eventsForThread(VALID_THREAD_ID)
+        [...relayed.slice(0, -1), turnIdsEvent, ...relayed.slice(-1)]
           .map((event) => encoder.encode(event))
           .join(''),
       );

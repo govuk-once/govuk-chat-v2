@@ -36,6 +36,11 @@ export interface TurnInput {
   assistantTurn: { firstOutputAt: string; messages: AssistantTurnMessages };
 }
 
+export interface TurnIds {
+  userTurnId: string;
+  assistantTurnId: string;
+}
+
 export type RunClaim =
   | { status: 'claimed' }
   | { status: 'thread-busy' }
@@ -118,6 +123,7 @@ function turnWrites(
   { userTurn, assistantTurn, messagePointer }: TurnEntities,
   { systemThreadId, runId }: RunKey,
   turns: TurnInput,
+  { userTurnId, assistantTurnId }: TurnIds,
   now: Date,
   expiresAt: number,
 ) {
@@ -125,7 +131,6 @@ function turnWrites(
   const assistantMessages = AssistantTurnMessagesSchema.parse(
     turns.assistantTurn.messages,
   );
-  const userTurnId = crypto.randomUUID();
 
   return [
     userTurn
@@ -142,7 +147,7 @@ function turnWrites(
     assistantTurn
       .put({
         systemThreadId,
-        turnId: crypto.randomUUID(),
+        turnId: assistantTurnId,
         sender: 'assistant',
         runId,
         messages: assistantMessages,
@@ -167,10 +172,14 @@ export async function finishRun(
   key: RunKey,
   messages: MessageInput[],
   turns: TurnInput,
-): Promise<void> {
+): Promise<TurnIds> {
   const now = new Date();
   const expiresAt = chatRegularRetention(now);
   const { systemThreadId, runId } = key;
+  const turnIds = {
+    userTurnId: crypto.randomUUID(),
+    assistantTurnId: crypto.randomUUID(),
+  };
 
   const result = await service.transaction
     .write(({ runLock, run, message, ...turnEntities }) => [
@@ -197,13 +206,13 @@ export async function finishRun(
           .where(absentOrExpired(now))
           .commit(),
       ),
-      ...turnWrites(turnEntities, key, turns, now, expiresAt),
+      ...turnWrites(turnEntities, key, turns, turnIds, now, expiresAt),
       runLock.delete({ systemThreadId }).where(claimedBy(runId)).commit(),
     ])
     .go();
 
   if (!result.canceled) {
-    return;
+    return turnIds;
   }
 
   const codes = cancellationCodes(result.data);

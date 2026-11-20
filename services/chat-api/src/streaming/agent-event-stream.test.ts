@@ -12,13 +12,24 @@ import {
   collectStreamText,
 } from '../test-utils/agent-stream.ts';
 import { logger } from '../logging/logger.ts';
+import type { TurnIds } from '../persistence/runs.ts';
 import { relayAgentEventStream } from './agent-event-stream.ts';
 
 const USER_THREAD_ID = crypto.randomUUID();
 const SYSTEM_THREAD_ID = crypto.randomUUID();
 const RUN_ID = crypto.randomUUID();
 
-const onRunFinished = vi.fn<() => Promise<void>>();
+const TURN_IDS = {
+  userTurnId: crypto.randomUUID(),
+  assistantTurnId: crypto.randomUUID(),
+};
+const TURN_IDS_EVENT: BaseEvent = {
+  type: EventType.CUSTOM,
+  name: 'turnIds',
+  value: TURN_IDS,
+} as BaseEvent;
+
+const onRunFinished = vi.fn<() => Promise<TurnIds>>();
 const onRunFailed = vi.fn<() => Promise<void>>();
 
 function eventsForThread(threadId: string): BaseEvent[] {
@@ -41,18 +52,19 @@ function relayParameters(source: AsyncIterable<Uint8Array>) {
 }
 
 beforeEach(() => {
-  onRunFinished.mockResolvedValue();
+  onRunFinished.mockResolvedValue(TURN_IDS);
   onRunFailed.mockResolvedValue();
 });
 
 describe('relayAgentEventStream', () => {
-  it('relays the event stream with run events carrying the client thread id', async () => {
+  it('relays the event stream with run events carrying the client thread id, and the turn ids just before RUN_FINISHED', async () => {
     const sseStream = relayAgentEventStream(
       relayParameters(aguiEventStream(eventsForThread(SYSTEM_THREAD_ID))),
     );
 
+    const expected = eventsForThread(USER_THREAD_ID);
     expect(await collectStreamText(sseStream)).toBe(
-      eventsForThread(USER_THREAD_ID)
+      [...expected.slice(0, -1), TURN_IDS_EVENT, ...expected.slice(-1)]
         .map((event) => encoder.encode(event))
         .join(''),
     );
@@ -153,6 +165,7 @@ describe('relayAgentEventStream', () => {
     const relayed: string[] = [];
     onRunFinished.mockImplementation(async () => {
       relayed.push('recorded');
+      return TURN_IDS;
     });
 
     const sseStream = relayAgentEventStream(
@@ -176,7 +189,7 @@ describe('relayAgentEventStream', () => {
       relayed.push(chunk.includes('RUN_FINISHED') ? 'finished' : 'other');
     }
 
-    expect(relayed).toEqual(['other', 'recorded', 'finished']);
+    expect(relayed).toEqual(['other', 'recorded', 'other', 'finished']);
     expect(onRunFailed).not.toHaveBeenCalled();
   });
 

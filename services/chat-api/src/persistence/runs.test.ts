@@ -199,7 +199,7 @@ describe('finishRun', () => {
   it('writes both turns under new ids, and points the user message at its turn', async () => {
     send.mockResolvedValueOnce({});
 
-    await testEnv.finishRun(KEY, ASSISTANT_MESSAGES, TURNS);
+    const turnIds = await testEnv.finishRun(KEY, ASSISTANT_MESSAGES, TURNS);
 
     const [userTurn, assistantTurn, pointer] = transactItems()
       .slice(2, 5)
@@ -209,6 +209,7 @@ describe('finishRun', () => {
     expect(userTurnId).toMatch(UUID);
     expect(assistantTurnId).toMatch(UUID);
     expect(userTurnId).not.toBe(assistantTurnId);
+    expect(turnIds).toEqual({ userTurnId, assistantTurnId });
 
     expect(userTurn?.Item).toMatchObject({
       __edb_e__: 'userTurn',
