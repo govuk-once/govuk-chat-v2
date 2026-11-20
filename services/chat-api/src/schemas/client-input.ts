@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CursorSchema } from './message-cursor.ts';
+import { TurnCursorSchema } from './turn-cursor.ts';
 
 // We may want to use JSON schema validaiton or use an OpenAPI spec
 // for request and response validation. These are quite easy to convert to
@@ -56,6 +57,20 @@ export const ThreadMessagesQuerySchema = z.object({
 
 export type ThreadMessagesQuery = z.infer<typeof ThreadMessagesQuerySchema>;
 
+export const ThreadTurnsPathParametersSchema = z.object({
+  threadId: z.uuid({ message: 'threadId must be a valid UUID' }),
+});
+
+export type ThreadTurnsPathParameters = z.infer<
+  typeof ThreadTurnsPathParametersSchema
+>;
+
+export const ThreadTurnsQuerySchema = z.object({
+  cursor: TurnCursorSchema.optional(),
+});
+
+export type ThreadTurnsQuery = z.infer<typeof ThreadTurnsQuerySchema>;
+
 export const MessageFeedbackPathParametersSchema =
   ThreadMessagesPathParametersSchema.extend({
     messageId: z.uuid({ message: 'messageId must be a valid UUID' }),
@@ -72,3 +87,20 @@ export const MessageFeedbackBodySchema = z
   .strict();
 
 export type MessageFeedbackBody = z.infer<typeof MessageFeedbackBodySchema>;
+
+export const TurnFeedbackPathParametersSchema =
+  ThreadTurnsPathParametersSchema.extend({
+    turnId: z.uuid({ message: 'turnId must be a valid UUID' }),
+  });
+
+export type TurnFeedbackPathParameters = z.infer<
+  typeof TurnFeedbackPathParametersSchema
+>;
+
+export const TurnFeedbackBodySchema = z
+  .object({
+    reaction: z.enum(['positive', 'negative']),
+  })
+  .strict();
+
+export type TurnFeedbackBody = z.infer<typeof TurnFeedbackBodySchema>;

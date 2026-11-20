@@ -55,6 +55,23 @@ Nothing is recorded for a run that ends in an error. A run and its message
 are stored as the run finishes, just before `RUN_FINISHED` reaches the
 client, and expire alongside the thread.
 
+## Turns
+
+Each run is also stored as a user turn and an assistant turn.
+`GET /v1/threads/{threadId}/turns` returns a thread's turns, oldest first.
+Each has an `id`, a `sender` of `user` or `assistant`, a `createdAt` and
+its `messages`, as AG-UI message objects. A page holds up to 100 turns,
+with `earlierTurnsUrl` and `laterTurnsUrl` to reach the rest.
+
+Just before `RUN_FINISHED`, the stream has a `CUSTOM` event named
+`turnIds`, with the run's `userTurnId` and `assistantTurnId`.
+
+An end user can react to an assistant turn once, with
+`POST /v1/threads/{threadId}/turns/{turnId}/feedback`. It takes the same
+body and gives the same responses as feedback on a message, below. In
+`/turns`, an assistant turn has `feedback` or `feedbackUrl` as an
+assistant message does in `/messages`.
+
 ## Feedback
 
 An end user can react to an assistant message once, with
