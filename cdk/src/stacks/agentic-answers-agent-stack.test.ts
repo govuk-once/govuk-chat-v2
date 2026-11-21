@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import baseContext from '../../cdk.json' with { type: 'json' };
 import * as agentcore from 'aws-cdk-lib/aws-bedrockagentcore';
-import { Tags, Template } from 'aws-cdk-lib/assertions';
+import { Match, Tags, Template } from 'aws-cdk-lib/assertions';
 import { describe, it, expect, vi } from 'vitest';
 import { AgenticAnswersAgentStack } from './agentic-answers-agent-stack.ts';
 
@@ -79,6 +79,20 @@ describe('AgenticAnswersAgentStack', () => {
       const template = stackTemplate();
 
       template.hasResource('AWS::BedrockAgentCore::Memory', {});
+    });
+
+    it('grants the runtime read access to the OpenSearch secret', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith(['secretsmanager:GetSecretValue']),
+            }),
+          ]),
+        },
+      });
     });
 
     it('outputs the name', () => {

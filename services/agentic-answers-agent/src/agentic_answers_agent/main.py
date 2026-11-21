@@ -10,6 +10,8 @@ from strands import Agent
 from strands.agent.conversation_manager import SlidingWindowConversationManager
 from strands.models import BedrockModel
 
+from agentic_answers_agent.search_govuk.tool import search_govuk_guidance
+
 MODEL_ID = "eu.anthropic.claude-sonnet-5-5"
 MAX_TOKENS = 16_000
 THINKING_EFFORT = "low"
@@ -64,7 +66,7 @@ agent = Agent(
         },
     ),
     system_prompt=system_prompt,
-    tools=[],
+    tools=[search_govuk_guidance],
     conversation_manager=SlidingWindowConversationManager(
         window_size=CONVERSATION_WINDOW_SIZE
     ),
