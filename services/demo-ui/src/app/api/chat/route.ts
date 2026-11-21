@@ -4,20 +4,13 @@ import { z } from 'zod';
 import { readSession } from '../../../auth/session.ts';
 import { invokeThread } from '../../../chat-api/client.ts';
 import { endUserIdFor } from '../../../chat-api/end-user-id.ts';
+import { readJson } from '../../../lib/read-json.ts';
 import { setThreadId } from './cookies.ts';
 
 const uuidSchema = z.uuid();
 
 function errorResponse(status: number, error: string): NextResponse {
   return NextResponse.json({ error }, { status });
-}
-
-async function readJson(request: Request): Promise<unknown> {
-  try {
-    return await request.json();
-  } catch {
-    return undefined;
-  }
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {

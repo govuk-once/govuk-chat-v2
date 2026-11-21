@@ -34,6 +34,28 @@ describe('load', () => {
     );
   });
 
+  it('marks the messages the end user has given feedback on with their reaction', async () => {
+    const [userMessage, assistantMessage] = MESSAGES;
+    const answeredMessage = {
+      ...assistantMessage,
+      id: crypto.randomUUID(),
+      feedback: { reaction: 'negative', createdAt: '2026-09-30T12:01:00.000Z' },
+    };
+    fetchMock.mockResolvedValueOnce(
+      Response.json({
+        messages: [userMessage, assistantMessage, answeredMessage],
+      }),
+    );
+
+    const repository = await threadHistory.load();
+
+    expect(
+      repository.messages.map(
+        ({ message }) => message.metadata.submittedFeedback,
+      ),
+    ).toEqual([undefined, undefined, { type: 'negative' }]);
+  });
+
   it('throws when the messages route fails', async () => {
     fetchMock.mockResolvedValueOnce(
       Response.json({ error: 'Chat API request failed' }, { status: 500 }),
