@@ -58,19 +58,26 @@ describe('relayAgentEventStream', () => {
     );
   });
 
-  it('calls onEvent for each parsed event', async () => {
+  it('passes on only allowlisted event types, to the client and to onEvent', async () => {
+    const textContent: BaseEvent = {
+      type: EventType.TEXT_MESSAGE_CONTENT,
+      messageId: 'msg-1',
+      delta: 'Hi',
+    };
     const events: BaseEvent[] = [
       {
-        type: EventType.RUN_STARTED,
-        threadId: SYSTEM_THREAD_ID,
-        runId: RUN_ID,
+        type: EventType.TOOL_CALL_START,
+        toolCallId: 'tool-1',
+        toolCallName: 'search_govuk_content',
       },
-      { type: EventType.TEXT_MESSAGE_CONTENT, messageId: 'msg-1', delta: 'Hi' },
+      textContent,
       {
-        type: EventType.RUN_FINISHED,
-        threadId: SYSTEM_THREAD_ID,
-        runId: RUN_ID,
+        type: EventType.TOOL_CALL_RESULT,
+        messageId: 'msg-2',
+        toolCallId: 'tool-1',
+        content: '[{"title":"Renew your passport"}]',
       },
+      { type: EventType.RAW, event: { metrics: {} } },
     ];
 
     const onEvent = vi.fn();
@@ -79,14 +86,10 @@ describe('relayAgentEventStream', () => {
       onEvent,
     });
 
-    await collectStreamText(sseStream);
-
-    expect(onEvent).toHaveBeenCalledTimes(3);
-    expect(onEvent.mock.calls.map((call) => call[0].type)).toEqual([
-      EventType.RUN_STARTED,
-      EventType.TEXT_MESSAGE_CONTENT,
-      EventType.RUN_FINISHED,
-    ]);
+    expect(await collectStreamText(sseStream)).toBe(
+      encoder.encode(textContent),
+    );
+    expect(onEvent.mock.calls.map((call) => call[0])).toEqual([textContent]);
   });
 
   it('emits synthetic RUN_STARTED followed by RUN_ERROR when the source fails before RUN_STARTED', async () => {
