@@ -87,6 +87,9 @@ fi
 echo "== Installing pnpm dependencies =="
 pnpm install || return 1
 
+echo "== Installing Playwright's Chromium =="
+pnpm --filter @govuk-chat-v2/cloud-tests exec playwright install chromium || return 1
+
 echo "== Checking Docker is installed =="
 if command -v docker >/dev/null 2>&1; then
     docker --version || return 1
