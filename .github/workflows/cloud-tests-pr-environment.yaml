@@ -23,8 +23,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Deploy PR environment
+  deploy-and-test:
+    name: Deploy and test PR environment
     # Fork PRs get no OIDC token, so they can't deploy
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -61,3 +61,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.private-repo-token.outputs.token }}
         run: cloud-tests/scripts/deploy.sh --skip-credentials
+
+      - name: Run cloud tests
+        run: cloud-tests/scripts/test.sh --skip-credentials
