@@ -72,12 +72,16 @@ fi
 echo "== Selecting node version =="
 nvm use || nvm install || return 1
 
-echo "== Checking pnpm is installed =="
-if command -v pnpm >/dev/null 2>&1; then
-    pnpm --version || return 1
+echo "== Checking pnpm version =="
+if ! PNPM_PACKAGE="$(jq -er '.packageManager' "${ROOT_DIR}/package.json")"; then
+    echo "Error: could not read packageManager from ${ROOT_DIR}/package.json"
+    return 1
+fi
+if [[ "pnpm@$(pnpm --version 2>/dev/null)" == "${PNPM_PACKAGE}" ]]; then
+    echo "${PNPM_PACKAGE} is installed"
 else
-    echo "pnpm is not installed, installing now"
-    npm install -g pnpm || return 1
+    echo "Installing ${PNPM_PACKAGE}"
+    npm install -g "${PNPM_PACKAGE}" || return 1
 fi
 
 echo "== Installing pnpm dependencies =="

@@ -5,7 +5,6 @@
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
-!.pnpmrc
 !tsconfig.json
 !services/demo-ui
 services/demo-ui/node_modules
