@@ -4,7 +4,7 @@
   "type": "module",
   "author": "Government Digital Service",
   "license": "MIT",
-  "packageManager": "pnpm@10.28.1",
+  "packageManager": "pnpm@12.21.0",
   "devDependencies": {
     "@aws/agentcore": "~0.31.1",
     "@eslint/js": "^10.0.1",
