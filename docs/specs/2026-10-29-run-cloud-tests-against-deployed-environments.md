@@ -244,7 +244,13 @@ paths in R9 (R9):
    `aws ecr-public get-login-password --region us-east-1` (R13).
 5. Run `deploy.sh --skip-credentials` with `ENVIRONMENT=test-pr-<number>`.
 6. Install Playwright's Chromium, then run `test.sh --skip-credentials`.
-7. Upload the Playwright report and traces if the tests fail.
+7. Upload the Playwright report, with screenshots, if the tests fail.
+
+CI doesn't record Playwright traces, though local runs do. A trace captures
+the Demo UI's session cookie, which stays valid for its full 24 hours after
+the test user is deleted, as the Demo UI doesn't check it against Cognito.
+Anyone signed in to GitHub can download a public repository's artifacts, so
+an uploaded trace would give them a working session on the PR environment.
 
 The workflow uses a concurrency group per PR with `cancel-in-progress: true`
 (R10), as UNS does. Cancelling a run only stops the `cdk` process:
@@ -397,7 +403,7 @@ The bare minimum to learn what deploying per PR is like, with no tests yet.
    Make `test.sh` run both suites. Check for Chromium in `dev-prepare.zsh`.
    (R3, R5, R6, R7)
 10. Install Chromium in `cloud-tests-pr-environment.yaml`, and upload the
-    Playwright report and traces if the tests fail.
+    Playwright report, with screenshots, if the tests fail.
 
 Set **implemented** in PR 4.
 
@@ -452,7 +458,9 @@ cloud test run exercises both.
 - **Each run spends Bedrock tokens.** The prompt is short and asks for a short
   answer, and only PRs that match the path filters run.
 - **Signing in through the Hosted UI may be brittle** if Cognito changes its
-  page. Assertions use form roles and labels rather than layout.
+  page. The classic Hosted UI renders its sign-in form twice with the same
+  ids, so the test finds the visible form and its fields by name, rather
+  than by layout.
 - **Public ECR login may not stop the rate limiting.** If 429s continue, a
   pull-through cache in private ECR is the fallback.
 - **Rate limits.** The Chat API allows 15 invokes a minute per end user; the
