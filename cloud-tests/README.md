@@ -70,7 +70,8 @@ arguments.
 
 The UI tests sign in as a `cloud-test-` user they create for the run and
 delete afterwards. Playwright writes a report to `playwright-report/`, and a
-trace of any failed test to `test-results/`.
+screenshot and trace of any failed test to `test-results/`. CI records no
+traces, as they capture a session cookie that outlives the test user.
 
 ### Testing in a separate environment
 

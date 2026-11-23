@@ -6,6 +6,10 @@ export default defineConfig({
   globalTeardown: './src/ui/global-teardown.ts',
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    trace: 'retain-on-failure',
+    // Traces capture the Demo UI session cookie, which stays valid after the
+    // test user is deleted, and CI artifacts on a public repo are
+    // downloadable, so CI relies on screenshots instead.
+    trace: process.env.CI ? 'off' : 'retain-on-failure',
+    screenshot: 'only-on-failure',
   },
 });
