@@ -39,6 +39,14 @@ else
     echo "GITHUB_TOKEN already set, skipping export"
 fi
 
+echo "== Checking gh is set up as credential helper =="
+if git config --global --get-all credential.https://github.com.helper 2>/dev/null | grep -q 'gh auth git-credential'; then
+  echo "gh is configured as git credential helper"
+else
+  echo "gh not configured, running setup-git..."
+  gh auth setup-git
+fi
+
 echo "== Checking uv is installed =="
 if command -v uv >/dev/null 2>&1; then
     uv --version || return 1
