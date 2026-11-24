@@ -6,6 +6,10 @@ OpenSearch index, using the connection details in the
 `govuk-chat-v2-opensearch` secret. That secret is only in the dev account
 for now.
 
+A Bedrock guardrail, created by the agent's stack, checks each user message
+and each answer. When it steps in, ag-ui-strands sends an `AgentStopped` event
+with `stop_reason` set to `guardrail_intervened`.
+
 ## Usage
 
 Deploy the agent's infrastructure with:
