@@ -76,6 +76,20 @@ class TestPrepareAgentConfiguration:
         assert (service_dir / "agentcore/.cli/deployed-state.json").is_file()
         assert (service_dir / ".venv").is_symlink()
 
+    def test_passes_on_the_guardrail_when_the_stack_has_one(
+        self, tmp_path: Path
+    ) -> None:
+        outputs = {**STACK_OUTPUTS, "GuardrailId": "abc123", "GuardrailVersion": "2"}
+        service_dir = make_service_dir(tmp_path, outputs)
+
+        configure.prepare_agent_configuration(service_dir, MANIFEST)
+
+        assert (service_dir / "agentcore/.env.local").read_text() == (
+            f"BEDROCK_AGENTCORE_MEMORY_ID={MEMORY_ID}\n"
+            "GUARDRAIL_ID=abc123\n"
+            "GUARDRAIL_VERSION=2\n"
+        )
+
     def test_can_run_repeatedly(self, tmp_path: Path) -> None:
         service_dir = make_service_dir(tmp_path, STACK_OUTPUTS)
 
