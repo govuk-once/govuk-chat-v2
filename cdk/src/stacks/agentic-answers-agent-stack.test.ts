@@ -118,5 +118,58 @@ describe('AgenticAnswersAgentStack', () => {
 
       template.hasOutput('ShortTermMemoryArn', {});
     });
+
+    it('lets the runtime delete memory events, so Strands can redact blocked turns', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: Match.arrayWith(['bedrock-agentcore:DeleteEvent']),
+            }),
+          ]),
+        },
+      });
+    });
+  });
+
+  describe('Guardrail', () => {
+    it('creates a guardrail and one version of it', () => {
+      const template = stackTemplate();
+
+      template.resourceCountIs('AWS::Bedrock::Guardrail', 1);
+      template.resourceCountIs('AWS::Bedrock::GuardrailVersion', 1);
+    });
+
+    it("gives the runtime the guardrail's id and version", () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::BedrockAgentCore::Runtime', {
+        EnvironmentVariables: Match.objectLike({
+          GUARDRAIL_ID: Match.anyValue(),
+          GUARDRAIL_VERSION: Match.anyValue(),
+        }),
+      });
+    });
+
+    it('lets the runtime apply the guardrail', () => {
+      const template = stackTemplate();
+
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({ Action: 'bedrock:ApplyGuardrail' }),
+          ]),
+        },
+      });
+    });
+
+    it('outputs the guardrail id and version', () => {
+      const template = stackTemplate();
+
+      template.hasOutput('GuardrailId', {});
+      template.hasOutput('GuardrailVersion', {});
+    });
   });
 });
