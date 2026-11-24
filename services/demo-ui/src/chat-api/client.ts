@@ -1,5 +1,5 @@
-import { fetchClientSecret } from '../lib/cognito-client-secret.ts';
-import { requireEnv } from '../lib/env.ts';
+import { fetchClientSecret } from '#lib/cognito-client-secret.ts';
+import { requireEnv } from '#lib/env.ts';
 
 const TOKEN_SCOPE = 'chat-api/invoke';
 const TOKEN_EXPIRY_MARGIN_MS = 60_000;

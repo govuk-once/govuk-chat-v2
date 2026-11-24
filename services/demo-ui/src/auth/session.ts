@@ -1,7 +1,7 @@
 import { sealData, unsealData } from 'iron-session';
 import type { NextRequest, NextResponse } from 'next/server';
-import { requireEnv } from '../lib/env.ts';
-import { setHttpOnlyCookie } from '../lib/http-only-cookie.ts';
+import { requireEnv } from '#lib/env.ts';
+import { setHttpOnlyCookie } from '#lib/http-only-cookie.ts';
 import type { SignInFlow } from './cognito-sign-in.ts';
 import { CALLBACK_PATH } from './urls.ts';
 

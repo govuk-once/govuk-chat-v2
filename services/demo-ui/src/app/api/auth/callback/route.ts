@@ -1,11 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { finishSignIn } from '../../../../auth/cognito-sign-in.ts';
-import {
-  clearSignInFlow,
-  readSignInFlow,
-  setSession,
-} from '../../../../auth/session.ts';
-import { appOrigin, callbackUrl } from '../../../../auth/urls.ts';
+import { finishSignIn } from '#auth/cognito-sign-in.ts';
+import { clearSignInFlow, readSignInFlow, setSession } from '#auth/session.ts';
+import { appOrigin, callbackUrl } from '#auth/urls.ts';
 
 // The return path is the page the user first asked for, which could be a
 // path like //evil.example that a browser treats as another site.

@@ -62,7 +62,7 @@ beforeEach(async () => {
 
   // The token cache lives in module scope, so each test imports afresh.
   vi.resetModules();
-  vi.doMock('../lib/cognito-client-secret.ts', () => ({ fetchClientSecret }));
+  vi.doMock('#lib/cognito-client-secret.ts', () => ({ fetchClientSecret }));
   const clientModule = await import('./client.ts');
   testEnv.invokeThread = clientModule.invokeThread;
   testEnv.listThreadMessages = clientModule.listThreadMessages;

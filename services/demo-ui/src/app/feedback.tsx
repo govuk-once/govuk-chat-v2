@@ -1,6 +1,6 @@
 import { useAui, useAuiState } from '@assistant-ui/react';
 import { useState } from 'react';
-import type { Reaction } from '../chat-api/client.ts';
+import type { Reaction } from '#chat-api/client.ts';
 import { sendFeedback, type FeedbackOutcome } from './send-feedback.ts';
 import { useThreadId } from './thread-id.ts';
 

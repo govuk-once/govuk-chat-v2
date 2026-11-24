@@ -68,7 +68,7 @@ function fakeCognito(tokenFor: () => string): void {
 }
 
 beforeAll(async () => {
-  vi.doMock('../lib/cognito-client-secret.ts', () => ({
+  vi.doMock('#lib/cognito-client-secret.ts', () => ({
     fetchClientSecret: () => Promise.resolve('client-secret'),
   }));
 
