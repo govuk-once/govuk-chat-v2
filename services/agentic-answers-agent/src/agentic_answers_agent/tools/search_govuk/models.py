@@ -2,6 +2,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from typing import Any, Self
 
+from agentic_answers_agent.tools.search_govuk.document_type_weightings import (
+    DEFAULT_WEIGHTING,
+    DOCUMENT_TYPE_WEIGHTINGS,
+)
+
 
 @dataclass(frozen=True, kw_only=True)
 class SearchResult:
@@ -22,3 +27,12 @@ class SearchResult:
     @classmethod
     def from_hit(cls, hit: Mapping[str, Any]) -> Self:
         return cls(score=hit["_score"], **hit["_source"])
+
+    @property
+    def weighted_score(self) -> float:
+        document_type = self.document_type
+        # HTML publications are attachments, so their parent says what they are.
+        if document_type == "html_publication":
+            document_type = self.parent_document_type or document_type
+        weighting = DOCUMENT_TYPE_WEIGHTINGS.get(document_type or "", DEFAULT_WEIGHTING)
+        return self.score * weighting
