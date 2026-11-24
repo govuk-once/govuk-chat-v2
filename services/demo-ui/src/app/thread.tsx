@@ -6,6 +6,7 @@ import {
   ThreadPrimitive,
 } from '@assistant-ui/react';
 import { StreamdownTextPrimitive } from '@assistant-ui/react-streamdown';
+import { Feedback } from './feedback.tsx';
 
 export function Thread({ isNewConversation }: { isNewConversation: boolean }) {
   return (
@@ -63,6 +64,11 @@ function AssistantMessage() {
           <ErrorPrimitive.Message />
         </ErrorPrimitive.Root>
       </MessagePrimitive.Error>
+      {/* The Chat API stores an answer as its run finishes, so feedback is
+          only offered on complete answers. */}
+      <AuiIf condition={(state) => state.message.status?.type === 'complete'}>
+        <Feedback />
+      </AuiIf>
     </MessagePrimitive.Root>
   );
 }

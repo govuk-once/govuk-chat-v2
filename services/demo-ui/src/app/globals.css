@@ -108,6 +108,78 @@ body {
   background: #fdf1ef;
 }
 
+.message-feedback {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0.75rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid #b1b4b6;
+}
+
+.message-feedback-reaction {
+  padding: 0.25rem 0.375rem;
+  border: 0;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  background: transparent;
+}
+
+.message-feedback-button {
+  cursor: pointer;
+}
+
+.message-feedback-button:hover:not(:disabled),
+.message-feedback-given {
+  background: #f3f2f1;
+}
+
+/* The tooltip repeats the label that screen readers already announce. */
+.message-feedback-given {
+  position: relative;
+  cursor: default;
+}
+
+.message-feedback-given::after {
+  content: attr(aria-label);
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 0.5rem);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  color: #fff;
+  background: #0b0c0c;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: opacity 0.15s;
+}
+
+.message-feedback-given:hover::after {
+  opacity: 1;
+}
+
+.message-feedback-button:focus-visible {
+  outline: 3px solid #fd0;
+}
+
+.message-feedback-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.message-feedback-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 1rem;
+  color: #d4351c;
+}
+
 .thread-footer {
   position: sticky;
   bottom: 0;

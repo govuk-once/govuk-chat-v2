@@ -5,6 +5,7 @@ import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { useAgUiRuntime } from '@assistant-ui/react-ag-ui';
 import { useState } from 'react';
 import { threadHistory } from './thread-history.ts';
+import { ThreadIdContext } from './thread-id.ts';
 import { Thread } from './thread.tsx';
 
 function createAgent(threadId: string): HttpAgent {
@@ -25,7 +26,9 @@ export function Chat({ threadId, isNewConversation }: ChatProps) {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <Thread isNewConversation={isNewConversation} />
+      <ThreadIdContext value={threadId}>
+        <Thread isNewConversation={isNewConversation} />
+      </ThreadIdContext>
     </AssistantRuntimeProvider>
   );
 }
