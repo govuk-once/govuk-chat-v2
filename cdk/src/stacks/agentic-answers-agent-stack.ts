@@ -5,6 +5,8 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { agentCoreCodeAsset } from '../bundling/python.ts';
 import { getResourceNamePrefix } from '../constants/environment.ts';
+import { basicGuardrailConfig } from '../bedrock-guardrail-configs/basic-guardrail.ts';
+import { VersionedBedrockGuardrail } from '../constructs/versioned-bedrock-guardrail.ts';
 
 const OPENSEARCH_SECRET_NAME = 'govuk-chat-v2-opensearch';
 
@@ -32,8 +34,10 @@ export class AgenticAnswersAgentStack extends cdk.Stack {
     cdk.Tags.of(this).add('Environment', props.environment);
 
     const shortTermMemory = this.createShortTermMemory();
+    const guardrail = this.createGuardrail();
     const runtime = this.agentcoreRuntime(
       shortTermMemory.memoryId,
+      guardrail,
       props.githubToken,
     );
     this.agentRuntimeArn = runtime.agentRuntimeArn;
@@ -57,6 +61,21 @@ export class AgenticAnswersAgentStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ShortTermMemoryArn', {
       value: shortTermMemory.memoryArn,
     });
+
+    new cdk.CfnOutput(this, 'GuardrailId', {
+      value: guardrail.guardrailId,
+    });
+
+    new cdk.CfnOutput(this, 'GuardrailVersion', {
+      value: guardrail.guardrailVersion,
+    });
+  }
+
+  createGuardrail(): VersionedBedrockGuardrail {
+    return new VersionedBedrockGuardrail(this, 'Guardrail', {
+      name: `${getResourceNamePrefix()}-agentic-answers-guardrail`,
+      config: basicGuardrailConfig,
+    });
   }
 
   createShortTermMemory(): agentcore.Memory {
@@ -71,6 +90,7 @@ export class AgenticAnswersAgentStack extends cdk.Stack {
 
   agentcoreRuntime(
     shortTermMemoryId: string,
+    guardrail: VersionedBedrockGuardrail,
     githubToken: string,
   ): agentcore.Runtime {
     const name = `${getResourceNamePrefix()}-agentic-answers-runtime`;
@@ -81,6 +101,8 @@ export class AgenticAnswersAgentStack extends cdk.Stack {
       agentRuntimeArtifact: this.agentCode(githubToken),
       environmentVariables: {
         BEDROCK_AGENTCORE_MEMORY_ID: shortTermMemoryId,
+        GUARDRAIL_ID: guardrail.guardrailId,
+        GUARDRAIL_VERSION: guardrail.guardrailVersion,
       },
     });
 
@@ -99,8 +121,16 @@ export class AgenticAnswersAgentStack extends cdk.Stack {
 
     agentcoreRuntime.addToRolePolicy(
       new iam.PolicyStatement({
+        actions: ['bedrock:ApplyGuardrail'],
+        resources: [guardrail.guardrailArn],
+      }),
+    );
+
+    agentcoreRuntime.addToRolePolicy(
+      new iam.PolicyStatement({
         actions: [
           'bedrock-agentcore:CreateEvent',
+          'bedrock-agentcore:DeleteEvent',
           'bedrock-agentcore:GetEvent',
           'bedrock-agentcore:ListEvents',
         ],
