@@ -85,16 +85,17 @@ holding a copy.
 
 ```
 .dockerignore                         # remove
-.github/workflows/demo-ui-ci.yaml     # remove Docker job and .dockerignore paths
+.github/workflows/demo-ui-ci.yaml     # remove Docker job and .dockerignore paths; add build job
 cdk/package.json                      # aws-cdk-lib >= 2.276.0
-cdk/src/bundling/nextjs.ts            # add: next build on the host, zip .next/standalone, .next/static, index.js
+cdk/src/bundling/nextjs.ts            # add: scripts/build.sh on the host, zip .next/standalone, .next/static, index.ts
 cdk/src/stacks/demo-ui-stack.ts       # WebFunction replaces VPC, Docker asset, ECS service
 cdk/src/stacks/demo-ui-stack.test.ts
 services/demo-ui/
   Dockerfile                          # remove
   README.md
-  index.js                            # add: HOSTNAME, PORT from AWS_LAMBDA_HTTP_ENDPOINT; start standalone server
+  index.ts                            # add: HOSTNAME, PORT from AWS_LAMBDA_HTTP_ENDPOINT; start standalone server
   package.json                        # add @aws-sdk/client-secrets-manager
+  scripts/build.sh                    # add: next build, run by CDK, CI and dev-checks.sh
   src/app/api/health/                 # remove
   src/auth/session.ts                 # seal and unseal with the fetched secret
   src/auth/urls.ts                    # https unless the host is localhost
@@ -104,6 +105,7 @@ services/demo-ui/
 ### `WebFunction`
 
 - `runtime`: `WebFunctionRuntime.NODEJS_24_X`
+- `entryPoint`: `index.ts`, which Node runs by stripping its types
 - `code`: `WebFunctionCode.fromAssetToManagedBucket(<package dir>)`, with
   local bundling so synth runs `next build` on the host
 - `defaultEndpointAuth`: `WebFunctionAuthType.APPLICATION_MANAGED`
