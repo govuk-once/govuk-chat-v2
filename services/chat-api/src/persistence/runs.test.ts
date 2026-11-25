@@ -172,6 +172,20 @@ describe('finishRun', () => {
     ).toContain(KEY.runId);
   });
 
+  it('stores that the guardrail stepped in on the assistant message', async () => {
+    send.mockResolvedValueOnce({});
+
+    await testEnv.finishRun(KEY, [
+      { ...ASSISTANT_MESSAGES[0], guardrailTriggered: true },
+    ]);
+
+    const [, assistantMessage] = transactItems();
+    expect(assistantMessage.Put?.Item).toMatchObject({
+      sk: 'MESSAGE#message-2',
+      guardrailTriggered: true,
+    });
+  });
+
   it('throws when the completion is cancelled', async () => {
     send.mockRejectedValueOnce(
       transactionCancelled(['None', 'None', 'ConditionalCheckFailed']),

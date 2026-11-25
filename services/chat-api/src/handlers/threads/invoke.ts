@@ -31,6 +31,7 @@ import {
 } from '../../persistence/runs.ts';
 import { MessageAccumulator } from '../../streaming/message-accumulator.ts';
 import { relayAgentEventStream } from '../../streaming/agent-event-stream.ts';
+import { BLOCKED_MESSAGE } from '../../streaming/guardrail-triggered.ts';
 
 const agentRuntimeArn = process.env.AGENT_RUNTIME_ARN;
 if (!agentRuntimeArn) {
@@ -138,8 +139,10 @@ async function invokeAgent(
       userThreadId: body.threadId,
       systemThreadId,
       runId: body.runId,
-      onRunFinished: () => {
-        const assistantContent = accumulator.getContent();
+      onRunFinished: (wasGuardrailTriggered) => {
+        const assistantContent = wasGuardrailTriggered
+          ? BLOCKED_MESSAGE
+          : accumulator.getContent();
 
         // The run's text messages are stored as one, under the id of the
         // last, which is the one a client streaming several shows the answer
@@ -152,6 +155,7 @@ async function invokeAgent(
                 role: 'assistant',
                 content: assistantContent,
                 createdAt: new Date().toISOString(),
+                ...(wasGuardrailTriggered && { guardrailTriggered: true }),
               },
             ]
           : [userMessage];

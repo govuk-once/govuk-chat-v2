@@ -8,6 +8,7 @@ export interface StoredMessage {
   role: string;
   content: string;
   createdAt: string;
+  guardrailTriggered?: boolean;
   feedback?: MessageFeedback;
 }
 
@@ -35,6 +36,7 @@ function toStoredMessage(record: StoredMessage): StoredMessage {
     role: record.role,
     content: record.content,
     createdAt: record.createdAt,
+    guardrailTriggered: record.guardrailTriggered,
   };
 }
 

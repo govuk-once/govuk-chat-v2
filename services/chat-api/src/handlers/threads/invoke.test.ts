@@ -17,6 +17,7 @@ import {
   type ResponseStream,
 } from '../../test-utils/agent-stream.ts';
 import { apiGatewayProxyEventFixture } from '../../test-utils/api-gateway.ts';
+import { BLOCKED_MESSAGE } from '../../streaming/guardrail-triggered.ts';
 
 type StreamifiedHandler = (
   event: APIGatewayProxyEvent,
@@ -381,6 +382,57 @@ describe('handler', () => {
           }),
         ]),
       );
+    });
+
+    it("stores the guardrail's blocked message in place of what was streamed when the guardrail steps in", async () => {
+      send.mockResolvedValueOnce({
+        response: aguiEventStream([
+          {
+            type: EventType.RUN_STARTED,
+            threadId: SYSTEM_THREAD_ID,
+            runId: VALID_RUN_ID,
+          },
+          {
+            type: EventType.TEXT_MESSAGE_START,
+            messageId: 'msg-1',
+            role: 'assistant',
+          },
+          {
+            type: EventType.TEXT_MESSAGE_CONTENT,
+            messageId: 'msg-1',
+            delta: 'A harmful answer',
+          },
+          {
+            type: EventType.CUSTOM,
+            name: 'AgentStopped',
+            value: { stop_reason: 'guardrail_intervened' },
+          } as BaseEvent,
+          { type: EventType.TEXT_MESSAGE_END, messageId: 'msg-1' },
+          {
+            type: EventType.RUN_FINISHED,
+            threadId: SYSTEM_THREAD_ID,
+            runId: VALID_RUN_ID,
+          },
+        ]),
+      });
+
+      await runHandler(
+        apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+      );
+
+      const [, messages] = finishRun.mock.calls[0];
+      expect(messages).toEqual([
+        expect.objectContaining({
+          role: 'user',
+          content: VALID_MESSAGES[0].content,
+        }),
+        expect.objectContaining({
+          messageId: 'msg-1',
+          role: 'assistant',
+          content: BLOCKED_MESSAGE,
+          guardrailTriggered: true,
+        }),
+      ]);
     });
   });
 

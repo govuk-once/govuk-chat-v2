@@ -18,7 +18,8 @@ const USER_THREAD_ID = crypto.randomUUID();
 const SYSTEM_THREAD_ID = crypto.randomUUID();
 const RUN_ID = crypto.randomUUID();
 
-const onRunFinished = vi.fn<() => Promise<void>>();
+const onRunFinished =
+  vi.fn<(wasGuardrailTriggered: boolean) => Promise<void>>();
 const onRunFailed = vi.fn<() => Promise<void>>();
 
 function eventsForThread(threadId: string): BaseEvent[] {
@@ -181,6 +182,39 @@ describe('relayAgentEventStream', () => {
 
     expect(relayed).toEqual(['other', 'recorded', 'finished']);
     expect(onRunFailed).not.toHaveBeenCalled();
+  });
+
+  it('records that the guardrail stepped in, without relaying AgentStopped', async () => {
+    const answer: BaseEvent = {
+      type: EventType.TEXT_MESSAGE_CONTENT,
+      messageId: 'msg-1',
+      delta: 'A harmful answer',
+    };
+    const runFinished: BaseEvent = {
+      type: EventType.RUN_FINISHED,
+      threadId: SYSTEM_THREAD_ID,
+      runId: RUN_ID,
+    };
+
+    const sseStream = relayAgentEventStream(
+      relayParameters(
+        aguiEventStream([
+          answer,
+          {
+            type: EventType.CUSTOM,
+            name: 'AgentStopped',
+            value: { stop_reason: 'guardrail_intervened' },
+          } as BaseEvent,
+          runFinished,
+        ]),
+      ),
+    );
+
+    expect(await collectStreamText(sseStream)).toBe(
+      encoder.encode(answer) +
+        encoder.encode({ ...runFinished, threadId: USER_THREAD_ID }),
+    );
+    expect(onRunFinished).toHaveBeenCalledWith(true);
   });
 
   it('ends the stream with RUN_ERROR when the finished run cannot be recorded', async () => {

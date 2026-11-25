@@ -7,6 +7,7 @@ import {
 import { EventEncoder } from '@ag-ui/encoder';
 import { createParser, type EventSourceMessage } from 'eventsource-parser';
 import { logger } from '../logging/logger.ts';
+import { isStoppedByGuardrail } from './guardrail-triggered.ts';
 
 const encoder = new EventEncoder();
 
@@ -29,7 +30,7 @@ export interface RelayAgentEventStreamParameters {
   userThreadId: string;
   systemThreadId: string;
   runId: string;
-  onRunFinished: () => Promise<void>;
+  onRunFinished: (wasGuardrailTriggered: boolean) => Promise<void>;
   onRunFailed: () => Promise<void>;
   onEvent?: (event: RelayedEvent) => void;
 }
@@ -45,6 +46,7 @@ export async function* relayAgentEventStream({
 }: RelayAgentEventStreamParameters): AsyncGenerator<string> {
   let isRunStarted = false;
   let isOutcomeReported = false;
+  let wasGuardrailTriggered = false;
   // middy resets the logger's appended keys before it streams the body, so
   // anything logged from here has to carry its own context.
   const logContext = { systemThreadId, userThreadId, runId };
@@ -53,6 +55,7 @@ export async function* relayAgentEventStream({
   const parser = createParser({
     onEvent: (message: EventSourceMessage) => {
       const event = JSON.parse(message.data) as RelayedEvent;
+      wasGuardrailTriggered ||= isStoppedByGuardrail(event);
       if (RELAYED_EVENT_TYPES.has(event.type)) {
         parsedEvents.push(event);
       }
@@ -94,7 +97,7 @@ export async function* relayAgentEventStream({
           event.threadId = userThreadId;
         }
         if (event.type === EventType.RUN_FINISHED) {
-          await onRunFinished();
+          await onRunFinished(wasGuardrailTriggered);
           isOutcomeReported = true;
         }
         if (event.type === EventType.RUN_ERROR) {

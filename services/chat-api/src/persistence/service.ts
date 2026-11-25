@@ -123,6 +123,7 @@ const Message = new Entity({
     messageId: { type: 'string', required: true },
     role: { type: 'string', required: true },
     content: { type: 'string', required: true },
+    guardrailTriggered: { type: 'boolean' },
     runId: { type: 'string', required: true },
     createdAt: { type: 'string', required: true, readOnly: true },
     expiresAt: { type: 'number', required: true },
