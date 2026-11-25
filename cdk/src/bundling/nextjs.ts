@@ -7,23 +7,19 @@ import { hashGlobs, repositoryRoot } from '../constants/environment.ts';
 const ARCHIVE_NAME = 'code.zip';
 
 function run(command: string, arguments_: string[], cwd: string): void {
-  execFileSync(command, arguments_, {
-    cwd,
-    stdio: 'inherit',
-    env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
-  });
+  execFileSync(command, arguments_, { cwd, stdio: 'inherit' });
 }
 
-// Builds the package's standalone output, and zips it as the web function
-// runs it: the package's index.js at the root, starting the standalone
-// server, which with outputFileTracingRoot at the repo root keeps the
-// workspace layout under it.
+// Builds the package's standalone output with its scripts/build.sh, and
+// zips it as the web function runs it: the package's index.js at the root,
+// starting the standalone server, which with outputFileTracingRoot at the
+// repo root keeps the workspace layout under it.
 function bundleStandalone(servicePath: string, outputDirectory: string): void {
   const packageDirectory = path.resolve(repositoryRoot(), servicePath);
   const archive = path.join(outputDirectory, ARCHIVE_NAME);
   const standaloneDirectory = path.join(packageDirectory, '.next/standalone');
 
-  run('pnpm', ['exec', 'next', 'build'], packageDirectory);
+  run('scripts/build.sh', [], packageDirectory);
   // -y stores pnpm's symlinks as symlinks: following them would copy each
   // package away from the dependencies it resolves beside.
   run('zip', ['-qry', archive, '.'], standaloneDirectory);

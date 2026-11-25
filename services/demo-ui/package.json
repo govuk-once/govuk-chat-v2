@@ -6,6 +6,7 @@
     "#*": "./src/*"
   },
   "scripts": {
+    "build": "scripts/build.sh",
     "dev": "scripts/dev.sh",
     "dev-checks": "scripts/dev-checks.sh",
     "format": "scripts/format.sh",

@@ -65,3 +65,14 @@ jobs:
 
       - name: Run type checks
         run: services/demo-ui/scripts/type-check.sh
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: $/.github/actions/setup-node-pnpm-env
+
+      - name: Run build
+        run: services/demo-ui/scripts/build.sh
