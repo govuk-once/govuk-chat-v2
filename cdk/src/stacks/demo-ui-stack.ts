@@ -1,17 +1,15 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
-import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
+import { nextjsWebFunctionCode } from '../bundling/nextjs.ts';
 import {
   getResourceNamePrefix,
   isEphemeralEnvironment,
-  repositoryRoot,
 } from '../constants/environment.ts';
 
 export interface DemoUiStackProps extends cdk.StackProps {
@@ -26,7 +24,9 @@ export interface DemoUiStackProps extends cdk.StackProps {
   cognitoAppClientId: string;
 }
 
-const CONTAINER_PORT = 3000;
+// Long enough to stream a reply from the Chat API, whose Lambda times out
+// after 30 seconds.
+const WEB_FUNCTION_TIMEOUT = cdk.Duration.seconds(60);
 const LOCAL_DEV_ORIGIN = 'http://localhost:3000';
 
 export class DemoUiStack extends cdk.Stack {
@@ -38,47 +38,27 @@ export class DemoUiStack extends cdk.Stack {
     cdk.Tags.of(this).add('RepositoryUrl', props.repositoryUrl);
     cdk.Tags.of(this).add('Environment', props.environment);
 
-    const subnets = this.publicSubnets();
     const logGroup = this.logGroup();
     const sessionSecret = this.sessionSecret();
     const signInClient = this.signInClient(props);
-    const service = this.expressService(
+    const webFunction = this.webFunction(
       props,
-      subnets,
       logGroup,
       signInClient.ref,
       sessionSecret,
     );
-    this.applySignInClientSettings(props, signInClient, service);
+    const endpointUrl = `https://${webFunction.endpoint.domainName}`;
+    this.applySignInClientSettings(props, signInClient, endpointUrl);
 
-    new cdk.CfnOutput(this, 'EndpointUrl', {
-      value: service.attrEndpoint,
-    });
+    new cdk.CfnOutput(this, 'EndpointUrl', { value: endpointUrl });
 
     new cdk.CfnOutput(this, 'SignInClientId', {
       value: signInClient.ref,
     });
   }
 
-  // A VPC per developer stack, until the platform shared VPC can host
-  // Express Mode tasks (CHAT-929 sub-issue 04).
-  publicSubnets(): ec2.ISubnet[] {
-    const vpcName = `${getResourceNamePrefix()}-demo-ui-vpc`;
-
-    const vpc = new ec2.Vpc(this, vpcName, {
-      vpcName,
-      maxAzs: 2,
-      natGateways: 0,
-      subnetConfiguration: [
-        { name: 'public', subnetType: ec2.SubnetType.PUBLIC },
-      ],
-    });
-
-    return vpc.publicSubnets;
-  }
-
   logGroup(): logs.LogGroup {
-    const logGroupName = `/ecs/express/${getResourceNamePrefix()}-demo-ui`;
+    const logGroupName = `/aws/lambda/${getResourceNamePrefix()}-demo-ui`;
 
     return new logs.LogGroup(this, logGroupName, {
       logGroupName,
@@ -112,10 +92,10 @@ export class DemoUiStack extends cdk.Stack {
     });
   }
 
-  // The sign-in client needs the service's endpoint as a callback URL, and the
-  // service needs the client's ID, which would be a circular dependency. So
-  // this custom resource applies the client's settings once the service
-  // exists.
+  // The sign-in client needs the web function's endpoint as a callback URL,
+  // and the web function needs the client's ID, which would be a circular
+  // dependency. So this custom resource applies the client's settings once
+  // the endpoint exists.
   //
   // UpdateUserPoolClient resets any setting it isn't given, as would
   // CloudFormation updating the client, so every setting lives here rather
@@ -125,11 +105,11 @@ export class DemoUiStack extends cdk.Stack {
   applySignInClientSettings(
     props: DemoUiStackProps,
     signInClient: cognito.CfnUserPoolClient,
-    service: ecs.CfnExpressGatewayService,
+    endpointUrl: string,
   ): void {
     const origins = [
       ...(isEphemeralEnvironment() ? [LOCAL_DEV_ORIGIN] : []),
-      service.attrEndpoint,
+      endpointUrl,
     ];
 
     const updateSignInClient: cr.AwsSdkCall = {
@@ -167,101 +147,49 @@ export class DemoUiStack extends cdk.Stack {
     });
   }
 
-  expressService(
+  webFunction(
     props: DemoUiStackProps,
-    subnets: ec2.ISubnet[],
     logGroup: logs.LogGroup,
     signInClientId: string,
     sessionSecret: secretsmanager.ISecret,
-  ): ecs.CfnExpressGatewayService {
-    const serviceName = `${getResourceNamePrefix()}-demo-ui`;
+  ): lambda.WebFunction {
+    const webFunctionName = `${getResourceNamePrefix()}-demo-ui`;
 
-    // The Express Mode CloudFormation resource has no CPU architecture
-    // property, so the task runs on x86.
-    const image = new DockerImageAsset(this, `${serviceName}-image`, {
-      directory: repositoryRoot(),
-      file: 'services/demo-ui/Dockerfile',
-      platform: Platform.LINUX_AMD64,
-    });
-
-    const executionRole = new iam.Role(this, `${serviceName}-execution-role`, {
-      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName(
-          'service-role/AmazonECSTaskExecutionRolePolicy',
-        ),
-      ],
-    });
-
-    sessionSecret.grantRead(executionRole);
-
-    const infrastructureRole = new iam.Role(
-      this,
-      `${serviceName}-infrastructure-role`,
-      {
-        assumedBy: new iam.ServicePrincipal('ecs.amazonaws.com'),
-        managedPolicies: [
-          iam.ManagedPolicy.fromAwsManagedPolicyName(
-            'service-role/AmazonECSInfrastructureRoleforExpressGatewayServices',
-          ),
-        ],
+    // Changing the construct ID or the name replaces the web function, and
+    // with it the endpoint's URL.
+    const webFunction = new lambda.WebFunction(this, webFunctionName, {
+      webFunctionName,
+      runtime: lambda.WebFunctionRuntime.NODEJS_24_X,
+      code: nextjsWebFunctionCode('demo-ui'),
+      defaultEndpointAuth: lambda.WebFunctionAuthType.APPLICATION_MANAGED,
+      timeout: WEB_FUNCTION_TIMEOUT,
+      logGroup,
+      environment: {
+        ENVIRONMENT: props.environment,
+        CHAT_API_URL: props.chatApiUrl,
+        COGNITO_TOKEN_ENDPOINT: props.cognitoTokenEndpoint,
+        COGNITO_USER_POOL_ID: props.cognitoUserPoolId,
+        COGNITO_APP_CLIENT_ID: props.cognitoAppClientId,
+        COGNITO_SIGN_IN_CLIENT_ID: signInClientId,
+        SESSION_SECRET_ARN: sessionSecret.secretArn,
       },
-    );
-
-    const taskRole = new iam.Role(this, `${serviceName}-task-role`, {
-      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
     });
+
+    cdk.Annotations.of(webFunction.endpoint).acknowledgeWarning(
+      '@aws-cdk/aws-lambda:webFunctionPublicEndpoint',
+      'The endpoint is public, as the app requires Cognito sign-in itself',
+    );
 
     // The app reads the Chat API client secret from Cognito, rather than
     // holding a copy of it.
-    taskRole.addToPolicy(
+    webFunction.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['cognito-idp:DescribeUserPoolClient'],
         resources: [props.cognitoUserPoolArn],
       }),
     );
+    sessionSecret.grantRead(webFunction);
 
-    const service = new ecs.CfnExpressGatewayService(this, serviceName, {
-      serviceName,
-      cpu: '512',
-      memory: '1024',
-      executionRoleArn: executionRole.roleArn,
-      infrastructureRoleArn: infrastructureRole.roleArn,
-      taskRoleArn: taskRole.roleArn,
-      healthCheckPath: '/api/health',
-      networkConfiguration: {
-        subnets: subnets.map((subnet) => subnet.subnetId),
-      },
-      primaryContainer: {
-        image: image.imageUri,
-        containerPort: CONTAINER_PORT,
-        environment: [
-          { name: 'ENVIRONMENT', value: props.environment },
-          { name: 'CHAT_API_URL', value: props.chatApiUrl },
-          { name: 'COGNITO_TOKEN_ENDPOINT', value: props.cognitoTokenEndpoint },
-          { name: 'COGNITO_USER_POOL_ID', value: props.cognitoUserPoolId },
-          { name: 'COGNITO_APP_CLIENT_ID', value: props.cognitoAppClientId },
-          { name: 'COGNITO_SIGN_IN_CLIENT_ID', value: signInClientId },
-        ],
-        secrets: [
-          { name: 'SESSION_SECRET', valueFrom: sessionSecret.secretArn },
-        ],
-        awsLogsConfiguration: {
-          logGroup: logGroup.logGroupName,
-          logStreamPrefix: 'demo-ui',
-        },
-      },
-      scalingTarget: {
-        minTaskCount: 1,
-        maxTaskCount: 1,
-      },
-    });
-
-    service.node.addDependency(logGroup);
-    service.node.addDependency(
-      ...subnets.map((subnet) => subnet.internetConnectivityEstablished),
-    );
-
-    return service;
+    return webFunction;
   }
 }

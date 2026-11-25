@@ -68,77 +68,54 @@ describe('DemoUiStack', () => {
     });
   });
 
-  describe('VPC', () => {
-    it('creates public subnets in two availability zones and no NAT gateways', () => {
+  describe('Web function', () => {
+    it('creates a web function with a public endpoint', () => {
       const template = Template.fromStack(createStack());
 
-      template.resourceCountIs('AWS::EC2::VPC', 1);
-      template.resourceCountIs('AWS::EC2::Subnet', 2);
-      template.resourceCountIs('AWS::EC2::InternetGateway', 1);
-      template.resourceCountIs('AWS::EC2::NatGateway', 0);
-    });
-  });
-
-  describe('Express service', () => {
-    it('runs in the stack subnets with the health check path', () => {
-      const template = Template.fromStack(createStack());
-
-      const subnetIds = Object.keys(template.findResources('AWS::EC2::Subnet'));
-
-      template.hasResourceProperties('AWS::ECS::ExpressGatewayService', {
-        HealthCheckPath: '/api/health',
-        NetworkConfiguration: {
-          Subnets: subnetIds.map((id) => ({ Ref: id })),
-        },
+      template.resourceCountIs('AWS::Lambda::WebFunction', 1);
+      template.hasResourceProperties('AWS::Lambda::WebFunctionEndpoint', {
+        AuthType: 'ApplicationManaged',
       });
     });
 
-    it('passes the environment name and Chat API values to the container', () => {
+    it('passes the environment name, Chat API values and session secret ARN', () => {
       const template = Template.fromStack(createStack());
 
-      template.hasResourceProperties('AWS::ECS::ExpressGatewayService', {
-        PrimaryContainer: Match.objectLike({
-          Environment: Match.arrayWith([
-            { Name: 'ENVIRONMENT', Value: baseProps.environment },
-            { Name: 'CHAT_API_URL', Value: baseProps.chatApiUrl },
-            {
-              Name: 'COGNITO_TOKEN_ENDPOINT',
-              Value: baseProps.cognitoTokenEndpoint,
-            },
-            {
-              Name: 'COGNITO_USER_POOL_ID',
-              Value: baseProps.cognitoUserPoolId,
-            },
-            {
-              Name: 'COGNITO_APP_CLIENT_ID',
-              Value: baseProps.cognitoAppClientId,
-            },
-            { Name: 'COGNITO_SIGN_IN_CLIENT_ID', Value: Match.anyValue() },
-          ]),
+      template.hasResourceProperties('AWS::Lambda::WebFunctionRevision', {
+        ServiceConfig: Match.objectLike({
+          EnvironmentVariables: {
+            ENVIRONMENT: baseProps.environment,
+            CHAT_API_URL: baseProps.chatApiUrl,
+            COGNITO_TOKEN_ENDPOINT: baseProps.cognitoTokenEndpoint,
+            COGNITO_USER_POOL_ID: baseProps.cognitoUserPoolId,
+            COGNITO_APP_CLIENT_ID: baseProps.cognitoAppClientId,
+            COGNITO_SIGN_IN_CLIENT_ID: Match.anyValue(),
+            SESSION_SECRET_ARN: Match.anyValue(),
+          },
         }),
       });
     });
 
-    it('lets the task role describe the Chat API user pool client', () => {
+    it('lets the execution role describe the Chat API user pool client', () => {
       const template = Template.fromStack(createStack());
 
-      const services = template.findResources(
-        'AWS::ECS::ExpressGatewayService',
+      const [revision] = Object.values(
+        template.findResources('AWS::Lambda::WebFunctionRevision'),
       );
-      const taskRoleId =
-        Object.values(services)[0].Properties.TaskRoleArn['Fn::GetAtt'][0];
+      const roleId =
+        revision.Properties.ServiceConfig.ExecutionRoleArn['Fn::GetAtt'][0];
 
       template.hasResourceProperties('AWS::IAM::Policy', {
         PolicyDocument: {
-          Statement: [
+          Statement: Match.arrayWith([
             {
               Action: 'cognito-idp:DescribeUserPoolClient',
               Effect: 'Allow',
               Resource: baseProps.cognitoUserPoolArn,
             },
-          ],
+          ]),
         },
-        Roles: [{ Ref: taskRoleId }],
+        Roles: [{ Ref: roleId }],
       });
     });
 
@@ -155,19 +132,6 @@ describe('DemoUiStack', () => {
     });
   });
 
-  describe('Session secret', () => {
-    it('passes a generated secret to the container', () => {
-      const template = Template.fromStack(createStack());
-
-      template.resourceCountIs('AWS::SecretsManager::Secret', 1);
-      template.hasResourceProperties('AWS::ECS::ExpressGatewayService', {
-        PrimaryContainer: Match.objectLike({
-          Secrets: [{ Name: 'SESSION_SECRET', ValueFrom: Match.anyValue() }],
-        }),
-      });
-    });
-  });
-
   describe('Sign-in client', () => {
     it('creates a client with a secret on the user pool', () => {
       const template = Template.fromStack(createStack());
@@ -178,26 +142,26 @@ describe('DemoUiStack', () => {
       });
     });
 
-    it('applies the authorization code grant once the service exists', () => {
+    it('applies the authorization code grant once the endpoint exists', () => {
       expect(signInClientSettings()).toContain('"AllowedOAuthFlows":["code"]');
     });
 
-    it('allows localhost and the service as origins in ephemeral environments', () => {
+    it('allows localhost and the endpoint as origins in ephemeral environments', () => {
       const template = Template.fromStack(createStack());
-      const [serviceId] = Object.keys(
-        template.findResources('AWS::ECS::ExpressGatewayService'),
+      const [endpointId] = Object.keys(
+        template.findResources('AWS::Lambda::WebFunctionEndpoint'),
       );
-      const serviceOrigin = `<${serviceId}.Endpoint>`;
+      const endpointOrigin = `https://<${endpointId}.DomainName>`;
 
       const { parameters } = JSON.parse(signInClientSettings(template));
 
       expect(parameters.CallbackURLs).toEqual([
         'http://localhost:3000/api/auth/callback',
-        `${serviceOrigin}/api/auth/callback`,
+        `${endpointOrigin}/api/auth/callback`,
       ]);
       expect(parameters.LogoutURLs).toEqual([
         'http://localhost:3000/',
-        `${serviceOrigin}/`,
+        `${endpointOrigin}/`,
       ]);
     });
 
