@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-18
 
-**Status:** accepted
+**Status:** implemented
 
 **2-minute read. The decisions are made; check you agree with them under
 [Know](#know).** The [build sheet](#build-sheet) is for whoever implements
@@ -40,15 +40,21 @@ still succeeds and you find out when you open the app.
   leaving but stays the fallback, Lambda Web Adapter has more moving parts,
   and Amplify Hosting has a different deploy model from the rest of our app.
 - **Public endpoint, with Cognito as its only protection:** as the ECS
-  endpoint is today. The `Host` header reaches the app unchanged, so the
-  OAuth redirect logic doesn't change. CloudFront with an IAM-signed origin
+  endpoint is today. The `Host` header reaches the app unchanged, but the
+  endpoint doesn't set `X-Forwarded-Proto` as the load balancer does, and
+  passes on any the client sends. So the OAuth redirect logic uses `https`
+  for any host but localhost, rather than reading the header. CloudFront with an IAM-signed origin
   would add a distribution, an origin access control, `Host` rewriting and a
   way to keep Cognito's redirects working, for no benefit while we have no
   custom domain or WAF. We'd revisit it if we need either.
-- **`SESSION_SECRET` is fetched from Secrets Manager at start-up:** ECS
-  injects it into the container today, and web functions have no
-  equivalent. An environment variable would be simpler, but anyone who can
-  read the revision could read the secret back.
+- **The app fetches the session secret from Secrets Manager:** ECS injects
+  it into the container today, and web functions have no equivalent. An
+  environment variable would be simpler, but anyone who can read the
+  revision could read the secret back. The app fetches it on first use, as
+  it does the Chat API client secret, rather than the entry shim fetching it
+  before starting the server: the build only includes modules Next.js
+  traces from the app, so a client used only by the shim would need a
+  separate bundling step.
 - **No health check:** a broken build deploys and only fails on requests,
   which the manual check covers for a demo app.
 - **No VPC:** calls to Cognito and API Gateway are public.
@@ -87,9 +93,12 @@ cdk/src/stacks/demo-ui-stack.test.ts
 services/demo-ui/
   Dockerfile                          # remove
   README.md
-  index.js                            # add: HOSTNAME, PORT from AWS_LAMBDA_HTTP_ENDPOINT; fetch SESSION_SECRET; start standalone server
+  index.js                            # add: HOSTNAME, PORT from AWS_LAMBDA_HTTP_ENDPOINT; start standalone server
   package.json                        # add @aws-sdk/client-secrets-manager
   src/app/api/health/                 # remove
+  src/auth/session.ts                 # seal and unseal with the fetched secret
+  src/auth/urls.ts                    # https unless the host is localhost
+  src/lib/session-secret.ts           # add: SESSION_SECRET if set, else fetch SESSION_SECRET_ARN
 ```
 
 ### `WebFunction`
@@ -121,10 +130,8 @@ services/demo-ui/
 - If an AWS Organizations service control policy denies
   `ApplicationManaged` endpoints, the deploy fails with access denied; ask
   the Platform team for an exception.
-- If the session secret can't be fetched, the shim exits before starting the
-  server, so requests fail rather than sessions using no secret.
-- The standalone output only includes modules Next.js traces, so the shim's
-  Secrets Manager client must be included explicitly.
+- If the session secret can't be fetched, the request fails rather than
+  sessions using no secret, and the next request fetches again.
 - If the `WebFunction` construct id changes, the endpoint gets a new URL.
 
 ### Checks
