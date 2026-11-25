@@ -109,7 +109,7 @@ services/demo-ui/
 - `defaultEndpointAuth`: `WebFunctionAuthType.APPLICATION_MANAGED`
 - `timeout`: enough for a streamed reply; default 30s, maximum 900s
 - `logGroup`: the stack's own; `DESTROY` when ephemeral, `RETAIN` otherwise
-- `environment`: `ENVIRONMENT`, `CHAT_API_URL`, `COGNITO_TOKEN_ENDPOINT`,
+- `environment`: `CHAT_API_URL`, `COGNITO_TOKEN_ENDPOINT`,
   `COGNITO_USER_POOL_ID`, `COGNITO_APP_CLIENT_ID`,
   `COGNITO_SIGN_IN_CLIENT_ID`, `SESSION_SECRET_ARN`
 - Role: `cognito-idp:DescribeUserPoolClient` on the user pool;
