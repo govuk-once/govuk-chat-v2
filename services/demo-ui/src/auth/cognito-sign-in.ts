@@ -1,6 +1,6 @@
 import * as client from 'openid-client';
-import { fetchClientSecret } from '../lib/cognito-client-secret.ts';
-import { requireEnv } from '../lib/env.ts';
+import { fetchClientSecret } from '#lib/cognito-client-secret.ts';
+import { requireEnv } from '#lib/env.ts';
 
 // What the callback needs to finish a sign-in the proxy started.
 export interface SignInFlow {

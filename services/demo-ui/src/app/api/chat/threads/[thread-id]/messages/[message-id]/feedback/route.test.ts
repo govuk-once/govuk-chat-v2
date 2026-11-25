@@ -1,7 +1,7 @@
 import { NextRequest, type NextResponse } from 'next/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GiveFeedbackInput } from '../../../../../../../../chat-api/client.ts';
-import { endUserIdFor } from '../../../../../../../../chat-api/end-user-id.ts';
+import type { GiveFeedbackInput } from '#chat-api/client.ts';
+import { endUserIdFor } from '#chat-api/end-user-id.ts';
 
 const THREAD_ID = crypto.randomUUID();
 const MESSAGE_ID = crypto.randomUUID();
@@ -23,8 +23,8 @@ const testEnv = {} as {
 };
 
 beforeAll(async () => {
-  vi.doMock('../../../../../../../../auth/session.ts', () => ({ readSession }));
-  vi.doMock('../../../../../../../../chat-api/client.ts', () => ({
+  vi.doMock('#auth/session.ts', () => ({ readSession }));
+  vi.doMock('#chat-api/client.ts', () => ({
     giveFeedback,
   }));
   const routeModule = await import('./route.ts');

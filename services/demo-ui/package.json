@@ -2,6 +2,9 @@
   "name": "@govuk-chat-v2/demo-ui",
   "type": "module",
   "private": true,
+  "imports": {
+    "#*": "./src/*"
+  },
   "scripts": {
     "dev": "scripts/dev.sh",
     "dev-checks": "scripts/dev-checks.sh",

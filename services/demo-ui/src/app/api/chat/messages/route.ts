@@ -1,10 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { readSession } from '../../../../auth/session.ts';
-import {
-  listThreadMessages,
-  type ThreadMessage,
-} from '../../../../chat-api/client.ts';
-import { endUserIdFor } from '../../../../chat-api/end-user-id.ts';
+import { readSession } from '#auth/session.ts';
+import { listThreadMessages, type ThreadMessage } from '#chat-api/client.ts';
+import { endUserIdFor } from '#chat-api/end-user-id.ts';
 import { readThreadId, setThreadId } from '../cookies.ts';
 
 interface ThreadMessagesBody {

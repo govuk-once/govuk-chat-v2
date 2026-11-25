@@ -1,10 +1,10 @@
 import { RunAgentInputSchema } from '@ag-ui/core/schemas';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { readSession } from '../../../auth/session.ts';
-import { invokeThread } from '../../../chat-api/client.ts';
-import { endUserIdFor } from '../../../chat-api/end-user-id.ts';
-import { readJson } from '../../../lib/read-json.ts';
+import { readSession } from '#auth/session.ts';
+import { invokeThread } from '#chat-api/client.ts';
+import { endUserIdFor } from '#chat-api/end-user-id.ts';
+import { readJson } from '#lib/read-json.ts';
 import { setThreadId } from './cookies.ts';
 
 const uuidSchema = z.uuid();

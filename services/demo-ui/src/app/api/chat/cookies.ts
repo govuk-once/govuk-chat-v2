@@ -1,6 +1,6 @@
 import type { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { setHttpOnlyCookie } from '../../../lib/http-only-cookie.ts';
+import { setHttpOnlyCookie } from '#lib/http-only-cookie.ts';
 
 const THREAD_ID_COOKIE = 'thread_id';
 

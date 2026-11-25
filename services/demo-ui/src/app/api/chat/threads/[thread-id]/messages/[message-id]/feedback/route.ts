@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
-import { readSession } from '../../../../../../../../auth/session.ts';
-import { giveFeedback } from '../../../../../../../../chat-api/client.ts';
-import { endUserIdFor } from '../../../../../../../../chat-api/end-user-id.ts';
-import { readJson } from '../../../../../../../../lib/read-json.ts';
+import { readSession } from '#auth/session.ts';
+import { giveFeedback } from '#chat-api/client.ts';
+import { endUserIdFor } from '#chat-api/end-user-id.ts';
+import { readJson } from '#lib/read-json.ts';
 
 const parametersSchema = z.object({
   'thread-id': z.uuid(),

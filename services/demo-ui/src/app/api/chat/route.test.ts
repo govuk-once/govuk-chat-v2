@@ -1,7 +1,7 @@
 import { NextRequest, type NextResponse } from 'next/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { InvokeThreadInput } from '../../../chat-api/client.ts';
-import { endUserIdFor } from '../../../chat-api/end-user-id.ts';
+import type { InvokeThreadInput } from '#chat-api/client.ts';
+import { endUserIdFor } from '#chat-api/end-user-id.ts';
 
 const THREAD_ID = crypto.randomUUID();
 const USER_SUB = crypto.randomUUID();
@@ -20,8 +20,8 @@ const testEnv = {} as {
 };
 
 beforeAll(async () => {
-  vi.doMock('../../../auth/session.ts', () => ({ readSession }));
-  vi.doMock('../../../chat-api/client.ts', () => ({ invokeThread }));
+  vi.doMock('#auth/session.ts', () => ({ readSession }));
+  vi.doMock('#chat-api/client.ts', () => ({ invokeThread }));
   const routeModule = await import('./route.ts');
   testEnv.POST = routeModule.POST;
 });

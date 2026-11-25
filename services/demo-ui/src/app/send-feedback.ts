@@ -1,4 +1,4 @@
-import type { Reaction } from '../chat-api/client.ts';
+import type { Reaction } from '#chat-api/client.ts';
 
 export type FeedbackOutcome = 'recorded' | 'already-given' | 'failed';
 

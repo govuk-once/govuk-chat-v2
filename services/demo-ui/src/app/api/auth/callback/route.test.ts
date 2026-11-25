@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SignInFlow } from '../../../../auth/cognito-sign-in.ts';
-import { readSession, setSignInFlow } from '../../../../auth/session.ts';
+import type { SignInFlow } from '#auth/cognito-sign-in.ts';
+import { readSession, setSignInFlow } from '#auth/session.ts';
 
 const USER_SUB = crypto.randomUUID();
 const FLOW: SignInFlow = {
@@ -17,7 +17,7 @@ const testEnv = {} as {
 };
 
 beforeAll(async () => {
-  vi.doMock('../../../../auth/cognito-sign-in.ts', () => ({ finishSignIn }));
+  vi.doMock('#auth/cognito-sign-in.ts', () => ({ finishSignIn }));
 
   const routeModule = await import('./route.ts');
   testEnv.GET = routeModule.GET;

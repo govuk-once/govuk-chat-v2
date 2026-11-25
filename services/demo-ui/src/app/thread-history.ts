@@ -4,7 +4,7 @@ import {
   type ThreadMessageLike,
 } from '@assistant-ui/react';
 import { fromAgUiMessages } from '@assistant-ui/react-ag-ui';
-import type { Reaction, ThreadMessage } from '../chat-api/client.ts';
+import type { Reaction, ThreadMessage } from '#chat-api/client.ts';
 
 interface MessagesBody {
   messages: ThreadMessage[];
