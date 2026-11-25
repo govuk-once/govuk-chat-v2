@@ -165,7 +165,6 @@ export class DemoUiStack extends cdk.Stack {
       timeout: WEB_FUNCTION_TIMEOUT,
       logGroup,
       environment: {
-        ENVIRONMENT: props.environment,
         CHAT_API_URL: props.chatApiUrl,
         COGNITO_TOKEN_ENDPOINT: props.cognitoTokenEndpoint,
         COGNITO_USER_POOL_ID: props.cognitoUserPoolId,

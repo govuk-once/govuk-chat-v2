@@ -94,10 +94,8 @@ The app is at the stack's `EndpointUrl`:
 ./scripts/fetch-cdk-output.sh DemoUiStack EndpointUrl
 ```
 
-The web function gets `ENVIRONMENT`, the deployment environment name. It
-also gets the Chat API values above from the
-`ChatApiStack` in the same environment, which the deploy script deploys
-first.
+The web function gets the Chat API values above from the `ChatApiStack` in
+the same environment, which the deploy script deploys first.
 
 A deploy succeeds even if the app fails to start, so open the app after
 deploying to check it.

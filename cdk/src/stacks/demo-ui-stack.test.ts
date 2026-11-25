@@ -78,13 +78,12 @@ describe('DemoUiStack', () => {
       });
     });
 
-    it('passes the environment name, Chat API values and session secret ARN', () => {
+    it('passes the Chat API values and session secret ARN', () => {
       const template = Template.fromStack(createStack());
 
       template.hasResourceProperties('AWS::Lambda::WebFunctionRevision', {
         ServiceConfig: Match.objectLike({
           EnvironmentVariables: {
-            ENVIRONMENT: baseProps.environment,
             CHAT_API_URL: baseProps.chatApiUrl,
             COGNITO_TOKEN_ENDPOINT: baseProps.cognitoTokenEndpoint,
             COGNITO_USER_POOL_ID: baseProps.cognitoUserPoolId,
