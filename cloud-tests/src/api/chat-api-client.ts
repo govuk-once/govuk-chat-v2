@@ -10,6 +10,12 @@ export interface StoredMessage {
   id: string;
   role: string;
   content: string;
+  guardrailTriggered?: boolean;
+}
+
+export interface StreamedEvent {
+  type: string;
+  name?: string;
 }
 
 async function fetchAppClientSecret({
@@ -89,8 +95,12 @@ export class ChatApiClient {
     return response;
   }
 
-  // Returns the types of the events streamed back, in the order received.
-  async invokeThread(threadId: string, prompt: string): Promise<string[]> {
+  // Returns the type, and for CUSTOM events the name, of each event streamed
+  // back, in the order received.
+  async invokeThread(
+    threadId: string,
+    prompt: string,
+  ): Promise<StreamedEvent[]> {
     const response = await this.request('/v1/threads/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -107,11 +117,12 @@ export class ChatApiClient {
     const events = response.body
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(new EventSourceParserStream());
-    const eventTypes: string[] = [];
+    const streamed: StreamedEvent[] = [];
     for await (const event of events) {
-      eventTypes.push((JSON.parse(event.data) as { type: string }).type);
+      const { type, name } = JSON.parse(event.data) as StreamedEvent;
+      streamed.push(name === undefined ? { type } : { type, name });
     }
-    return eventTypes;
+    return streamed;
   }
 
   async listMessages(threadId: string): Promise<StoredMessage[]> {
