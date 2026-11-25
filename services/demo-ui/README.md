@@ -7,8 +7,8 @@ cookie, so refreshing the page carries on the same conversation. The page
 shows the conversation's earlier messages when it loads. The "New
 conversation" button starts a new one. Each finished answer has 👍 and 👎
 buttons for giving feedback on it once, and shows the reaction given. It
-also serves a `/api/health` route, a `/api/chat/messages` route that
-returns the conversation's messages, and a
+also serves a `/api/chat/messages` route that returns the conversation's
+messages, and a
 `/api/chat/threads/{threadId}/messages/{messageId}/feedback` route that
 gives feedback on one.
 
@@ -20,8 +20,7 @@ To run it on your own machine:
 ./scripts/dev.sh
 ```
 
-The page is at http://localhost:3000 and the health check at
-http://localhost:3000/api/health. Arguments are passed to `next dev`,
+The page is at http://localhost:3000. Arguments are passed to `next dev`,
 but keep the default port, as sign-in only works locally on port 3000.
 
 ## Configuration
@@ -42,8 +41,6 @@ export COGNITO_APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiStack AppClien
 
 The app requires Cognito sign-in. Unauthenticated page requests are
 redirected to the Cognito Hosted UI, and API requests get a 401.
-`/api/health` is exempt so that health checks and CI smoke tests still
-pass.
 
 Sign-in uses [openid-client](https://github.com/panva/openid-client),
 which finds Cognito's endpoints from its published configuration.
@@ -78,17 +75,6 @@ registers the endpoint's callback URL automatically via a custom resource.
 Rather than `SESSION_SECRET`, the web function gets `SESSION_SECRET_ARN`
 and reads the secret from Secrets Manager.
 
-## Building the image
-
-The image builds from the repo root, because pnpm keeps the lockfile there:
-
-```
-docker build -f services/demo-ui/Dockerfile -t demo-ui .
-docker run --rm -p 3000:3000 demo-ui
-```
-
-`next build` runs only inside this Docker build.
-
 ## Deploying
 
 To deploy to a
@@ -108,8 +94,8 @@ The app is at the stack's `EndpointUrl`:
 ./scripts/fetch-cdk-output.sh DemoUiStack EndpointUrl
 ```
 
-The web function gets `ENVIRONMENT`, the deployment environment name.
-`/api/health` reports it. It also gets the Chat API values above from the
+The web function gets `ENVIRONMENT`, the deployment environment name. It
+also gets the Chat API values above from the
 `ChatApiStack` in the same environment, which the deploy script deploys
 first.
 
