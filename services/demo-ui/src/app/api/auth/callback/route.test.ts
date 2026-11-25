@@ -29,10 +29,7 @@ beforeEach(() => {
 });
 
 async function callbackRequest(flow?: SignInFlow): Promise<NextRequest> {
-  const headers: Record<string, string> = {
-    host: 'chat.example.com',
-    'x-forwarded-proto': 'https',
-  };
+  const headers: Record<string, string> = { host: 'chat.example.com' };
   if (flow) {
     const response = new NextResponse();
     await setSignInFlow(response, flow);
