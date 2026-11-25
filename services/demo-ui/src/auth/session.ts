@@ -1,7 +1,7 @@
 import { sealData, unsealData } from 'iron-session';
 import type { NextRequest, NextResponse } from 'next/server';
-import { requireEnv } from '#lib/env.ts';
 import { setHttpOnlyCookie } from '#lib/http-only-cookie.ts';
+import { sessionSecret } from '#lib/session-secret.ts';
 import type { SignInFlow } from './cognito-sign-in.ts';
 import { CALLBACK_PATH } from './urls.ts';
 
@@ -16,14 +16,12 @@ const SIGN_IN_FLOW_MAX_AGE_SECONDS = 10 * 60;
 type RequestCookies = Pick<NextRequest['cookies'], 'get'>;
 
 // iron stamps the expiry into the seal, and checks it when unsealing.
-function seal(data: object, ttl: number): Promise<string> {
-  return sealData(data, { password: requireEnv('SESSION_SECRET'), ttl });
+async function seal(data: object, ttl: number): Promise<string> {
+  return sealData(data, { password: await sessionSecret(), ttl });
 }
 
-function unseal<T>(cookie: string): Promise<Partial<T>> {
-  return unsealData<Partial<T>>(cookie, {
-    password: requireEnv('SESSION_SECRET'),
-  });
+async function unseal<T>(cookie: string): Promise<Partial<T>> {
+  return unsealData<Partial<T>>(cookie, { password: await sessionSecret() });
 }
 
 export async function readSession(
