@@ -85,8 +85,9 @@ To deploy to a
 ```
 
 The CDK runs `next build` on your machine and deploys a zip of the
-standalone output, with `index.js` as its entry point. `index.js` starts
-the standalone server on the address Lambda gives it.
+standalone output, with `index.ts` as its entry point. `index.ts` starts
+the standalone server on the address Lambda gives it. Node strips its types
+when it runs it, so nothing compiles it.
 
 The app is at the stack's `EndpointUrl`:
 

@@ -3,9 +3,8 @@
 // AWS_LAMBDA_HTTP_ENDPOINT, in host:port form, while the Next.js standalone
 // server reads HOSTNAME and PORT.
 //
-// Written as plain JavaScript, as the runtime starts it without a build step,
-// and without top-level await, so it loads whether the runtime requires or
-// imports it.
+// Node strips the types itself, so nothing compiles this. It has no
+// top-level await, so it loads whether the runtime requires or imports it.
 import process from 'node:process';
 
 const [hostname, port] = (process.env.AWS_LAMBDA_HTTP_ENDPOINT ?? '').split(
@@ -17,4 +16,5 @@ process.env.PORT = port;
 
 // With outputFileTracingRoot at the repo root, the standalone output keeps
 // the workspace layout, so server.js sits under services/demo-ui.
+// @ts-expect-error -- server.js only exists in the build output
 import('./services/demo-ui/server.js');

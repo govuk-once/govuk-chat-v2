@@ -6,12 +6,16 @@ import { hashGlobs, repositoryRoot } from '../constants/environment.ts';
 
 const ARCHIVE_NAME = 'code.zip';
 
+// The package's entry shim, zipped at the root of the deployment package
+// for the web function to start.
+export const NEXTJS_ENTRY_POINT = 'index.ts';
+
 function run(command: string, arguments_: string[], cwd: string): void {
   execFileSync(command, arguments_, { cwd, stdio: 'inherit' });
 }
 
 // Builds the package's standalone output with its scripts/build.sh, and
-// zips it as the web function runs it: the package's index.js at the root,
+// zips it as the web function runs it: the package's index.ts at the root,
 // starting the standalone server, which with outputFileTracingRoot at the
 // repo root keeps the workspace layout under it.
 function bundleStandalone(servicePath: string, outputDirectory: string): void {
@@ -24,13 +28,16 @@ function bundleStandalone(servicePath: string, outputDirectory: string): void {
   // package away from the dependencies it resolves beside.
   run('zip', ['-qry', archive, '.'], standaloneDirectory);
   run('zip', ['-qr', archive, `${servicePath}/.next/static`], repositoryRoot());
-  run('zip', ['-q', archive, 'index.js'], packageDirectory);
+  run('zip', ['-q', archive, NEXTJS_ENTRY_POINT], packageDirectory);
 }
 
 function sourceHash(packageDirectory: string): string {
   return hashGlobs(
     path.join(packageDirectory, 'src/**/*'),
-    path.join(packageDirectory, '{index.js,next.config.ts,package.json}'),
+    path.join(
+      packageDirectory,
+      `{${NEXTJS_ENTRY_POINT},next.config.ts,package.json}`,
+    ),
     path.join(repositoryRoot(), 'pnpm-lock.yaml'),
   );
 }

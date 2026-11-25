@@ -18,14 +18,14 @@ afterEach(() => {
   }
 });
 
-// Lays index.js out as it is in the deployment package, beside a stand-in
+// Lays index.ts out as it is in the deployment package, beside a stand-in
 // for the standalone server that prints the address it would listen on.
 function deploymentPackage(): string {
   const root = mkdtempSync(path.join(tmpdir(), 'demo-ui-package-'));
   packageRoots.push(root);
   copyFileSync(
-    path.join(import.meta.dirname, 'index.js'),
-    path.join(root, 'index.js'),
+    path.join(import.meta.dirname, 'index.ts'),
+    path.join(root, 'index.ts'),
   );
   const serverDirectory = path.join(root, 'services/demo-ui');
   mkdirSync(serverDirectory, { recursive: true });
@@ -36,11 +36,11 @@ function deploymentPackage(): string {
   return root;
 }
 
-describe('index.js', () => {
+describe('index.ts', () => {
   it('starts the server on the address Lambda gives', () => {
     const output = execFileSync(
       process.execPath,
-      [path.join(deploymentPackage(), 'index.js')],
+      [path.join(deploymentPackage(), 'index.ts')],
       {
         env: { ...process.env, AWS_LAMBDA_HTTP_ENDPOINT: '127.0.0.1:8080' },
         encoding: 'utf8',

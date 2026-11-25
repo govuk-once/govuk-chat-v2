@@ -6,7 +6,10 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
-import { nextjsWebFunctionCode } from '../bundling/nextjs.ts';
+import {
+  NEXTJS_ENTRY_POINT,
+  nextjsWebFunctionCode,
+} from '../bundling/nextjs.ts';
 import {
   getResourceNamePrefix,
   isEphemeralEnvironment,
@@ -161,6 +164,7 @@ export class DemoUiStack extends cdk.Stack {
       webFunctionName,
       runtime: lambda.WebFunctionRuntime.NODEJS_24_X,
       code: nextjsWebFunctionCode('demo-ui'),
+      entryPoint: NEXTJS_ENTRY_POINT,
       defaultEndpointAuth: lambda.WebFunctionAuthType.APPLICATION_MANAGED,
       timeout: WEB_FUNCTION_TIMEOUT,
       logGroup,
