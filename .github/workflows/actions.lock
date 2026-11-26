@@ -36,12 +36,12 @@ workflows:
         - 'actions/create-github-app-token@v3.3.0'
         - 'actions/setup-node@v6.2.0'
         - 'actions/setup-node@v7.1.0'
-        - 'aws-actions/configure-aws-credentials@v6.2.4'
+        - 'aws-actions/configure-aws-credentials@v6.3.0'
     '.github/workflows/cloud-tests-pr-environment.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/create-github-app-token@v3.3.0'
         - 'actions/setup-node@v6.2.0'
-        - 'aws-actions/configure-aws-credentials@v6.2.4'
+        - 'aws-actions/configure-aws-credentials@v6.3.0'
     '.github/workflows/demo-ui-ci.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v6.2.0'
@@ -79,8 +79,8 @@ dependencies:
         commit: 'sha1-3259c6206f993105e3a61b142c2d97bf4b9ef83d'
         owner_id: 115962839
         repo_id: 846733598
-    'aws-actions/configure-aws-credentials@v6.2.4':
-        ref: 'v6.2.4'
-        commit: 'sha1-cbe3b392738ccf3f987d68400dafcf4b0624a56c'
+    'aws-actions/configure-aws-credentials@v6.3.0':
+        ref: 'v6.3.0'
+        commit: 'sha1-e1253824e5c10ff9df46874f81ed3ec929e19cfd'
         owner_id: 57468012
         repo_id: 220391287
