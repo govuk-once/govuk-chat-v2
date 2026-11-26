@@ -1,33 +1,31 @@
-import type * as bedrock from 'aws-cdk-lib/aws-bedrock';
+import {
+  ContentFilterStrength,
+  ContentFilterType,
+  GuardrailAction,
+  type ContentFilter,
+} from '@aws-cdk/aws-bedrock-alpha';
 import type { BedrockGuardrailConfig } from '../constructs/versioned-bedrock-guardrail.ts';
-
-type ContentFilterType =
-  'SEXUAL' | 'VIOLENCE' | 'HATE' | 'INSULTS' | 'MISCONDUCT';
-type FilterStrength = 'LOW' | 'MEDIUM' | 'HIGH';
 
 function contentFilter(
   type: ContentFilterType,
-  strength: FilterStrength,
-): bedrock.CfnGuardrail.ContentFilterConfigProperty {
+  strength: ContentFilterStrength,
+): ContentFilter {
   return {
     type,
-    inputEnabled: true,
-    inputAction: 'BLOCK',
+    inputAction: GuardrailAction.BLOCK,
     inputStrength: strength,
-    outputEnabled: true,
-    outputAction: 'BLOCK',
+    outputAction: GuardrailAction.BLOCK,
     outputStrength: strength,
   };
 }
 
-const promptAttackFilter: bedrock.CfnGuardrail.ContentFilterConfigProperty = {
-  type: 'PROMPT_ATTACK',
-  inputEnabled: true,
-  inputAction: 'BLOCK',
-  inputStrength: 'HIGH',
+const promptAttackFilter: ContentFilter = {
+  type: ContentFilterType.PROMPT_ATTACK,
+  inputAction: GuardrailAction.BLOCK,
+  inputStrength: ContentFilterStrength.HIGH,
   outputEnabled: false,
-  outputAction: 'NONE',
-  outputStrength: 'NONE',
+  outputAction: GuardrailAction.NONE,
+  outputStrength: ContentFilterStrength.NONE,
 };
 
 export const basicGuardrailConfig: BedrockGuardrailConfig = {
@@ -35,14 +33,12 @@ export const basicGuardrailConfig: BedrockGuardrailConfig = {
   // replace them with its own blocked messages.
   blockedInputMessaging: '[Question blocked by the guardrail]',
   blockedOutputsMessaging: '[Answer blocked by the guardrail]',
-  contentPolicyConfig: {
-    filtersConfig: [
-      contentFilter('SEXUAL', 'LOW'),
-      contentFilter('VIOLENCE', 'HIGH'),
-      contentFilter('HATE', 'HIGH'),
-      contentFilter('INSULTS', 'HIGH'),
-      contentFilter('MISCONDUCT', 'HIGH'),
-      promptAttackFilter,
-    ],
-  },
+  contentFilters: [
+    contentFilter(ContentFilterType.SEXUAL, ContentFilterStrength.LOW),
+    contentFilter(ContentFilterType.VIOLENCE, ContentFilterStrength.HIGH),
+    contentFilter(ContentFilterType.HATE, ContentFilterStrength.HIGH),
+    contentFilter(ContentFilterType.INSULTS, ContentFilterStrength.HIGH),
+    contentFilter(ContentFilterType.MISCONDUCT, ContentFilterStrength.HIGH),
+    promptAttackFilter,
+  ],
 };

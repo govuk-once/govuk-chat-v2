@@ -119,12 +119,7 @@ export class AgenticAnswersAgentStack extends cdk.Stack {
       }),
     );
 
-    agentcoreRuntime.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['bedrock:ApplyGuardrail'],
-        resources: [guardrail.guardrailArn],
-      }),
-    );
+    guardrail.grantApply(agentcoreRuntime);
 
     agentcoreRuntime.addToRolePolicy(
       new iam.PolicyStatement({

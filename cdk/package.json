@@ -13,6 +13,7 @@
     "type-check": "scripts/type-check.sh"
   },
   "dependencies": {
+    "@aws-cdk/aws-bedrock-alpha": "2.274.0-alpha.0",
     "aws-cdk": "^2.1146.1",
     "aws-cdk-lib": "^2.274.0",
     "constructs": "^10.8.1"

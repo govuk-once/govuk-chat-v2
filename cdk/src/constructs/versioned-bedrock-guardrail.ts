@@ -1,9 +1,14 @@
 import { createHash } from 'node:crypto';
+import * as bedrockAlpha from '@aws-cdk/aws-bedrock-alpha';
 import * as cdk from 'aws-cdk-lib';
 import * as bedrock from 'aws-cdk-lib/aws-bedrock';
+import type * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
-export type BedrockGuardrailConfig = Omit<bedrock.CfnGuardrailProps, 'name'>;
+export type BedrockGuardrailConfig = Omit<
+  bedrockAlpha.GuardrailProps,
+  'guardrailName'
+>;
 
 export interface VersionedBedrockGuardrailProps {
   name: string;
@@ -14,9 +19,12 @@ export interface VersionedBedrockGuardrailProps {
 // description can't be changed after it's created, so describing it by a
 // hash of the config means a config change replaces the version. The old one
 // is kept, as agent sessions that started before the change still use it.
+// The L2 guardrail's own createVersion() can't do this: it names the version
+// after unresolved tokens rather than the config, so a config change doesn't
+// reliably create a new version, and an unrelated change can.
 export class VersionedBedrockGuardrail extends Construct {
+  private readonly guardrail: bedrockAlpha.Guardrail;
   public readonly guardrailId: string;
-  public readonly guardrailArn: string;
   public readonly guardrailVersion: string;
 
   constructor(
@@ -26,20 +34,23 @@ export class VersionedBedrockGuardrail extends Construct {
   ) {
     super(scope, id);
 
-    const guardrail = new bedrock.CfnGuardrail(this, 'Guardrail', {
-      name: props.name,
+    this.guardrail = new bedrockAlpha.Guardrail(this, 'Guardrail', {
+      guardrailName: props.name,
       ...props.config,
     });
 
     const version = new bedrock.CfnGuardrailVersion(this, 'Version', {
-      guardrailIdentifier: guardrail.attrGuardrailId,
+      guardrailIdentifier: this.guardrail.guardrailId,
       description: `Config ${configHash(props.config)}`,
     });
     version.cfnOptions.updateReplacePolicy = cdk.CfnDeletionPolicy.RETAIN;
 
-    this.guardrailId = guardrail.attrGuardrailId;
-    this.guardrailArn = guardrail.attrGuardrailArn;
+    this.guardrailId = this.guardrail.guardrailId;
     this.guardrailVersion = version.attrVersion;
+  }
+
+  grantApply(grantee: iam.IGrantable): iam.Grant {
+    return this.guardrail.grantApply(grantee);
   }
 }
 
