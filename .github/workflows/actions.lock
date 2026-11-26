@@ -23,7 +23,7 @@ workflows:
         - 'astral-sh/setup-uv@v7.1.0'
     '.github/workflows/cdk-ci.yaml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/create-github-app-token@v3.3.0'
+        - 'actions/create-github-app-token@v3.4.0'
         - 'actions/setup-node@v6.2.0'
     '.github/workflows/chat-api-ci.yaml':
         - 'actions/checkout@v7.0.1'
@@ -33,13 +33,13 @@ workflows:
         - 'actions/setup-node@v6.2.0'
     '.github/workflows/cloud-tests-pr-environment-cleanup.yaml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/create-github-app-token@v3.3.0'
+        - 'actions/create-github-app-token@v3.4.0'
         - 'actions/setup-node@v6.2.0'
         - 'actions/setup-node@v7.1.0'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
     '.github/workflows/cloud-tests-pr-environment.yaml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/create-github-app-token@v3.3.0'
+        - 'actions/create-github-app-token@v3.4.0'
         - 'actions/setup-node@v6.2.0'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
     '.github/workflows/demo-ui-ci.yaml':
@@ -57,6 +57,11 @@ dependencies:
     'actions/create-github-app-token@v3.3.0':
         ref: 'v3.3.0'
         commit: 'sha1-64ab729a6294000f5aa4a4bc0b73d1f32bc45510'
+        owner_id: 44036562
+        repo_id: 642580244
+    'actions/create-github-app-token@v3.4.0':
+        ref: 'v3.4.0'
+        commit: 'sha1-f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc'
         owner_id: 44036562
         repo_id: 642580244
     'actions/setup-node@v6.2.0':
