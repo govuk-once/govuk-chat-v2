@@ -1,9 +1,12 @@
 import * as agentcore from 'aws-cdk-lib/aws-bedrockagentcore';
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { agentCoreCodeAsset } from '../bundling/python.ts';
 import { getResourceNamePrefix } from '../constants/environment.ts';
+
+const OPENSEARCH_SECRET_NAME = 'govuk-chat-v2-opensearch';
 
 export interface AgenticAnswersAgentStackProps extends cdk.StackProps {
   serviceName: string;
@@ -107,6 +110,12 @@ export class AgenticAnswersAgentStack extends cdk.Stack {
         ],
       }),
     );
+
+    secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'OpenSearchSecret',
+      OPENSEARCH_SECRET_NAME,
+    ).grantRead(agentcoreRuntime);
 
     return agentcoreRuntime;
   }
