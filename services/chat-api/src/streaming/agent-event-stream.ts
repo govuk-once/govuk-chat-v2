@@ -10,6 +10,18 @@ import { logger } from '../logging/logger.ts';
 
 const encoder = new EventEncoder();
 
+// Only these of the agent's events reach the client or storage. Others,
+// such as RAW and TOOL_CALL_RESULT, can carry the guardrail's trace or a
+// tool's full result.
+const RELAYED_EVENT_TYPES: ReadonlySet<EventType> = new Set([
+  EventType.RUN_STARTED,
+  EventType.RUN_FINISHED,
+  EventType.RUN_ERROR,
+  EventType.TEXT_MESSAGE_START,
+  EventType.TEXT_MESSAGE_CONTENT,
+  EventType.TEXT_MESSAGE_END,
+]);
+
 type RelayedEvent = BaseEvent & { threadId?: string };
 
 export interface RelayAgentEventStreamParameters {
@@ -39,8 +51,11 @@ export async function* relayAgentEventStream({
   const textDecoder = new TextDecoder('utf-8');
   const parsedEvents: RelayedEvent[] = [];
   const parser = createParser({
-    onEvent: (event: EventSourceMessage) => {
-      parsedEvents.push(JSON.parse(event.data) as RelayedEvent);
+    onEvent: (message: EventSourceMessage) => {
+      const event = JSON.parse(message.data) as RelayedEvent;
+      if (RELAYED_EVENT_TYPES.has(event.type)) {
+        parsedEvents.push(event);
+      }
     },
   });
 

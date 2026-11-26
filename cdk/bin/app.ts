@@ -23,7 +23,7 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION || 'eu-west-1',
 };
 
-const aguiAgentStack = new AguiAgentStack(app, 'AguiAgentStack', {
+new AguiAgentStack(app, 'AguiAgentStack', {
   env: env,
   environment: getEnvironment(),
   githubToken: githubToken,
@@ -31,18 +31,22 @@ const aguiAgentStack = new AguiAgentStack(app, 'AguiAgentStack', {
   ...serviceMetadata,
 });
 
-new AgenticAnswersAgentStack(app, 'AgenticAnswersAgentStack', {
-  env: env,
-  environment: getEnvironment(),
-  githubToken: githubToken,
-  stackName: `${getResourceNamePrefix()}-AgenticAnswersAgentStack`,
-  ...serviceMetadata,
-});
+const agenticAnswersAgentStack = new AgenticAnswersAgentStack(
+  app,
+  'AgenticAnswersAgentStack',
+  {
+    env: env,
+    environment: getEnvironment(),
+    githubToken: githubToken,
+    stackName: `${getResourceNamePrefix()}-AgenticAnswersAgentStack`,
+    ...serviceMetadata,
+  },
+);
 
 const chatApiStack = new ChatApiStack(app, 'ChatApiStack', {
   env: env,
   environment: getEnvironment(),
-  agentRuntimeArn: aguiAgentStack.agentRuntimeArn,
+  agentRuntimeArn: agenticAnswersAgentStack.agentRuntimeArn,
   stackName: `${getResourceNamePrefix()}-ChatApiStack`,
   ...serviceMetadata,
 });

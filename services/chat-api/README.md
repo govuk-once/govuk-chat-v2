@@ -55,6 +55,10 @@ Nothing is recorded for a run that ends in an error. A run and its message
 are stored as the run finishes, just before `RUN_FINISHED` reaches the
 client, and expire alongside the thread.
 
+Of the events the agent sends, the stream carries only `RUN_STARTED`,
+`RUN_FINISHED`, `RUN_ERROR` and `TEXT_MESSAGE_*`. The API drops the rest,
+such as tool calls and `RAW` events, before it streams or stores anything.
+
 ## Feedback
 
 An end user can react to an assistant message once, with
