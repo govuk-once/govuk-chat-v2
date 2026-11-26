@@ -55,3 +55,38 @@ class TestSearchResult:
         result = search_result(0.5, "html_publication", parent_document_type="guide")
 
         assert result.weighted_score == 1.0
+
+    def test_as_content_chunk_maps_the_result_to_what_the_model_is_given(self):
+        result = SearchResult(
+            score=0.9,
+            exact_path="/renew-passport/how-to",
+            title="Renew your passport",
+            description="How to renew your passport",
+            heading_hierarchy=["How to renew"],
+            html_content="<p>Apply online.</p>",
+            llm_instructions="Mention the fee",
+        )
+
+        assert result.as_content_chunk() == {
+            "page_url": "/renew-passport/how-to",
+            "page_title": "Renew your passport",
+            "page_description": "How to renew your passport",
+            "context_headings": ["How to renew"],
+            "context_content": "<p>Apply online.</p>",
+            "llm_instructions": "Mention the fee",
+        }
+
+    def test_as_content_chunk_leaves_out_fields_that_are_not_set(self):
+        result = SearchResult(
+            score=0.9,
+            exact_path="/renew-passport",
+            title="Renew your passport",
+            html_content="<p>Apply online.</p>",
+        )
+
+        assert result.as_content_chunk() == {
+            "page_url": "/renew-passport",
+            "page_title": "Renew your passport",
+            "context_headings": [],
+            "context_content": "<p>Apply online.</p>",
+        }

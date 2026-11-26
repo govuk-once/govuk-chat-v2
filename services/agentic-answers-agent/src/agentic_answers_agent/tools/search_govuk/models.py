@@ -1,11 +1,20 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, fields
-from typing import Any, Self
+from typing import Any, NotRequired, Self, TypedDict
 
 from agentic_answers_agent.tools.search_govuk.document_type_weightings import (
     DEFAULT_WEIGHTING,
     DOCUMENT_TYPE_WEIGHTINGS,
 )
+
+
+class GovukContentChunk(TypedDict):
+    page_url: str
+    page_title: str
+    page_description: NotRequired[str]
+    context_headings: list[str]
+    context_content: str
+    llm_instructions: NotRequired[str]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -27,6 +36,19 @@ class SearchResult:
     @classmethod
     def from_hit(cls, hit: Mapping[str, Any]) -> Self:
         return cls(score=hit["_score"], **hit["_source"])
+
+    def as_content_chunk(self) -> GovukContentChunk:
+        chunk: GovukContentChunk = {
+            "page_url": self.exact_path,
+            "page_title": self.title,
+            "context_headings": self.heading_hierarchy or [],
+            "context_content": self.html_content,
+        }
+        if self.description is not None:
+            chunk["page_description"] = self.description
+        if self.llm_instructions is not None:
+            chunk["llm_instructions"] = self.llm_instructions
+        return chunk
 
     @property
     def weighted_score(self) -> float:
