@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: aws-actions/configure-aws-credentials@v6.2.4
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           audience: sts.amazonaws.com
           role-to-assume: ${{ secrets.AWS_DEV_DEPLOY_ROLE_ARN }}
@@ -59,7 +59,7 @@ jobs:
       - name: Create private repo token
         if: steps.stacks.outputs.found == 'true'
         id: private-repo-token
-        uses: actions/create-github-app-token@v3.3.0
+        uses: actions/create-github-app-token@v3.4.0
         with:
           client-id: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_CLIENT_ID }}
           private-key: ${{ secrets.CHAT_V2_REPO_CONNECTOR_APP_PRIVATE_KEY }}
