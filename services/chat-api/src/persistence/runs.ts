@@ -1,5 +1,11 @@
 import type { WhereAttributeSymbol } from 'electrodb';
 import {
+  AssistantTurnMessagesSchema,
+  UserTurnMessagesSchema,
+  type AssistantTurnMessages,
+  type UserTurnMessages,
+} from '../schemas/turn-messages.ts';
+import {
   absentOrExpired,
   cancellationCodes,
   chatRegularRetention,
@@ -23,6 +29,11 @@ export interface MessageInput {
   role: string;
   content: string;
   createdAt: string;
+}
+
+export interface TurnInput {
+  userTurn: { createdAt: string; messages: UserTurnMessages };
+  assistantTurn: { firstOutputAt: string; messages: AssistantTurnMessages };
 }
 
 export type RunClaim =
@@ -93,16 +104,76 @@ export async function beginRun(key: RunKey): Promise<RunClaim> {
   throw new Error(`Run claim was cancelled: ${codes.join(', ')}`);
 }
 
+type TransactionEntities = Parameters<
+  Parameters<typeof service.transaction.write>[0]
+>[0];
+type TurnEntities = Pick<
+  TransactionEntities,
+  'userTurn' | 'assistantTurn' | 'messagePointer'
+>;
+
+// Turns get ids of their own, as run and message ids come from the client
+// or the agent.
+function turnWrites(
+  { userTurn, assistantTurn, messagePointer }: TurnEntities,
+  { systemThreadId, runId }: RunKey,
+  turns: TurnInput,
+  now: Date,
+  expiresAt: number,
+) {
+  const userMessages = UserTurnMessagesSchema.parse(turns.userTurn.messages);
+  const assistantMessages = AssistantTurnMessagesSchema.parse(
+    turns.assistantTurn.messages,
+  );
+  const userTurnId = crypto.randomUUID();
+
+  return [
+    userTurn
+      .put({
+        systemThreadId,
+        turnId: userTurnId,
+        sender: 'user',
+        runId,
+        messages: userMessages,
+        createdAt: turns.userTurn.createdAt,
+        expiresAt,
+      })
+      .commit(),
+    assistantTurn
+      .put({
+        systemThreadId,
+        turnId: crypto.randomUUID(),
+        sender: 'assistant',
+        runId,
+        messages: assistantMessages,
+        createdAt: now.toISOString(),
+        firstOutputAt: turns.assistantTurn.firstOutputAt,
+        expiresAt,
+      })
+      .commit(),
+    messagePointer
+      .put({
+        systemThreadId,
+        messageId: userMessages[0].id,
+        turnId: userTurnId,
+        expiresAt,
+      })
+      .where(absentOrExpired(now))
+      .commit(),
+  ];
+}
+
 export async function finishRun(
   key: RunKey,
   messages: MessageInput[],
+  turns: TurnInput,
 ): Promise<void> {
   const now = new Date();
   const expiresAt = chatRegularRetention(now);
   const { systemThreadId, runId } = key;
 
   const result = await service.transaction
-    .write(({ runLock, run, message }) => [
+    .write(({ runLock, run, message, ...turnEntities }) => [
       run
         .put({
           systemThreadId,
@@ -126,6 +197,7 @@ export async function finishRun(
           .where(absentOrExpired(now))
           .commit(),
       ),
+      ...turnWrites(turnEntities, key, turns, now, expiresAt),
       runLock.delete({ systemThreadId }).where(claimedBy(runId)).commit(),
     ])
     .go();

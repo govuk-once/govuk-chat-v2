@@ -4,6 +4,7 @@ export class MessageAccumulator {
   private parts: string[] = [];
   private messageCount = 0;
   private lastMessageId: string | undefined;
+  private firstOutputAt: string | undefined;
 
   process(event: BaseEvent): void {
     switch (event.type) {
@@ -12,6 +13,7 @@ export class MessageAccumulator {
           this.parts.push('\n\n');
         }
         this.messageCount++;
+        this.firstOutputAt ??= new Date().toISOString();
         this.lastMessageId = (
           event as BaseEvent & { messageId: string }
         ).messageId;
@@ -31,5 +33,9 @@ export class MessageAccumulator {
 
   getLastMessageId(): string | undefined {
     return this.lastMessageId;
+  }
+
+  getFirstOutputAt(): string | undefined {
+    return this.firstOutputAt;
   }
 }
