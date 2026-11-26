@@ -37,7 +37,7 @@ jobs:
 
       # Most PRs never deploy, so check before spending time on setup. The
       # check only needs Node to read CDK's tag values, not dependencies.
-      - uses: actions/setup-node@v6.2.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: '.nvmrc'
 
