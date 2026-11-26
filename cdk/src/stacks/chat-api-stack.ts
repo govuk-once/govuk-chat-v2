@@ -71,15 +71,40 @@ export class ChatApiStack extends cdk.Stack {
     const apiGateway = this.apiGateway(props, auth, table);
     this.webAcl(apiGateway);
 
-    this.gatewayUrl = apiGateway.url;
-    this.tokenEndpoint = auth.tokenEndpoint;
-    this.userPoolId = auth.userPool.userPoolId;
-    this.userPoolArn = auth.userPool.userPoolArn;
-    this.appClientId = auth.appClient.userPoolClientId;
+    this.gatewayUrl = this.crossStackOutput('GatewayUrl', apiGateway.url);
+    this.tokenEndpoint = this.crossStackOutput(
+      'TokenEndpoint',
+      auth.tokenEndpoint,
+    );
+    this.userPoolId = this.crossStackOutput(
+      'UserPoolId',
+      auth.userPool.userPoolId,
+    );
+    this.userPoolArn = this.crossStackOutput(
+      'UserPoolArn',
+      auth.userPool.userPoolArn,
+    );
+    this.appClientId = this.crossStackOutput(
+      'AppClientId',
+      auth.appClient.userPoolClientId,
+    );
+  }
 
-    new cdk.CfnOutput(this, 'GatewayUrl', {
-      value: apiGateway.url,
-    });
+  // Outputs the value and returns a reference to that output, for other
+  // stacks to use. CDK's own cross-stack references don't work for
+  // WebFunction: aws-cdk-lib 2.278.0 copies its configuration into a custom
+  // resource after rendering it, leaving a plain Ref to this stack that
+  // CloudFormation rejects. An explicit Fn::GetStackOutput survives the copy.
+  // The consuming stack must declare its dependency on this one, as CDK
+  // can't see it.
+  crossStackOutput(id: string, value: string): string {
+    const output = new cdk.CfnOutput(this, id, { value });
+
+    return cdk.Fn.getStackOutput(
+      this.stackName,
+      this.resolve(output.logicalId),
+      this.region,
+    );
   }
 
   cognitoAuth(): CognitoAuth {
@@ -146,18 +171,6 @@ export class ChatApiStack extends cdk.Stack {
     );
 
     const tokenEndpoint = `https://${domain.domainName}.auth.${this.region}.amazoncognito.com/oauth2/token`;
-
-    new cdk.CfnOutput(this, 'UserPoolId', {
-      value: userPool.userPoolId,
-    });
-
-    new cdk.CfnOutput(this, 'AppClientId', {
-      value: appClient.userPoolClientId,
-    });
-
-    new cdk.CfnOutput(this, 'TokenEndpoint', {
-      value: tokenEndpoint,
-    });
 
     return {
       authorizer,
