@@ -10,6 +10,10 @@ wheels/
 node_modules
 *.tsbuildinfo
 
+# Playwright reports and traces
+cloud-tests/playwright-report/
+cloud-tests/test-results/
+
 # Next.js files
 .next
 next-env.d.ts

@@ -15,6 +15,10 @@ export interface ChatApiOutputs {
   appClientId: string;
 }
 
+export interface DemoUiOutputs {
+  endpointUrl: string;
+}
+
 const hasTag = (stack: Stack, key: string, value: string): boolean =>
   stack.Tags?.some((tag) => tag.Key === key && tag.Value === value) ?? false;
 
@@ -82,4 +86,9 @@ export async function chatApiOutputs(): Promise<ChatApiOutputs> {
     userPoolId: outputs.UserPoolId,
     appClientId: outputs.AppClientId,
   };
+}
+
+export async function demoUiOutputs(): Promise<DemoUiOutputs> {
+  const outputs = await stackOutputs('DemoUiStack', ['EndpointUrl']);
+  return { endpointUrl: outputs.EndpointUrl };
 }

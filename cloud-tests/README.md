@@ -46,11 +46,15 @@ The tests run against whatever is already deployed; they don't deploy
 anything. To test a change, deploy it to your own stacks first with the
 services' `scripts/cdk-deploy.sh`, as you would to try it by hand.
 
+The UI tests use Playwright's Chromium, which `source scripts/dev-prepare.zsh`
+installs.
+
 With AWS credentials from `source scripts/refresh-dev-aws-credentials.zsh`:
 
 ```
 cloud-tests/scripts/test.sh                          # your own $USER stacks
 ENVIRONMENT=test-pr-123 cloud-tests/scripts/test.sh  # another environment
+cloud-tests/scripts/test-ui.sh --headed              # watch the browser
 ```
 
 The tests find the environment's stacks by the `Environment` and
@@ -58,8 +62,16 @@ The tests find the environment's stacks by the `Environment` and
 [`cdk/src/constants/environment.ts`](../cdk/src/constants/environment.ts)),
 and read the URLs and Cognito IDs they need from the stacks' outputs.
 
-`scripts/test-api.sh` runs only the API tests. Both scripts pass their
-arguments to the test runner, for example a test name filter with `-t`.
+`scripts/test-api.sh` runs only the API tests, with Vitest, and
+`scripts/test-ui.sh` only the UI tests, with Playwright. Each passes its
+arguments to its test runner, for example a test name filter with `-t` for
+Vitest or `-g` for Playwright. `test.sh` runs both, and takes no runner
+arguments.
+
+The UI tests sign in as a `cloud-test-` user they create for the run and
+delete afterwards. Playwright writes a report to `playwright-report/`, and a
+screenshot and trace of any failed test to `test-results/`. CI records no
+traces, as they capture a session cookie that outlives the test user.
 
 ### Testing in a separate environment
 

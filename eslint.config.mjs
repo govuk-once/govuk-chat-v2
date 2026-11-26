@@ -43,7 +43,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['**/vitest.config.ts'],
+    files: ['**/vitest.config.ts', '**/playwright.config.ts'],
     rules: {
       // Config files export the result of a call (`defineConfig`)
       'unicorn/no-top-level-side-effects': 'off',

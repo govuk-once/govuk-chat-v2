@@ -62,5 +62,17 @@ jobs:
           GITHUB_TOKEN: ${{ steps.private-repo-token.outputs.token }}
         run: cloud-tests/scripts/deploy.sh --skip-credentials
 
+      - name: Install Playwright Chromium
+        working-directory: cloud-tests
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run cloud tests
+        id: cloud-tests
         run: cloud-tests/scripts/test.sh --skip-credentials
+
+      - name: Upload Playwright report
+        if: failure() && steps.cloud-tests.outcome == 'failure'
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: playwright-report
+          path: cloud-tests/playwright-report/
