@@ -16,7 +16,8 @@ describe('a thread journey', () => {
   it('streams a run, then stores its messages', async () => {
     const threadId = randomUUID();
 
-    const eventTypes = await client.invokeThread(threadId, PROMPT);
+    const events = await client.invokeThread(threadId, PROMPT);
+    const eventTypes = events.map((event) => event.type);
 
     expect(eventTypes[0]).toBe('RUN_STARTED');
     expect(eventTypes).toContain('TEXT_MESSAGE_CONTENT');

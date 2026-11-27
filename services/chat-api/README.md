@@ -58,6 +58,33 @@ client, and expire alongside the thread.
 Of the events the agent sends, the stream carries only `RUN_STARTED`,
 `RUN_FINISHED`, `RUN_ERROR` and `TEXT_MESSAGE_*`. The API drops the rest,
 such as tool calls and `RAW` events, before it streams or stores anything.
+It adds one event of its own, `guardrailTriggered`, when the guardrail steps in.
+
+### When the guardrail steps in
+
+When the agent's guardrail blocks the user's message or the answer,
+ag-ui-strands sends a `CUSTOM` event named `AgentStopped`, with `stop_reason`
+set to `guardrail_intervened`. The API doesn't pass it on. Instead, it stores
+`BLOCKED_MESSAGE` from `src/streaming/guardrail-triggered.ts` in place of what
+was streamed, with `guardrailTriggered: true` on the message, which the
+messages endpoint returns. For now, a blocked user message gets the same
+message. It has the same wording as the guardrail's blocked output message,
+which Bedrock never streams in async mode. The user's message is stored as
+usual. Just before `RUN_FINISHED`, the stream has:
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "guardrailTriggered",
+  "value": {
+    "messageIds": ["<each message the run streamed>"],
+    "content": "The generated response did not meet our quality standards, please rephrase and ask again."
+  }
+}
+```
+
+A client shows `content` in place of the messages it streamed, as a blocked
+answer has already streamed by the time the guardrail steps in.
 
 ## Feedback
 

@@ -182,6 +182,34 @@ describe('successful retrieval', () => {
     });
   });
 
+  it('returns whether the guardrail stepped in on a message', async () => {
+    getMessagePage.mockResolvedValueOnce({
+      messages: [
+        {
+          messageId: 'msg-1',
+          role: 'assistant',
+          content:
+            'The generated response did not meet our quality standards, please rephrase and ask again.',
+          createdAt: '2026-09-03T12:00:00.000Z',
+          guardrailTriggered: true,
+        },
+      ],
+    });
+
+    const response = await runHandler(validEvent());
+
+    expect(parsedBody(response)).toEqual({
+      messages: [
+        expect.objectContaining({
+          id: 'msg-1',
+          content:
+            'The generated response did not meet our quality standards, please rephrase and ask again.',
+          guardrailTriggered: true,
+        }),
+      ],
+    });
+  });
+
   it('returns the feedback, and no feedbackUrl, for an assistant message with a reaction', async () => {
     const feedback = {
       reaction: 'positive',

@@ -79,6 +79,7 @@ async function listMessages(
         role: message.role,
         content: message.content,
         createdAt: message.createdAt,
+        guardrailTriggered: message.guardrailTriggered,
         ...feedbackFields(threadId, message),
       })),
       earlierMessagesUrl,

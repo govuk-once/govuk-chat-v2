@@ -156,6 +156,34 @@ describe('getMessagePage', () => {
       });
     });
 
+    it('returns whether the guardrail stepped in on a message', async () => {
+      const blocked = {
+        ...storedMessage(
+          'msg-1',
+          'assistant',
+          'The generated response did not meet our quality standards, please rephrase and ask again.',
+          '2026-09-03T11:00:00.000Z',
+        ),
+        guardrailTriggered: true,
+      };
+      send
+        .mockResolvedValueOnce({ Items: [blocked] })
+        .mockResolvedValueOnce(batchGetResponse());
+
+      const result = await testEnv.getMessagePage(SYSTEM_THREAD_ID);
+
+      expect(result.messages).toEqual([
+        {
+          messageId: 'msg-1',
+          role: 'assistant',
+          content:
+            'The generated response did not meet our quality standards, please rephrase and ask again.',
+          createdAt: '2026-09-03T11:00:00.000Z',
+          guardrailTriggered: true,
+        },
+      ]);
+    });
+
     it('returns the messages oldest first, with no positions, when fewer than 101 come back', async () => {
       const thread = threadOf(3);
       send

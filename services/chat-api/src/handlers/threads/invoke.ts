@@ -31,6 +31,7 @@ import {
 } from '../../persistence/runs.ts';
 import { MessageAccumulator } from '../../streaming/message-accumulator.ts';
 import { relayAgentEventStream } from '../../streaming/agent-event-stream.ts';
+import { BLOCKED_MESSAGE } from '../../streaming/guardrail-triggered.ts';
 
 const agentRuntimeArn = process.env.AGENT_RUNTIME_ARN;
 if (!agentRuntimeArn) {
@@ -138,25 +139,41 @@ async function invokeAgent(
       userThreadId: body.threadId,
       systemThreadId,
       runId: body.runId,
-      onRunFinished: () => {
-        const assistantContent = accumulator.getContent();
+      onRunFinished: async (wasGuardrailTriggered) => {
+        const assistantContent = wasGuardrailTriggered
+          ? BLOCKED_MESSAGE
+          : accumulator.getContent();
 
         // The run's text messages are stored as one, under the id of the
         // last, which is the one a client streaming several shows the answer
         // in. The run id stands in if the agent never started one.
+        const assistantMessageId = accumulator.getLastMessageId() ?? body.runId;
         const messages = assistantContent
           ? [
               userMessage,
               {
-                messageId: accumulator.getLastMessageId() ?? body.runId,
+                messageId: assistantMessageId,
                 role: 'assistant',
                 content: assistantContent,
                 createdAt: new Date().toISOString(),
+                ...(wasGuardrailTriggered && { guardrailTriggered: true }),
               },
             ]
           : [userMessage];
 
-        return finishRun(runKey, messages);
+        await finishRun(runKey, messages);
+
+        if (!wasGuardrailTriggered) {
+          return;
+        }
+        const streamedMessageIds = accumulator.getMessageIds();
+        return {
+          messageIds:
+            streamedMessageIds.length > 0
+              ? streamedMessageIds
+              : [assistantMessageId],
+          content: assistantContent,
+        };
       },
       onRunFailed: () => releaseRun(runKey),
       onEvent: (event) => accumulator.process(event),

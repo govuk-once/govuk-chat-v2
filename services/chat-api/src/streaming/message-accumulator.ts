@@ -2,19 +2,17 @@ import { EventType, type BaseEvent } from '@ag-ui/core';
 
 export class MessageAccumulator {
   private parts: string[] = [];
-  private messageCount = 0;
-  private lastMessageId: string | undefined;
+  private messageIds: string[] = [];
 
   process(event: BaseEvent): void {
     switch (event.type) {
       case EventType.TEXT_MESSAGE_START: {
-        if (this.messageCount > 0) {
+        if (this.messageIds.length > 0) {
           this.parts.push('\n\n');
         }
-        this.messageCount++;
-        this.lastMessageId = (
-          event as BaseEvent & { messageId: string }
-        ).messageId;
+        this.messageIds.push(
+          (event as BaseEvent & { messageId: string }).messageId,
+        );
         break;
       }
       case EventType.TEXT_MESSAGE_CONTENT: {
@@ -30,6 +28,10 @@ export class MessageAccumulator {
   }
 
   getLastMessageId(): string | undefined {
-    return this.lastMessageId;
+    return this.messageIds.at(-1);
+  }
+
+  getMessageIds(): string[] {
+    return [...this.messageIds];
   }
 }

@@ -23,6 +23,7 @@ export interface MessageInput {
   role: string;
   content: string;
   createdAt: string;
+  guardrailTriggered?: boolean;
 }
 
 export type RunClaim =
@@ -119,6 +120,7 @@ export async function finishRun(
             messageId: input.messageId,
             role: input.role,
             content: input.content,
+            guardrailTriggered: input.guardrailTriggered,
             runId,
             createdAt: input.createdAt,
             expiresAt,
