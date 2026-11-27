@@ -2,7 +2,7 @@
 
 GOV.UK Chat V2 which is an API product to provide an AI powered chatbot for UK
 government guidance and services. It is a successor to [GOV.UK Chat](https://github.com/alphagov/govuk-chat) (V1) and intended to be a foundational tool that acts a gateway and
-orchestrator for a conversational interface to governemnt.
+orchestrator for a conversational interface to government.
 
 The three main factors that differentiate it from GOV.UK Chat V1 are:
 
