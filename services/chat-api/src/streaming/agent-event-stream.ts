@@ -8,9 +8,13 @@ import { EventEncoder } from '@ag-ui/encoder';
 import { createParser, type EventSourceMessage } from 'eventsource-parser';
 import { logger } from '../logging/logger.ts';
 import {
+  guardrailTraceIn,
   guardrailTriggeredEvent,
   isStoppedByGuardrail,
+  isUserMessageBlocked,
   type BlockedMessage,
+  type BlockedRole,
+  type GuardrailTrace,
 } from './guardrail-triggered.ts';
 
 const encoder = new EventEncoder();
@@ -35,7 +39,7 @@ export interface RelayAgentEventStreamParameters {
   systemThreadId: string;
   runId: string;
   onRunFinished: (
-    wasGuardrailTriggered: boolean,
+    guardrailBlocked: BlockedRole | undefined,
   ) => Promise<BlockedMessage | undefined>;
   onRunFailed: () => Promise<void>;
   onEvent?: (event: RelayedEvent) => void;
@@ -52,7 +56,9 @@ export async function* relayAgentEventStream({
 }: RelayAgentEventStreamParameters): AsyncGenerator<string> {
   let isRunStarted = false;
   let isOutcomeReported = false;
-  let wasGuardrailTriggered = false;
+  let lastGuardrailTrace: GuardrailTrace | undefined;
+  let hasToolResult = false;
+  let guardrailBlocked: BlockedRole | undefined;
   // middy resets the logger's appended keys before it streams the body, so
   // anything logged from here has to carry its own context.
   const logContext = { systemThreadId, userThreadId, runId };
@@ -61,7 +67,20 @@ export async function* relayAgentEventStream({
   const parser = createParser({
     onEvent: (message: EventSourceMessage) => {
       const event = JSON.parse(message.data) as RelayedEvent;
-      wasGuardrailTriggered ||= isStoppedByGuardrail(event);
+      lastGuardrailTrace = guardrailTraceIn(event) ?? lastGuardrailTrace;
+      hasToolResult ||= event.type === EventType.TOOL_CALL_RESULT;
+      if (isStoppedByGuardrail(event)) {
+        // Once a tool has returned, the guardrail checks its result as the
+        // latest message, so a block on the input after that isn't the
+        // user's message. Without a trace, it's treated as a blocked answer,
+        // so the streamed answer is never kept.
+        guardrailBlocked =
+          !hasToolResult &&
+          lastGuardrailTrace &&
+          isUserMessageBlocked(lastGuardrailTrace)
+            ? 'user'
+            : 'assistant';
+      }
       if (RELAYED_EVENT_TYPES.has(event.type)) {
         parsedEvents.push(event);
       }
@@ -103,7 +122,7 @@ export async function* relayAgentEventStream({
           event.threadId = userThreadId;
         }
         if (event.type === EventType.RUN_FINISHED) {
-          const blockedMessage = await onRunFinished(wasGuardrailTriggered);
+          const blockedMessage = await onRunFinished(guardrailBlocked);
           isOutcomeReported = true;
           if (blockedMessage) {
             yield encoder.encodeSSE(guardrailTriggeredEvent(blockedMessage));

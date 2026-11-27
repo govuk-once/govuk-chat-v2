@@ -64,27 +64,39 @@ It adds one event of its own, `guardrailTriggered`, when the guardrail steps in.
 
 When the agent's guardrail blocks the user's message or the answer,
 ag-ui-strands sends a `CUSTOM` event named `AgentStopped`, with `stop_reason`
-set to `guardrail_intervened`. The API doesn't pass it on. Instead, it stores
-`BLOCKED_MESSAGE` from `src/streaming/guardrail-triggered.ts` in place of what
-was streamed, with `guardrailTriggered: true` on the message, which the
-messages endpoint returns. For now, a blocked user message gets the same
-message. It has the same wording as the guardrail's blocked output message,
-which Bedrock never streams in async mode. The user's message is stored as
-usual. Just before `RUN_FINISHED`, the stream has:
+set to `guardrail_intervened`. The API doesn't pass it on. Instead, it reads
+the last guardrail trace before it, from a `RAW` event, to tell which was
+blocked, and sets `guardrailTriggered: true` on that message, which the
+messages endpoint returns.
+
+- **A blocked user message.** Bedrock doesn't call the model, and streams the
+  guardrail's blocked input message as the answer. The API stores it as
+  streamed.
+- **A blocked answer.** With async checking, some or all of the answer has
+  already streamed. The API stores `BLOCKED_MESSAGE` from
+  `src/streaming/guardrail-triggered.ts` in its place. It has the same wording
+  as the guardrail's blocked output message, which Bedrock never streams in
+  async mode.
+
+Once a tool such as search has returned, the guardrail checks its result as the
+latest message, so a block after that counts as a blocked answer. So does a
+block with no trace. Just before `RUN_FINISHED`, the stream has:
 
 ```json
 {
   "type": "CUSTOM",
   "name": "guardrailTriggered",
   "value": {
+    "blocked": "assistant",
     "messageIds": ["<each message the run streamed>"],
     "content": "The generated response did not meet our quality standards, please rephrase and ask again."
   }
 }
 ```
 
-A client shows `content` in place of the messages it streamed, as a blocked
-answer has already streamed by the time the guardrail steps in.
+`blocked` is `user` or `assistant`. A client shows `content` in place of the
+messages it streamed. For a blocked user message, that's the text it already
+shows.
 
 ## Feedback
 

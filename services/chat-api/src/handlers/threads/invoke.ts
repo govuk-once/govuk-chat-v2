@@ -139,10 +139,15 @@ async function invokeAgent(
       userThreadId: body.threadId,
       systemThreadId,
       runId: body.runId,
-      onRunFinished: async (wasGuardrailTriggered) => {
-        const assistantContent = wasGuardrailTriggered
-          ? BLOCKED_MESSAGE
-          : accumulator.getContent();
+      onRunFinished: async (guardrailBlocked) => {
+        const assistantContent =
+          guardrailBlocked === 'assistant'
+            ? BLOCKED_MESSAGE
+            : accumulator.getContent();
+        const storedUserMessage =
+          guardrailBlocked === 'user'
+            ? { ...userMessage, guardrailTriggered: true }
+            : userMessage;
 
         // The run's text messages are stored as one, under the id of the
         // last, which is the one a client streaming several shows the answer
@@ -150,24 +155,27 @@ async function invokeAgent(
         const assistantMessageId = accumulator.getLastMessageId() ?? body.runId;
         const messages = assistantContent
           ? [
-              userMessage,
+              storedUserMessage,
               {
                 messageId: assistantMessageId,
                 role: 'assistant',
                 content: assistantContent,
                 createdAt: new Date().toISOString(),
-                ...(wasGuardrailTriggered && { guardrailTriggered: true }),
+                ...(guardrailBlocked === 'assistant' && {
+                  guardrailTriggered: true,
+                }),
               },
             ]
-          : [userMessage];
+          : [storedUserMessage];
 
         await finishRun(runKey, messages);
 
-        if (!wasGuardrailTriggered) {
+        if (!guardrailBlocked) {
           return;
         }
         const streamedMessageIds = accumulator.getMessageIds();
         return {
+          blocked: guardrailBlocked,
           messageIds:
             streamedMessageIds.length > 0
               ? streamedMessageIds

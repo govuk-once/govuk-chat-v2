@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { EventType, type BaseEvent } from '@ag-ui/core';
-import { isStoppedByGuardrail } from './guardrail-triggered.ts';
+import {
+  guardrailTraceIn,
+  isStoppedByGuardrail,
+  isUserMessageBlocked,
+  type GuardrailTrace,
+} from './guardrail-triggered.ts';
+import {
+  answerBlockedTraceEvent,
+  userMessageBlockedTraceEvent,
+} from '../test-utils/guardrail-trace.ts';
 
 function agentStopped(stopReason: string): BaseEvent {
   return {
@@ -26,5 +35,42 @@ describe('isStoppedByGuardrail', () => {
         delta: 'Hi',
       } as BaseEvent),
     ).toBe(false);
+  });
+});
+
+function traceIn(event: BaseEvent): GuardrailTrace {
+  const trace = guardrailTraceIn(event);
+  if (!trace) {
+    throw new Error('No guardrail trace in the event');
+  }
+  return trace;
+}
+
+describe('guardrailTraceIn', () => {
+  it("returns the input assessment from the guardrail's trace", () => {
+    expect(guardrailTraceIn(answerBlockedTraceEvent)).toEqual({
+      inputAssessment: { 'guardrail-id': {} },
+    });
+  });
+
+  it('returns nothing for a RAW event without a guardrail trace', () => {
+    expect(
+      guardrailTraceIn({
+        type: EventType.RAW,
+        event: { event: { messageStart: { role: 'assistant' } } },
+      } as BaseEvent),
+    ).toBeUndefined();
+  });
+});
+
+describe('isUserMessageBlocked', () => {
+  it("is true when the guardrail blocked the user's message", () => {
+    expect(isUserMessageBlocked(traceIn(userMessageBlockedTraceEvent))).toBe(
+      true,
+    );
+  });
+
+  it('is false when the guardrail only blocked the answer', () => {
+    expect(isUserMessageBlocked(traceIn(answerBlockedTraceEvent))).toBe(false);
   });
 });

@@ -16,6 +16,7 @@ export interface StoredMessage {
 export interface StreamedEvent {
   type: string;
   name?: string;
+  value?: unknown;
 }
 
 async function fetchAppClientSecret({
@@ -95,8 +96,8 @@ export class ChatApiClient {
     return response;
   }
 
-  // Returns the type, and for CUSTOM events the name, of each event streamed
-  // back, in the order received.
+  // Returns the type, and for CUSTOM events the name and value, of each event
+  // streamed back, in the order received.
   async invokeThread(
     threadId: string,
     prompt: string,
@@ -119,8 +120,8 @@ export class ChatApiClient {
       .pipeThrough(new EventSourceParserStream());
     const streamed: StreamedEvent[] = [];
     for await (const event of events) {
-      const { type, name } = JSON.parse(event.data) as StreamedEvent;
-      streamed.push(name === undefined ? { type } : { type, name });
+      const { type, name, value } = JSON.parse(event.data) as StreamedEvent;
+      streamed.push(name === undefined ? { type } : { type, name, value });
     }
     return streamed;
   }
