@@ -2,13 +2,14 @@ import type { NextRequest } from 'next/server';
 
 export const CALLBACK_PATH = '/api/auth/callback';
 
-// Behind the load balancer, the request's own URL is the container's. The
-// load balancer passes the Host header on and sets X-Forwarded-Proto, so the
-// public origin comes from those. It doesn't set X-Forwarded-Host, so that
-// header would be whatever the client sent.
+// The request's own URL is the local server's, so the public origin comes
+// from the Host header, which the web function endpoint passes on. The
+// endpoint only serves HTTPS but doesn't set X-Forwarded-Proto, and passes
+// any X-Forwarded-* header from the client unchecked, so the protocol isn't
+// read from the request: only `next dev` on localhost serves plain HTTP.
 export function appOrigin(request: NextRequest): string {
   const host = request.headers.get('host');
-  const protocol = request.headers.get('x-forwarded-proto') ?? 'http';
+  const protocol = host?.split(':', 1)[0] === 'localhost' ? 'http' : 'https';
   return `${protocol}://${host}`;
 }
 

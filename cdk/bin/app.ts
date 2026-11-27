@@ -47,7 +47,7 @@ const chatApiStack = new ChatApiStack(app, 'ChatApiStack', {
   ...serviceMetadata,
 });
 
-new DemoUiStack(app, 'DemoUiStack', {
+const demoUiStack = new DemoUiStack(app, 'DemoUiStack', {
   env: env,
   environment: getEnvironment(),
   chatApiUrl: chatApiStack.gatewayUrl,
@@ -58,3 +58,4 @@ new DemoUiStack(app, 'DemoUiStack', {
   stackName: `${getResourceNamePrefix()}-DemoUiStack`,
   ...serviceMetadata,
 });
+demoUiStack.addStackDependency(chatApiStack);

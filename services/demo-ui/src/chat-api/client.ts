@@ -51,7 +51,7 @@ export interface ThreadMessage {
 const tokenCache: { token?: AccessToken } = {};
 
 // Read on use rather than at import, unlike the Chat API, because `next build`
-// imports route modules inside the Docker build, where none of this is set.
+// imports route modules during CDK synth, where none of this is set.
 function readConfig(): ChatApiConfig {
   return {
     chatApiUrl: requireEnv('CHAT_API_URL'),

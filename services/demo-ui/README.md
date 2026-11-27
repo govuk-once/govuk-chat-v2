@@ -7,8 +7,8 @@ cookie, so refreshing the page carries on the same conversation. The page
 shows the conversation's earlier messages when it loads. The "New
 conversation" button starts a new one. Each finished answer has 👍 and 👎
 buttons for giving feedback on it once, and shows the reaction given. It
-also serves a `/api/health` route, a `/api/chat/messages` route that
-returns the conversation's messages, and a
+also serves a `/api/chat/messages` route that returns the conversation's
+messages, and a
 `/api/chat/threads/{threadId}/messages/{messageId}/feedback` route that
 gives feedback on one.
 
@@ -20,8 +20,7 @@ To run it on your own machine:
 ./scripts/dev.sh
 ```
 
-The page is at http://localhost:3000 and the health check at
-http://localhost:3000/api/health. Arguments are passed to `next dev`,
+The page is at http://localhost:3000. Arguments are passed to `next dev`,
 but keep the default port, as sign-in only works locally on port 3000.
 
 ## Configuration
@@ -42,8 +41,6 @@ export COGNITO_APP_CLIENT_ID=$(scripts/fetch-cdk-output.sh ChatApiStack AppClien
 
 The app requires Cognito sign-in. Unauthenticated page requests are
 redirected to the Cognito Hosted UI, and API requests get a 401.
-`/api/health` is exempt so that health checks and CI smoke tests still
-pass.
 
 Sign-in uses [openid-client](https://github.com/panva/openid-client),
 which finds Cognito's endpoints from its published configuration.
@@ -73,27 +70,24 @@ Locally, sign-in only works on port 3000, as
 `http://localhost:3000/api/auth/callback` is the only local callback URL
 the sign-in client accepts.
 
-For a deployed stack, the CDK passes these values to the container and
+For a deployed stack, the CDK passes these values to the web function and
 registers the endpoint's callback URL automatically via a custom resource.
-
-## Building the image
-
-The image builds from the repo root, because pnpm keeps the lockfile there:
-
-```
-docker build -f services/demo-ui/Dockerfile -t demo-ui .
-docker run --rm -p 3000:3000 demo-ui
-```
-
-`next build` runs only inside this Docker build.
+Rather than `SESSION_SECRET`, the web function gets `SESSION_SECRET_ARN`
+and reads the secret from Secrets Manager.
 
 ## Deploying
 
-To deploy to ECS Express Mode:
+To deploy to a
+[Lambda web function](https://docs.aws.amazon.com/lambda/latest/dg/web-functions.html):
 
 ```
 ./scripts/cdk-deploy.sh
 ```
+
+The CDK runs `next build` on your machine and deploys a zip of the
+standalone output, with `index.ts` as its entry point. `index.ts` starts
+the standalone server on the address Lambda gives it. Node strips its types
+when it runs it, so nothing compiles it.
 
 The app is at the stack's `EndpointUrl`:
 
@@ -101,14 +95,15 @@ The app is at the stack's `EndpointUrl`:
 ./scripts/fetch-cdk-output.sh DemoUiStack EndpointUrl
 ```
 
-The container gets `ENVIRONMENT`, the deployment environment name.
-`/api/health` reports it. It also gets the Chat API values above from the
-`ChatApiStack` in the same environment, which the deploy script deploys
-first.
+The web function gets the Chat API values above from the `ChatApiStack` in
+the same environment, which the deploy script deploys first.
 
-Each stack runs a Fargate task and a load balancer all the time, so destroy
-it when you are finished. `aws-stack-cleanup` will not remove it, because it
-matches on a tag key named after its environment and Chat stacks tag
+A deploy succeeds even if the app fails to start, so open the app after
+deploying to check it.
+
+The web function scales to zero when idle, but destroy the stack when you
+are finished. `aws-stack-cleanup` will not remove it, because it matches on
+a tag key named after its environment and Chat stacks tag
 `Environment=<name>`. To destroy it, from the `cdk` directory:
 
 ```

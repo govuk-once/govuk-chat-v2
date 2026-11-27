@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import baseContext from '../../cdk.json' with { type: 'json' };
 import { Tags, Template, Match } from 'aws-cdk-lib/assertions';
-import { vi, describe, it, afterEach } from 'vitest';
+import { vi, describe, expect, it, afterEach } from 'vitest';
 import { ChatApiStack } from './chat-api-stack.ts';
 
 const context = {
@@ -436,6 +436,32 @@ describe('ChatApiStack', () => {
       template.hasOutput('UserPoolId', {});
       template.hasOutput('AppClientId', {});
       template.hasOutput('TokenEndpoint', {});
+    });
+  });
+
+  // Regression test: WebFunction leaves CDK's own cross-stack references as
+  // plain Refs, which CloudFormation rejects, so the values other stacks
+  // read must be explicit Fn::GetStackOutput references.
+  describe('crossStackOutput', () => {
+    it('outputs the value and returns a reference to that output', () => {
+      const app = new cdk.App({ context });
+      const stack = new ChatApiStack(app, 'TestStack', {
+        ...baseProps,
+        env: { region: 'eu-west-1' },
+      });
+
+      const reference = stack.crossStackOutput('Example', 'example-value');
+
+      Template.fromStack(stack).hasOutput('Example', {
+        Value: 'example-value',
+      });
+      expect(stack.resolve(reference)).toEqual({
+        'Fn::GetStackOutput': {
+          StackName: 'TestStack',
+          OutputName: 'Example',
+          Region: 'eu-west-1',
+        },
+      });
     });
   });
 });

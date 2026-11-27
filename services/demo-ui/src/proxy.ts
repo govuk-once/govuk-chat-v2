@@ -6,7 +6,7 @@ import { callbackUrl } from './auth/urls.ts';
 export const config = {
   matcher: [
     // eslint-disable-next-line unicorn/prefer-string-raw -- Next.js requires a plain string literal for static analysis
-    '/((?!api/health|api/auth/callback|_next/static|_next/image|favicon\\.ico).*)',
+    '/((?!api/auth/callback|_next/static|_next/image|favicon\\.ico).*)',
   ],
 };
 
