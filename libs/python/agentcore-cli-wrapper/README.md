@@ -82,7 +82,8 @@ three are gitignored, and every run rewrites them from
 - `services/<agent>/agentcore/aws-targets.json`, the account and region
 - `services/<agent>/agentcore/.cli/deployed-state.json`, naming the runtime and
   memory that the CLI resolves `--runtime` against
-- `services/<agent>/agentcore/.env.local`, setting `BEDROCK_AGENTCORE_MEMORY_ID`
+- `services/<agent>/agentcore/.env.local`, setting `BEDROCK_AGENTCORE_MEMORY_ID`,
+  and `GUARDRAIL_ID` and `GUARDRAIL_VERSION` if the agent's stack has a guardrail
 
 One thing that looks broken but isn't: under `--logs`, `watchfiles` reports
 `1 change detected` two or three times a second, forever. The CLI writes the

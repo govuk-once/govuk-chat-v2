@@ -22,13 +22,24 @@ def prepare_agent_configuration(
     manifest: Mapping[str, Any],
 ) -> None:
     outputs = read_stack_outputs(service_dir, manifest)
-    memory_id = outputs["ShortTermMemoryId"]
     write_deployed_state(service_dir, manifest, outputs)
 
-    (service_dir / "agentcore/.env.local").write_text(
-        f"BEDROCK_AGENTCORE_MEMORY_ID={memory_id}\n"
-    )
+    (service_dir / "agentcore/.env.local").write_text(local_environment(outputs))
     ensure_venv_link(service_dir)
+
+
+OPTIONAL_ENVIRONMENT_OUTPUTS = {
+    "GUARDRAIL_ID": "GuardrailId",
+    "GUARDRAIL_VERSION": "GuardrailVersion",
+}
+
+
+def local_environment(outputs: Mapping[str, str]) -> str:
+    variables = {"BEDROCK_AGENTCORE_MEMORY_ID": outputs["ShortTermMemoryId"]}
+    for name, output in OPTIONAL_ENVIRONMENT_OUTPUTS.items():
+        if output in outputs:
+            variables[name] = outputs[output]
+    return "".join(f"{name}={value}\n" for name, value in variables.items())
 
 
 def runtime_name(manifest: Mapping[str, Any]) -> str:
