@@ -13,7 +13,8 @@ import {
 } from '../test-utils/agent-stream.ts';
 import { logger } from '../logging/logger.ts';
 import { relayAgentEventStream } from './agent-event-stream.ts';
-import type { BlockedMessage } from './guardrail-triggered.ts';
+import type { BlockedMessage, BlockedRole } from './guardrail-triggered.ts';
+import { userMessageBlockedTraceEvent } from '../test-utils/guardrail-trace.ts';
 
 const USER_THREAD_ID = crypto.randomUUID();
 const SYSTEM_THREAD_ID = crypto.randomUUID();
@@ -21,7 +22,9 @@ const RUN_ID = crypto.randomUUID();
 
 const onRunFinished =
   vi.fn<
-    (wasGuardrailTriggered: boolean) => Promise<BlockedMessage | undefined>
+    (
+      guardrailBlocked: BlockedRole | undefined,
+    ) => Promise<BlockedMessage | undefined>
   >();
 const onRunFailed = vi.fn<() => Promise<void>>();
 
@@ -185,44 +188,75 @@ describe('relayAgentEventStream', () => {
     }
 
     expect(relayed).toEqual(['other', 'recorded', 'finished']);
+    expect(onRunFinished).toHaveBeenCalledWith(undefined);
     expect(onRunFailed).not.toHaveBeenCalled();
   });
 
-  it('records that the guardrail stepped in, without relaying AgentStopped', async () => {
-    const answer: BaseEvent = {
+  const agentStoppedByGuardrail = {
+    type: EventType.CUSTOM,
+    name: 'AgentStopped',
+    value: { stop_reason: 'guardrail_intervened' },
+  } as BaseEvent;
+  const runFinished: BaseEvent = {
+    type: EventType.RUN_FINISHED,
+    threadId: SYSTEM_THREAD_ID,
+    runId: RUN_ID,
+  };
+
+  it("records that the guardrail blocked the user's message from its last trace, without relaying the trace or AgentStopped", async () => {
+    const blockedMessage: BaseEvent = {
       type: EventType.TEXT_MESSAGE_CONTENT,
       messageId: 'msg-1',
-      delta: 'A harmful answer',
-    };
-    const runFinished: BaseEvent = {
-      type: EventType.RUN_FINISHED,
-      threadId: SYSTEM_THREAD_ID,
-      runId: RUN_ID,
+      delta: 'The message you sent contained banned content',
     };
 
     const sseStream = relayAgentEventStream(
       relayParameters(
         aguiEventStream([
-          answer,
+          blockedMessage,
+          userMessageBlockedTraceEvent,
           {
-            type: EventType.CUSTOM,
-            name: 'AgentStopped',
-            value: { stop_reason: 'guardrail_intervened' },
+            type: EventType.RAW,
+            event: { event: { redactContent: {} } },
           } as BaseEvent,
+          agentStoppedByGuardrail,
           runFinished,
         ]),
       ),
     );
 
     expect(await collectStreamText(sseStream)).toBe(
-      encoder.encode(answer) +
+      encoder.encode(blockedMessage) +
         encoder.encode({ ...runFinished, threadId: USER_THREAD_ID }),
     );
-    expect(onRunFinished).toHaveBeenCalledWith(true);
+    expect(onRunFinished).toHaveBeenCalledWith('user');
+  });
+
+  it('records a blocked answer when the guardrail blocks the input after a tool has returned', async () => {
+    const sseStream = relayAgentEventStream(
+      relayParameters(
+        aguiEventStream([
+          {
+            type: EventType.TOOL_CALL_RESULT,
+            messageId: 'msg-1',
+            toolCallId: 'tool-1',
+            content: 'Search results',
+          } as BaseEvent,
+          userMessageBlockedTraceEvent,
+          agentStoppedByGuardrail,
+          runFinished,
+        ]),
+      ),
+    );
+
+    await collectStreamText(sseStream);
+
+    expect(onRunFinished).toHaveBeenCalledWith('assistant');
   });
 
   it('tells the client the blocked message just before RUN_FINISHED', async () => {
-    const blockedMessage = {
+    const blockedMessage: BlockedMessage = {
+      blocked: 'assistant',
       messageIds: ['msg-1'],
       content: 'Output blocked',
     };
