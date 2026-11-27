@@ -139,7 +139,7 @@ async function invokeAgent(
       userThreadId: body.threadId,
       systemThreadId,
       runId: body.runId,
-      onRunFinished: (wasGuardrailTriggered) => {
+      onRunFinished: async (wasGuardrailTriggered) => {
         const assistantContent = wasGuardrailTriggered
           ? BLOCKED_MESSAGE
           : accumulator.getContent();
@@ -147,11 +147,12 @@ async function invokeAgent(
         // The run's text messages are stored as one, under the id of the
         // last, which is the one a client streaming several shows the answer
         // in. The run id stands in if the agent never started one.
+        const assistantMessageId = accumulator.getLastMessageId() ?? body.runId;
         const messages = assistantContent
           ? [
               userMessage,
               {
-                messageId: accumulator.getLastMessageId() ?? body.runId,
+                messageId: assistantMessageId,
                 role: 'assistant',
                 content: assistantContent,
                 createdAt: new Date().toISOString(),
@@ -160,7 +161,19 @@ async function invokeAgent(
             ]
           : [userMessage];
 
-        return finishRun(runKey, messages);
+        await finishRun(runKey, messages);
+
+        if (!wasGuardrailTriggered) {
+          return;
+        }
+        const streamedMessageIds = accumulator.getMessageIds();
+        return {
+          messageIds:
+            streamedMessageIds.length > 0
+              ? streamedMessageIds
+              : [assistantMessageId],
+          content: assistantContent,
+        };
       },
       onRunFailed: () => releaseRun(runKey),
       onEvent: (event) => accumulator.process(event),

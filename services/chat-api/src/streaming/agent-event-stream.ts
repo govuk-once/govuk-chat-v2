@@ -7,7 +7,11 @@ import {
 import { EventEncoder } from '@ag-ui/encoder';
 import { createParser, type EventSourceMessage } from 'eventsource-parser';
 import { logger } from '../logging/logger.ts';
-import { isStoppedByGuardrail } from './guardrail-triggered.ts';
+import {
+  guardrailTriggeredEvent,
+  isStoppedByGuardrail,
+  type BlockedMessage,
+} from './guardrail-triggered.ts';
 
 const encoder = new EventEncoder();
 
@@ -30,7 +34,9 @@ export interface RelayAgentEventStreamParameters {
   userThreadId: string;
   systemThreadId: string;
   runId: string;
-  onRunFinished: (wasGuardrailTriggered: boolean) => Promise<void>;
+  onRunFinished: (
+    wasGuardrailTriggered: boolean,
+  ) => Promise<BlockedMessage | undefined>;
   onRunFailed: () => Promise<void>;
   onEvent?: (event: RelayedEvent) => void;
 }
@@ -97,8 +103,11 @@ export async function* relayAgentEventStream({
           event.threadId = userThreadId;
         }
         if (event.type === EventType.RUN_FINISHED) {
-          await onRunFinished(wasGuardrailTriggered);
+          const blockedMessage = await onRunFinished(wasGuardrailTriggered);
           isOutcomeReported = true;
+          if (blockedMessage) {
+            yield encoder.encodeSSE(guardrailTriggeredEvent(blockedMessage));
+          }
         }
         if (event.type === EventType.RUN_ERROR) {
           await releaseThread();

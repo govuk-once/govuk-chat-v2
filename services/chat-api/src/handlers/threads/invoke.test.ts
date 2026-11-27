@@ -433,6 +433,53 @@ describe('handler', () => {
           guardrailTriggered: true,
         }),
       ]);
+      expect(testEnv.responseStream.read()).toContain(
+        encoder.encode({
+          type: EventType.CUSTOM,
+          name: 'guardrailTriggered',
+          value: {
+            messageIds: ['msg-1'],
+            content: BLOCKED_MESSAGE,
+          },
+        } as BaseEvent),
+      );
+    });
+
+    it('tells the client the id the blocked message is stored under when the agent streamed no message', async () => {
+      send.mockResolvedValueOnce({
+        response: aguiEventStream([
+          {
+            type: EventType.RUN_STARTED,
+            threadId: SYSTEM_THREAD_ID,
+            runId: VALID_RUN_ID,
+          },
+          {
+            type: EventType.CUSTOM,
+            name: 'AgentStopped',
+            value: { stop_reason: 'guardrail_intervened' },
+          } as BaseEvent,
+          {
+            type: EventType.RUN_FINISHED,
+            threadId: SYSTEM_THREAD_ID,
+            runId: VALID_RUN_ID,
+          },
+        ]),
+      });
+
+      await runHandler(
+        apiGatewayProxyEventFixture(validRequest(), END_USER_ID_HEADER),
+      );
+
+      expect(testEnv.responseStream.read()).toContain(
+        encoder.encode({
+          type: EventType.CUSTOM,
+          name: 'guardrailTriggered',
+          value: {
+            messageIds: [VALID_RUN_ID],
+            content: BLOCKED_MESSAGE,
+          },
+        } as BaseEvent),
+      );
     });
   });
 

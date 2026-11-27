@@ -1,4 +1,4 @@
-import { EventType, type BaseEvent } from '@ag-ui/core';
+import { EventType, type BaseEvent, type CustomEvent } from '@ag-ui/core';
 import { z } from 'zod';
 
 // Shown in place of a blocked answer. With async checking, Bedrock never
@@ -6,6 +6,15 @@ import { z } from 'zod';
 // copy users see.
 export const BLOCKED_MESSAGE =
   'The generated response did not meet our quality standards, please rephrase and ask again.';
+
+export interface BlockedMessage {
+  messageIds: string[];
+  content: string;
+}
+
+export function guardrailTriggeredEvent(blocked: BlockedMessage): CustomEvent {
+  return { type: EventType.CUSTOM, name: 'guardrailTriggered', value: blocked };
+}
 
 const AgentStoppedByGuardrailEventSchema = z.object({
   type: z.literal(EventType.CUSTOM),

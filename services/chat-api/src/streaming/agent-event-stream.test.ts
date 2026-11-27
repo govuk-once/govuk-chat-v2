@@ -13,13 +13,16 @@ import {
 } from '../test-utils/agent-stream.ts';
 import { logger } from '../logging/logger.ts';
 import { relayAgentEventStream } from './agent-event-stream.ts';
+import type { BlockedMessage } from './guardrail-triggered.ts';
 
 const USER_THREAD_ID = crypto.randomUUID();
 const SYSTEM_THREAD_ID = crypto.randomUUID();
 const RUN_ID = crypto.randomUUID();
 
 const onRunFinished =
-  vi.fn<(wasGuardrailTriggered: boolean) => Promise<void>>();
+  vi.fn<
+    (wasGuardrailTriggered: boolean) => Promise<BlockedMessage | undefined>
+  >();
 const onRunFailed = vi.fn<() => Promise<void>>();
 
 function eventsForThread(threadId: string): BaseEvent[] {
@@ -42,7 +45,7 @@ function relayParameters(source: AsyncIterable<Uint8Array>) {
 }
 
 beforeEach(() => {
-  onRunFinished.mockResolvedValue();
+  onRunFinished.mockResolvedValue(undefined);
   onRunFailed.mockResolvedValue();
 });
 
@@ -157,6 +160,7 @@ describe('relayAgentEventStream', () => {
     const relayed: string[] = [];
     onRunFinished.mockImplementation(async () => {
       relayed.push('recorded');
+      return;
     });
 
     const sseStream = relayAgentEventStream(
@@ -215,6 +219,32 @@ describe('relayAgentEventStream', () => {
         encoder.encode({ ...runFinished, threadId: USER_THREAD_ID }),
     );
     expect(onRunFinished).toHaveBeenCalledWith(true);
+  });
+
+  it('tells the client the blocked message just before RUN_FINISHED', async () => {
+    const blockedMessage = {
+      messageIds: ['msg-1'],
+      content: 'Output blocked',
+    };
+    onRunFinished.mockResolvedValueOnce(blockedMessage);
+    const runFinished: BaseEvent = {
+      type: EventType.RUN_FINISHED,
+      threadId: SYSTEM_THREAD_ID,
+      runId: RUN_ID,
+    };
+
+    const sseStream = relayAgentEventStream(
+      relayParameters(aguiEventStream([runFinished])),
+    );
+
+    expect(await collectStreamText(sseStream)).toBe(
+      encoder.encode({
+        type: EventType.CUSTOM,
+        name: 'guardrailTriggered',
+        value: blockedMessage,
+      } as BaseEvent) +
+        encoder.encode({ ...runFinished, threadId: USER_THREAD_ID }),
+    );
   });
 
   it('ends the stream with RUN_ERROR when the finished run cannot be recorded', async () => {
